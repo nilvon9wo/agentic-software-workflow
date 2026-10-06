@@ -46,7 +46,7 @@ public sealed class SeparationOfAuthorityLiveTest : IDisposable
         Fin<AgentResult> result;
 
         // Act
-        result = await RunAsync(task);
+        result = await Run(task);
 
         // Assert
         AgentResult answer = AssertSuccess(result);
@@ -65,7 +65,7 @@ public sealed class SeparationOfAuthorityLiveTest : IDisposable
         Fin<AgentResult> result;
 
         // Act
-        result = await RunAsync(task);
+        result = await Run(task);
 
         // Assert
         AgentResult answer = AssertSuccess(result);
@@ -75,10 +75,10 @@ public sealed class SeparationOfAuthorityLiveTest : IDisposable
 
     public void Dispose() => this._workspace.Delete(recursive: true);
 
-    private static Task<Fin<AgentResult>> RunAsync(AgentTask task)
+    private static Task<Fin<AgentResult>> Run(AgentTask task)
     {
         IAgentic runner = new ClaudeCodeAgentRunner(new SystemProcessRunner());
-        return runner.RunAsync(task, TestContext.Current.CancellationToken);
+        return runner.Run(task, TestContext.Current.CancellationToken);
     }
 
     private AgentTask ImplementerTask(string prompt) =>

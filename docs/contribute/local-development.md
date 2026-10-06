@@ -91,3 +91,22 @@ claude   # sign in once
 Each check asserts both that nothing leaked or changed *and* that a refusal was
 recorded — a run in which the model never tried would otherwise pass while
 proving nothing.
+
+## Running the workflow
+
+`aswf` runs from the repository root, where `aswf.json` says which repository
+the work lives in, who the maintainers are, and who commits on the workers'
+behalf. It needs, **in WSL**:
+
+- `claude`, signed in (the workers);
+- `gh`, signed in as the **workers' account** — never the maintainer's, so the
+  maintainer's comments are distinguishable as answers and the maintainer can
+  approve the workers' pull requests;
+- `git` pushing through that same account (`gh auth login` sets this up).
+
+```bash
+dotnet run --project src/AgenticSoftwareWorkflow.Cli -- specify <issue-number>
+```
+
+Each run works in its own git worktree under `.aswf/worktrees/` (ignored by
+git) and removes it afterwards.

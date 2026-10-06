@@ -347,6 +347,12 @@ dotnet_diagnostic.CA1854.severity = error
 dotnet_diagnostic.CA1859.severity = error
 # Catch only the specific exception you expect; never Exception or a bare catch.
 dotnet_diagnostic.CA1031.severity = error
+# A forgotten `await` is an error, wherever it happens (CS4014 covers only
+# async methods; VSTHRD110 covers every unobserved async call). That is what
+# makes an `Async` suffix redundant - so the rule demanding it is off.
+dotnet_diagnostic.CS4014.severity = error
+dotnet_diagnostic.VSTHRD110.severity = error
+dotnet_diagnostic.VSTHRD200.severity = none
 
 #### Wrapping (Rider / ReSharper) ####
 #

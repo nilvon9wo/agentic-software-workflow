@@ -10,18 +10,21 @@ namespace AgenticSoftwareWorkflow.Conductor.Work;
 /// </summary>
 public static class WorkItemBrief
 {
+    // A worker's brief is the same whichever OS the conductor runs on.
+    private const char LineBreak = '\n';
+
     public static string Describe(WorkItem item)
     {
         StringBuilder brief = new();
-        _ = brief.AppendLine($"# {item.Title}");
-        _ = brief.AppendLine();
-        _ = brief.AppendLine(item.Body);
+        _ = brief.Append($"# {item.Title}").Append(LineBreak);
+        _ = brief.Append(LineBreak);
+        _ = brief.Append(item.Body).Append(LineBreak);
         foreach (WorkComment comment in item.TrustedComments)
         {
-            _ = brief.AppendLine();
-            _ = brief.AppendLine($"## {comment.Author} replied");
-            _ = brief.AppendLine();
-            _ = brief.AppendLine(comment.Body);
+            _ = brief.Append(LineBreak);
+            _ = brief.Append($"## {comment.Author} replied").Append(LineBreak);
+            _ = brief.Append(LineBreak);
+            _ = brief.Append(comment.Body).Append(LineBreak);
         }
 
         return brief.ToString();

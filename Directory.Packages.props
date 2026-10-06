@@ -17,6 +17,8 @@
       code. Compile-time only: the attributes vanish from the built assembly.
     -->
     <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
+    <!-- Async correctness: VSTHRD110 makes an unobserved async call an error (see .editorconfig). -->
+    <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" />
     <PackageVersion Include="LanguageExt.Core" Version="5.0.0-beta-77" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="Xfty.Xunit" Version="1.0.0-beta.12" />

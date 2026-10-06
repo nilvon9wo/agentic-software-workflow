@@ -14,13 +14,15 @@ public sealed class WorkflowRolesTest
         [nameof(WorkflowRoles.TestReviewer)] = WorkflowRoles.TestReviewer,
         [nameof(WorkflowRoles.CodeReviewer)] = WorkflowRoles.CodeReviewer,
         [nameof(WorkflowRoles.Arbitrator)] = WorkflowRoles.Arbitrator,
+        [nameof(WorkflowRoles.Specifier)] = WorkflowRoles.Specifier,
     };
 
     [Theory]
     [InlineData(nameof(WorkflowRoles.TestReviewer))]
     [InlineData(nameof(WorkflowRoles.CodeReviewer))]
     [InlineData(nameof(WorkflowRoles.Arbitrator))]
-    public void Judges_WhenDefined_CannotEditWhatTheyJudge(string roleName)
+    [InlineData(nameof(WorkflowRoles.Specifier))]
+    public void ReadOnlyRoles_WhenDefined_CannotEdit(string roleName)
     {
         // Arrange
         AgentRole judge = RolesByName[roleName];
@@ -30,7 +32,7 @@ public sealed class WorkflowRolesTest
         canEdit = judge.CanEdit;
 
         // Assert
-        Assert.False(canEdit, $"{roleName} must only read what it judges.");
+        Assert.False(canEdit, $"{roleName} must only read.");
     }
 
     [Fact]
@@ -73,19 +75,6 @@ public sealed class WorkflowRolesTest
 
         // Assert
         Assert.Equal(["dotnet build", "dotnet test", "dotnet format"], commands);
-    }
-
-    [Fact]
-    public void Specifier_WhenDefined_CannotTouchCodeOrTests()
-    {
-        // Arrange
-        IReadOnlyList<string> uneditable;
-
-        // Act
-        uneditable = WorkflowRoles.Specifier.Access.UneditablePaths;
-
-        // Assert
-        Assert.Equal([WorkspaceLayout.Source, WorkspaceLayout.VisibleTests, WorkspaceLayout.HiddenTests], uneditable);
     }
 
     [Fact]

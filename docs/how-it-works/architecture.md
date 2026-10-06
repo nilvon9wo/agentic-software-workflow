@@ -6,8 +6,9 @@ why each piece is built (or *not* built) the way it is.
 > **Status.** In place: the quality gates and their canary, CI, branch
 > protection with auto-merge, the agent runner (`IAgentic` with its Claude
 > Code adapter), the role catalogue with enforced access rules, and the work
-> source (`IWorkSupplying` with its GitHub Issues adapter). Next: the first
-> pipeline stage, issue → specification. Tracked as GitHub issues.
+> source (`IWorkSupplying` with its GitHub Issues adapter), and the first
+> pipeline stage, issue → specification (`aswf specify`). Next: tests from the
+> specification. Tracked as GitHub issues.
 
 ## The one idea that matters most
 

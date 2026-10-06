@@ -84,7 +84,10 @@ notices when the rule stops being enforced.
 `master` is protected by a repository ruleset: every change arrives through a
 pull request, both CI jobs must pass on a branch that is up to date with
 `master`, and force-pushes and deletion are blocked. A pull request with
-auto-merge enabled merges itself the moment the gates are green.
+auto-merge enabled merges itself the moment the gates are green — except one
+that changes a specification: `CODEOWNERS` makes `spec/` the maintainer's, and
+the ruleset requires a code owner's approval, because a specification defines
+what everything else is held to.
 
 The ruleset has **no bypass**, not even for administrators. Workers act through
 the maintainer's GitHub account; a bypass for that account would let a worker

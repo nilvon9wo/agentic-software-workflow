@@ -20,70 +20,70 @@ public sealed class SystemProcessRunnerTest
     private readonly SystemProcessRunner _runner = new();
 
     [Fact]
-    public async Task RunAsync_WhenTheProcessSucceeds_CapturesItsOutput()
+    public async Task Run_WhenTheProcessSucceeds_CapturesItsOutput()
     {
         // Arrange
         ProcessRequest request = Request(["echo"], "hello from stdin", Generous);
         ProcessOutcome outcome;
 
         // Act
-        outcome = await this._runner.RunAsync(request, TestContext.Current.CancellationToken);
+        outcome = await this._runner.Run(request, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(new ProcessOutcome(0, "hello from stdin", "", false), outcome);
     }
 
     [Fact]
-    public async Task RunAsync_WhenTheProcessFails_CapturesItsExitCodeAndStandardError()
+    public async Task Run_WhenTheProcessFails_CapturesItsExitCodeAndStandardError()
     {
         // Arrange
         ProcessRequest request = Request(["fail", "3"], "", Generous);
         ProcessOutcome outcome;
 
         // Act
-        outcome = await this._runner.RunAsync(request, TestContext.Current.CancellationToken);
+        outcome = await this._runner.Run(request, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(new ProcessOutcome(3, "", "failed", false), outcome);
     }
 
     [Fact]
-    public async Task RunAsync_WhenTheProcessOutlivesItsTimeout_StopsItAndReportsTheTimeout()
+    public async Task Run_WhenTheProcessOutlivesItsTimeout_StopsItAndReportsTheTimeout()
     {
         // Arrange
         ProcessRequest request = Request(["hang"], "", Brief);
         ProcessOutcome outcome;
 
         // Act
-        outcome = await this._runner.RunAsync(request, TestContext.Current.CancellationToken);
+        outcome = await this._runner.Run(request, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(new ProcessOutcome(-1, "", "", true), outcome);
     }
 
     [Fact]
-    public async Task RunAsync_WhenTheCallerCancels_PropagatesTheCancellation()
+    public async Task Run_WhenTheCallerCancels_PropagatesTheCancellation()
     {
         // Arrange
         ProcessRequest request = Request(["hang"], "", Generous);
         using CancellationTokenSource cancellation = new(Brief);
 
         // Act
-        Exception? thrown = await Record.ExceptionAsync(() => this._runner.RunAsync(request, cancellation.Token));
+        Exception? thrown = await Record.ExceptionAsync(() => this._runner.Run(request, cancellation.Token));
 
         // Assert
         _ = Assert.IsType<OperationCanceledException>(thrown, exactMatch: false);
     }
 
     [Fact]
-    public async Task RunAsync_WhenTheExecutableDoesNotExist_ThrowsLoudly()
+    public async Task Run_WhenTheExecutableDoesNotExist_ThrowsLoudly()
     {
         // Arrange
         ProcessRequest request = new("no-such-executable-anywhere", [], "", ".", Generous);
 
         // Act
         Exception? thrown = await Record.ExceptionAsync(
-            () => this._runner.RunAsync(request, TestContext.Current.CancellationToken)
+            () => this._runner.Run(request, TestContext.Current.CancellationToken)
         );
 
         // Assert

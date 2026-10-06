@@ -18,6 +18,8 @@ and [docs/contribute/coverage-standards.md](docs/contribute/coverage-standards.m
 exactly. The rules most often missed:
 
 - `this.` on every instance member; no `var`; explicit types.
+- No `Async` suffix on our own methods (`Run`, not `RunAsync`); a missing
+  `await` is a build error instead.
 - One behaviour per test; AAA comments verbatim; the Act is one statement.
 - 100% line **and** branch coverage — every `dotnet test` enforces it.
 - Wrapped calls close with `)` on its own line; no line over 120 characters.

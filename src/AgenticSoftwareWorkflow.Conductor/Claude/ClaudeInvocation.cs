@@ -22,6 +22,7 @@ public sealed class ClaudeInvocation
     private const string PermissionModeFlag = "--permission-mode";
     private const string SettingsFlag = "--settings";
     private const string JsonSchemaFlag = "--json-schema";
+    private const string AppendSystemPromptFlag = "--append-system-prompt";
 
     private ClaudeInvocation(IReadOnlyList<string> arguments) => this.Arguments = arguments;
 
@@ -88,6 +89,16 @@ public sealed class ClaudeInvocation
     }
 
     /// <summary>Constrains the final answer to a JSON Schema the conductor can deserialize.</summary>
+    /// <summary>
+    /// Adds a role's standing instructions to Claude Code's own system prompt,
+    /// so they apply on every turn rather than only when the model chooses.
+    /// </summary>
+    public ClaudeInvocation WithAppendedSystemPrompt(string instructions)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(instructions);
+        return this.Append(AppendSystemPromptFlag, instructions);
+    }
+
     public ClaudeInvocation WithJsonSchema(string jsonSchema)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(jsonSchema);

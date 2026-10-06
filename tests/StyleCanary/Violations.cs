@@ -36,4 +36,9 @@ public sealed class Violations
             return 0;
         }
     }
+
+    public void Forget()
+    {
+        System.Threading.Tasks.Task.Delay(1); // expect: build:VSTHRD110
+    }
 }

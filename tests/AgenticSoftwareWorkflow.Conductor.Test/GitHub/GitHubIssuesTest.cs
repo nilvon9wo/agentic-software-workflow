@@ -35,7 +35,7 @@ public sealed class GitHubIssuesTest
     private readonly IProcessCapable _processes = Substitute.For<IProcessCapable>();
 
     [Fact]
-    public async Task ReadyAsync_WhenIssuesAreReady_ListsThoseNotWaitingOnAHuman()
+    public async Task ListReady_WhenIssuesAreReady_ListsThoseNotWaitingOnAHuman()
     {
         // Arrange
         this.Responds(
@@ -53,21 +53,21 @@ public sealed class GitHubIssuesTest
         Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ReadyAsync(TestContext.Current.CancellationToken);
+        ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal([new WorkItemId(Source, "3"), new WorkItemId(Source, "8")], AssertSuccess(ready));
     }
 
     [Fact]
-    public async Task ReadyAsync_WhenCalled_AsksGitHubForOpenReadyIssues()
+    public async Task ListReady_WhenCalled_AsksGitHubForOpenReadyIssues()
     {
         // Arrange
         this.Responds(Succeeded("[]"));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
 
         // Act
-        _ = await issues.ReadyAsync(TestContext.Current.CancellationToken);
+        _ = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         ProcessRequest request = this.Requests().Single();
@@ -82,7 +82,7 @@ public sealed class GitHubIssuesTest
     }
 
     [Fact]
-    public async Task ReadyAsync_WhenTheCommandFails_FailsWithItsError()
+    public async Task ListReady_WhenTheCommandFails_FailsWithItsError()
     {
         // Arrange
         this.Responds(new ProcessOutcome(4, "", "not authenticated", false));
@@ -90,18 +90,18 @@ public sealed class GitHubIssuesTest
         Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ReadyAsync(TestContext.Current.CancellationToken);
+        ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         Error error = AssertFailure(ready);
         Assert.Equal(
-            (WorkErrors.CommandFailedCode, "'gh issue list' exited with code 4: not authenticated"),
+            (CommandErrors.FailedCode, "'gh issue list' exited with code 4: not authenticated"),
             (error.Code, error.Message)
         );
     }
 
     [Fact]
-    public async Task ReadyAsync_WhenTheCommandTimesOut_FailsSayingSo()
+    public async Task ListReady_WhenTheCommandTimesOut_FailsSayingSo()
     {
         // Arrange
         this.Responds(new ProcessOutcome(-1, "", "", true));
@@ -109,14 +109,14 @@ public sealed class GitHubIssuesTest
         Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ReadyAsync(TestContext.Current.CancellationToken);
+        ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("'gh issue list' exited with code -1: timed out", AssertFailure(ready).Message);
     }
 
     [Fact]
-    public async Task ReadyAsync_WhenTheResponseIsNotJson_FailsWithMalformedResponse()
+    public async Task ListReady_WhenTheResponseIsNotJson_FailsWithMalformedResponse()
     {
         // Arrange
         this.Responds(Succeeded("<html>"));
@@ -124,14 +124,14 @@ public sealed class GitHubIssuesTest
         Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ReadyAsync(TestContext.Current.CancellationToken);
+        ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(WorkErrors.MalformedResponseCode, AssertFailure(ready).Code);
     }
 
     [Fact]
-    public async Task ReadAsync_WhenTheIssueExists_ReturnsItAndItsConversation()
+    public async Task Read_WhenTheIssueExists_ReturnsItAndItsConversation()
     {
         // Arrange
         this.Responds(Succeeded(Issue));
@@ -139,7 +139,7 @@ public sealed class GitHubIssuesTest
         Fin<WorkItem> read;
 
         // Act
-        read = await issues.ReadAsync(Seven, TestContext.Current.CancellationToken);
+        read = await issues.Read(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         WorkItem item = AssertSuccess(read);
@@ -150,7 +150,7 @@ public sealed class GitHubIssuesTest
     }
 
     [Fact]
-    public async Task ReadAsync_WhenMaintainersAndOthersHaveCommented_ReadsEachCommentAndTrustsOnlyTheMaintainers()
+    public async Task Read_WhenMaintainersAndOthersHaveCommented_ReadsEachCommentAndTrustsOnlyTheMaintainers()
     {
         // Arrange
         this.Responds(Succeeded(Issue));
@@ -158,7 +158,7 @@ public sealed class GitHubIssuesTest
         Fin<WorkItem> read;
 
         // Act
-        read = await issues.ReadAsync(Seven, TestContext.Current.CancellationToken);
+        read = await issues.Read(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
@@ -173,7 +173,7 @@ public sealed class GitHubIssuesTest
     }
 
     [Fact]
-    public async Task ReadAsync_WhenTheIssueHasOnlyANumber_DefaultsEverythingElse()
+    public async Task Read_WhenTheIssueHasOnlyANumber_DefaultsEverythingElse()
     {
         // Arrange
         this.Responds(Succeeded("""{ "number": 7 }"""));
@@ -181,7 +181,7 @@ public sealed class GitHubIssuesTest
         Fin<WorkItem> read;
 
         // Act
-        read = await issues.ReadAsync(Seven, TestContext.Current.CancellationToken);
+        read = await issues.Read(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         WorkItem item = AssertSuccess(read);
@@ -189,7 +189,7 @@ public sealed class GitHubIssuesTest
     }
 
     [Fact]
-    public async Task ReadAsync_WhenTheResponseIsJsonNull_FailsWithMalformedResponse()
+    public async Task Read_WhenTheResponseIsJsonNull_FailsWithMalformedResponse()
     {
         // Arrange
         this.Responds(Succeeded("null"));
@@ -197,7 +197,7 @@ public sealed class GitHubIssuesTest
         Fin<WorkItem> read;
 
         // Act
-        read = await issues.ReadAsync(Seven, TestContext.Current.CancellationToken);
+        read = await issues.Read(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
@@ -207,21 +207,21 @@ public sealed class GitHubIssuesTest
     }
 
     [Fact]
-    public async Task ReadAsync_WhenTheItemBelongsToAnotherSource_FailsWithoutCallingGitHub()
+    public async Task Read_WhenTheItemBelongsToAnotherSource_FailsWithoutCallingGitHub()
     {
         // Arrange
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
         Fin<WorkItem> read;
 
         // Act
-        read = await issues.ReadAsync(new WorkItemId("jira:PROJECT", "7"), TestContext.Current.CancellationToken);
+        read = await issues.Read(new WorkItemId("jira:PROJECT", "7"), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal((WorkErrors.ForeignItemCode, 0), (AssertFailure(read).Code, this.Requests().Count));
     }
 
     [Fact]
-    public async Task AskAsync_WhenCalled_PostsTheQuestionThenMarksTheIssueAsWaitingOnTheMaintainers()
+    public async Task Ask_WhenCalled_PostsTheQuestionThenMarksTheIssueAsWaitingOnTheMaintainers()
     {
         // Arrange
         this.Responds(Succeeded(""), Succeeded(""));
@@ -229,7 +229,7 @@ public sealed class GitHubIssuesTest
         Fin<Unit> asked;
 
         // Act
-        asked = await issues.AskAsync(Seven, "Which time zone?", TestContext.Current.CancellationToken);
+        asked = await issues.Ask(Seven, "Which time zone?", TestContext.Current.CancellationToken);
 
         // Assert
         _ = AssertSuccess(asked);
@@ -246,7 +246,7 @@ public sealed class GitHubIssuesTest
     }
 
     [Fact]
-    public async Task AskAsync_WhenPostingTheQuestionFails_DoesNotMarkTheIssue()
+    public async Task Ask_WhenPostingTheQuestionFails_DoesNotMarkTheIssue()
     {
         // Arrange
         this.Responds(new ProcessOutcome(1, "", "rate limited", false));
@@ -254,14 +254,14 @@ public sealed class GitHubIssuesTest
         Fin<Unit> asked;
 
         // Act
-        asked = await issues.AskAsync(Seven, "Which time zone?", TestContext.Current.CancellationToken);
+        asked = await issues.Ask(Seven, "Which time zone?", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal((WorkErrors.CommandFailedCode, 1), (AssertFailure(asked).Code, this.Requests().Count));
+        Assert.Equal((CommandErrors.FailedCode, 1), (AssertFailure(asked).Code, this.Requests().Count));
     }
 
     [Fact]
-    public async Task ResolveAsync_WhenCalled_RemovesTheWaitingLabelAndAssignment()
+    public async Task Resolve_WhenCalled_RemovesTheWaitingLabelAndAssignment()
     {
         // Arrange
         this.Responds(Succeeded(""));
@@ -269,7 +269,7 @@ public sealed class GitHubIssuesTest
         Fin<Unit> resolved;
 
         // Act
-        resolved = await issues.ResolveAsync(Seven, TestContext.Current.CancellationToken);
+        resolved = await issues.Resolve(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         _ = AssertSuccess(resolved);
@@ -283,7 +283,7 @@ public sealed class GitHubIssuesTest
 
     private void Responds(ProcessOutcome first, params ProcessOutcome[] rest) =>
         this._processes
-            .RunAsync(Arg.Any<ProcessRequest>(), Arg.Any<CancellationToken>())
+            .Run(Arg.Any<ProcessRequest>(), Arg.Any<CancellationToken>())
             .Returns(first, rest);
 
     private List<ProcessRequest> Requests() =>

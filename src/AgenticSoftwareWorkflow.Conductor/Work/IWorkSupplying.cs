@@ -16,17 +16,17 @@ namespace AgenticSoftwareWorkflow.Conductor.Work;
 public interface IWorkSupplying
 {
     /// <summary>Items marked ready and not waiting on a human.</summary>
-    Task<Fin<IReadOnlyList<WorkItemId>>> ReadyAsync(CancellationToken cancellationToken);
+    Task<Fin<IReadOnlyList<WorkItemId>>> ListReady(CancellationToken cancellationToken);
 
     /// <summary>One item, with its whole conversation.</summary>
-    Task<Fin<WorkItem>> ReadAsync(WorkItemId id, CancellationToken cancellationToken);
+    Task<Fin<WorkItem>> Read(WorkItemId id, CancellationToken cancellationToken);
 
     /// <summary>
     /// Posts a question on the item and marks it as waiting on a maintainer,
     /// assigning it to them so it appears in their own list.
     /// </summary>
-    Task<Fin<Unit>> AskAsync(WorkItemId id, string question, CancellationToken cancellationToken);
+    Task<Fin<Unit>> Ask(WorkItemId id, string question, CancellationToken cancellationToken);
 
     /// <summary>Marks a question answered: the item no longer waits on anyone.</summary>
-    Task<Fin<Unit>> ResolveAsync(WorkItemId id, CancellationToken cancellationToken);
+    Task<Fin<Unit>> Resolve(WorkItemId id, CancellationToken cancellationToken);
 }

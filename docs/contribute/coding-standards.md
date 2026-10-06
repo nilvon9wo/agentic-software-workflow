@@ -47,7 +47,11 @@ repo — human or AI. When a change is reviewed, this is the checklist.
   8. All classes, methods, and variables must be named to communicate
      intentions — never a single letter or abbreviation.
   9. Always use nouns to name objects.
-  10. Always use verbs to name methods.
+  10. Always use verbs to name methods — and never suffix them with `Async`.
+      The suffix repeats what `async`, `await`, and the `Task` return type
+      already say. What it was meant to guard against, a forgotten `await`, is
+      a build error instead (CS4014 and VSTHRD110). Framework methods keep
+      their own names (`ReadAllTextAsync`).
   11. Always use adjectives to name interfaces, prefixed with `I` as C#
       convention requires — `IDisposable`, `IAgentic`, `IProcessCapable`. An
       interface describes what its implementers *are able to do*; nouns name

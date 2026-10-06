@@ -1,0 +1,9 @@
+{
+  "repository": "nilvon9wo/agentic-software-workflow",
+  "baseBranch": "master",
+  "maintainers": ["nilvon9wo"],
+  "commitAuthor": {
+    "name": "nilvon9wo-bot",
+    "email": "338699558+nilvon9wo-bot@users.noreply.github.com"
+  }
+}
