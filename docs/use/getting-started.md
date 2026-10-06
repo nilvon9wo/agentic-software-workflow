@@ -79,6 +79,33 @@ conductor makes the same check itself, in case the Action has not run). Run
 it before you have replied and it says the item is still waiting, without
 running the specifier.
 
+## Today: letting it run
+
+Instead of naming issues one at a time, let the conductor work through every
+issue labelled `ready`:
+
+```bash
+dotnet run --project src/AgenticSoftwareWorkflow.Cli -- run          # keep watching
+dotnet run --project src/AgenticSoftwareWorkflow.Cli -- run --once   # one pass, then stop
+```
+
+Each pass specifies every ready issue, then waits ten minutes and looks
+again. An issue whose specification has been proposed moves from `ready` to
+`specified`, so it is never specified twice. Issues waiting on you are
+skipped until you reply.
+
+- **Usage limit reached**: the conductor reads when the limit resets
+  (Claude Code reports it), waits until a minute after, and retries the same
+  issue. Nothing is lost and nothing needs you.
+- **Anything else goes wrong**: it posts the failure on the issue and asks
+  you (`needs-human`), rather than retrying every pass and burning usage.
+  Reply once it is fixed, and the issue is picked up again.
+
+Stop it with Ctrl+C at any time: its state lives in GitHub, not in the
+process. One caveat: an issue stopped mid-way can leave its worktree under
+`.aswf/worktrees/`; remove it (`git worktree remove --force <path>`) before
+that issue runs again.
+
 ## Next
 
 The remaining stages — tests, implementation, review, repair — follow the

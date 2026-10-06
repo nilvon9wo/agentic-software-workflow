@@ -9,12 +9,14 @@ namespace AgenticSoftwareWorkflow.Conductor.GitHub;
 /// <summary>
 /// GitHub Issues as a work source, through the GitHub CLI. An issue labelled
 /// <c>ready</c> is ready; <c>needs-human</c>, plus an assignee, marks one
-/// waiting on a maintainer.
+/// waiting on a maintainer; <c>specified</c> replaces <c>ready</c> once its
+/// specification has been proposed.
 /// </summary>
 public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions options) : IWorkSupplying
 {
     private const string ReadyLabel = "ready";
     private const string NeedsHumanLabel = "needs-human";
+    private const string SpecifiedLabel = "specified";
     private const string UnknownAuthor = "ghost";
     private const string ListFields = "number,labels";
     private const string ViewFields = "number,title,body,labels,comments";
@@ -84,6 +86,28 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
             _ => this.Edit(id, "--remove-label", "--remove-assignee", cancellationToken)
         );
         return unmarked.Map(_ => Unit.Default);
+    }
+
+    public async Task<Fin<Unit>> MarkSpecified(WorkItemId id, CancellationToken cancellationToken)
+    {
+        Fin<string> relabelled = await this.RequireOwn(id).Then(
+            _ => this._gh.Run(
+                [
+                    "issue",
+                    "edit",
+                    id.Key,
+                    "--repo",
+                    this._options.Repository,
+                    "--remove-label",
+                    ReadyLabel,
+                    "--add-label",
+                    SpecifiedLabel,
+                ],
+                string.Empty,
+                cancellationToken
+            )
+        );
+        return relabelled.Map(_ => Unit.Default);
     }
 
     private static bool IsWaiting(GitHubIssue issue) =>

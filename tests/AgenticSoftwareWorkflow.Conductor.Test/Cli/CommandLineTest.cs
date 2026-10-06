@@ -3,8 +3,10 @@ using AgenticSoftwareWorkflow.Conductor.Agents;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.Processes;
 using AgenticSoftwareWorkflow.Conductor.Work;
+using AgenticSoftwareWorkflow.Conductor.Workflow;
 using AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
 using LanguageExt;
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 
 namespace AgenticSoftwareWorkflow.Conductor.Test.Cli;
@@ -18,6 +20,11 @@ public sealed class CommandLineTest : IDisposable
           "maintainers": ["maintainer"],
           "commitAuthor": { "name": "repository-bot", "email": "bot@example.com" }
         }
+        """;
+
+    private const string Usage = """
+        Usage: aswf specify <issue-number>   specify one issue
+               aswf run [--once]             work through the ready issues, then keep watching (or stop)
         """;
 
     private static readonly AgentUsage NoUsage = new(0, 0, 0m, 0, []);
@@ -54,17 +61,18 @@ public sealed class CommandLineTest : IDisposable
     [InlineData("specify")]
     [InlineData("specify", "seven")]
     [InlineData("unknown", "7")]
+    [InlineData("run", "--twice")]
     public async Task Run_WhenTheArgumentsAreNotUnderstood_PrintsUsage(params string[] arguments)
     {
         // Arrange
         // Nothing to arrange: the [InlineData] rows are the input; the constructor arranges the rest.
 
         // Act
-        int exitCode = await this.Run(arguments);
+        int exitCode = await this.Run(arguments, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
-            (CommandLine.UsageError, "Usage: aswf specify <issue-number>\n"),
+            (CommandLine.UsageError, Usage + "\n"),
             (exitCode, this._output.ToString().ReplaceLineEndings("\n"))
         );
     }
@@ -76,7 +84,7 @@ public sealed class CommandLineTest : IDisposable
         string path = Path.Combine(this._root.FullName, "aswf.json");
 
         // Act
-        int exitCode = await this.Run(["specify", "7"]);
+        int exitCode = await this.Run(["specify", "7"], TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(CommandLine.Failed, exitCode);
@@ -94,7 +102,7 @@ public sealed class CommandLineTest : IDisposable
         await this.WriteSettings("null");
 
         // Act
-        int exitCode = await this.Run(["specify", "7"]);
+        int exitCode = await this.Run(["specify", "7"], TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(CommandLine.Failed, exitCode);
@@ -112,7 +120,7 @@ public sealed class CommandLineTest : IDisposable
         await this.WriteSettings(Settings);
 
         // Act
-        int exitCode = await this.Run(["specify", "7"]);
+        int exitCode = await this.Run(["specify", "7"], TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
@@ -139,13 +147,46 @@ public sealed class CommandLineTest : IDisposable
             .Returns(new ProcessOutcome(128, "", "fatal", false));
 
         // Act
-        int exitCode = await this.Run(["specify", "7"]);
+        int exitCode = await this.Run(["specify", "7"], TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
             (CommandLine.Failed, "Failed (CommandFailed): 'git fetch origin' exited with code 128: fatal\n"),
             (exitCode, this._output.ToString().ReplaceLineEndings("\n"))
         );
+    }
+
+    [Fact]
+    public async Task Run_WhenRunningOnce_MakesOnePassAndSaysSo()
+    {
+        // Arrange
+        await this.WriteSettings(Settings);
+        _ = this._work.ListReady(Arg.Any<CancellationToken>()).Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
+
+        // Act
+        int exitCode = await this.Run(["run", "--once"], TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            (CommandLine.Succeeded, "[2026-10-07 12:00:00Z] 0 item(s) ready.\nThe pass is complete.\n"),
+            (exitCode, this._output.ToString().ReplaceLineEndings("\n"))
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenRunningContinuously_KeepsGoingUntilStopped()
+    {
+        // Arrange
+        await this.WriteSettings(Settings);
+        _ = this._work.ListReady(Arg.Any<CancellationToken>()).Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
+        using CancellationTokenSource stopped = new();
+        await stopped.CancelAsync();
+
+        // Act
+        Exception? thrown = await Record.ExceptionAsync(() => this.Run(["run"], stopped.Token));
+
+        // Assert
+        _ = Assert.IsType<OperationCanceledException>(thrown, exactMatch: false);
     }
 
     public void Dispose()
@@ -161,20 +202,31 @@ public sealed class CommandLineTest : IDisposable
             TestContext.Current.CancellationToken
         );
 
-    private Task<int> Run(string[] arguments) =>
+    private Task<int> Run(string[] arguments, CancellationToken cancellationToken) =>
         CommandLine.Run(
             arguments,
-            this._root.FullName,
-            this._output,
-            this.CreateSpecifyCommand,
-            TestContext.Current.CancellationToken
+            new CommandContext(this._root.FullName, this._output, new FakeComposer(this)),
+            cancellationToken
         );
 
-    private SpecifyCommand CreateSpecifyCommand(ConductorSettings settings, string repositoryRoot)
+    /// <summary>Builds the real commands around this test's fakes.</summary>
+    private sealed class FakeComposer(CommandLineTest test) : IConductorComposing
     {
-        this._settingsUsed.Add(settings);
-        GitRepository git = new(this._processes, repositoryRoot, settings.CommitAuthor);
-        IChangeProposing changes = Substitute.For<IChangeProposing>();
-        return new SpecifyCommand(this._work, this._agent, git, changes, settings.BaseBranch);
+        public SpecifyCommand CreateSpecifyCommand(ConductorSettings settings, string repositoryRoot)
+        {
+            test._settingsUsed.Add(settings);
+            GitRepository git = new(test._processes, repositoryRoot, settings.CommitAuthor);
+            IChangeProposing changes = Substitute.For<IChangeProposing>();
+            return new SpecifyCommand(test._work, test._agent, git, changes, settings.BaseBranch);
+        }
+
+        public RunLoop CreateRunLoop(ConductorSettings settings, CommandContext context, RunLoopOptions options) =>
+            new(
+                test._work,
+                this.CreateSpecifyCommand(settings, context.RepositoryRoot),
+                options,
+                context.Output,
+                new FakeTimeProvider(new DateTimeOffset(2026, 10, 7, 12, 0, 0, TimeSpan.Zero))
+            );
     }
 }
