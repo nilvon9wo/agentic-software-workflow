@@ -26,8 +26,16 @@ exactly. The rules most often missed:
   specific exception types.
 - Python, shell, and Markdown are held to equivalent standards. In Python:
   no conditional expressions (write `if`/`else` with both branches), no call
-  nested inside a call inside a call, 100% coverage.
-- Do not delete code just because it looks unused — find out why first.
+  nested inside a call inside a call, 100% coverage. There is no formatter:
+  lay code out by hand to the layout rules.
+- A boolean chain of three or more operands goes one operand per line,
+  operator first. Never introduce a name just to break up a line — names
+  must communicate intent.
+- Do not delete code just because it looks unused — find out why first; mark
+  code used from outside with `[PublicAPI]` (other projects) or
+  `[UsedImplicitly]` (reflection, frameworks, conventions).
+- Python: 80 columns, mandatory trailing commas, and modules split by intent
+  rather than by comment banners.
 
 ## Working rules
 

@@ -6,9 +6,14 @@ def add(first, second):  # expect: ruff:ANN001
 
 
 count: int = "three"  # expect: pyright:reportAssignmentType
-spaced = {  "a":1  }  # expect: ruff-format:unformatted
+spaced = {"a":1}  # expect: ruff:E231
 chosen = 1 if count else 2  # expect: pylint:E9001
 printed = print(len(str(count)))  # expect: pylint:E9002
+chained = count and spaced and chosen  # expect: pylint:E9004
+wrapped = print(count,  # expect: pylint:E9005
+                spaced)
+comprehended = [item  # expect: pylint:E9006
+                for item in spaced if item]
 
 
 def nested(groups):

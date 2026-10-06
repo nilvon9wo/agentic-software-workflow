@@ -9,14 +9,33 @@ requires-python = ">=3.12"
 
 # ---------------------------------------------------------------- ruff --------
 [tool.ruff]
-line-length = 120
+# Where this project's own modules live, so imports sort as first-party.
+src = ["scripts", "scripts/lint"]
+# Python's hard limit is the house rule's 80-column target, not its 120-column
+# ceiling. There is no formatter: layout is enforced by lint rules alone (see
+# docs/contribute/coding-standards.md), as `dotnet format` does not impose its
+# own layout on C# either.
+line-length = 80
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["ALL"]
+# pycodestyle's whitespace rules are "preview" in ruff. Each is enabled by its
+# exact code, so no other preview rule slips in unannounced.
+preview = true
+explicit-preview-rules = true
+select = [
+    "ALL",
+    "E111", "E112", "E113", "E114", "E115", "E116", "E117",
+    "E201", "E202", "E203", "E204", "E211",
+    "E221", "E222", "E223", "E224", "E225", "E226", "E227", "E228",
+    "E231", "E241", "E242", "E251", "E252",
+    "E261", "E262", "E265", "E266",
+    "E271", "E272", "E273", "E274", "E275",
+    "E301", "E302", "E303", "E304", "E305", "E306",
+    "E502", "W391",
+]
 ignore = [
     "CPY001",   # parity with C#: .editorconfig sets file_header_template = unset
-    "COM812",   # conflicts with `ruff format` (the formatter owns trailing commas)
     "D203",     # incompatible with D211; no blank line before a class docstring
     "D213",     # incompatible with D212; summary goes on the first docstring line
     "T201",     # these are command-line gates: print() IS their user interface
@@ -49,13 +68,10 @@ max-branches = 5
 max-returns = 3
 max-args = 5
 
-[tool.ruff.format]
-line-ending = "lf"
-
 # -------------------------------------------------------------- pyright -------
 [tool.pyright]
 include = ["scripts", "tests/scripts"]
-extraPaths = ["scripts", "scripts/lint"]
+extraPaths = ["scripts", "scripts/lint", "tests/scripts"]
 typeCheckingMode = "strict"
 pythonVersion = "3.12"
 
@@ -112,7 +128,7 @@ source = ["scripts"]
 omit = [
     # The subprocess orchestration modules are exercised end to end by
     # `gates.sh verify` in CI, not yet by unit tests; tracked in issue #9.
-    "scripts/gates.py",
+    "scripts/gates/*",
     "scripts/run_gates.py",
     "scripts/verify_gates.py",
 ]

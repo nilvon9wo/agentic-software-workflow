@@ -33,7 +33,17 @@ repo — human or AI. When a change is reviewed, this is the checklist.
      [Errors as values](#errors-as-values).
   6. Never nest expressions. The accepted ceiling is one simple call inside
      one call; anything deeper gets a named intermediate.
-  7. Use variables or methods to name the results of all complex expressions.
+  7. Use variables or methods to name the results of all complex expressions
+     — when the result *means* something. A name communicates intent; never
+     introduce one just to shorten or break up a line. Two booleans may share
+     a line (`foo && bar`); a chain of three or more puts each operand on its
+     own line, operator first:
+
+     ```csharp
+     return foo
+         && bar
+         && bat;
+     ```
   8. All classes, methods, and variables must be named to communicate
      intentions — never a single letter or abbreviation.
   9. Always use nouns to name objects.
@@ -186,13 +196,25 @@ proven to fire by the canary. See
   unused may be used from outside the repository: the public API of a library
   (Xfty's whole surface is consumed by other projects), reflection, or a
   framework convention. Find out first. Code that is deliberately used only
-  from outside is marked, so tools and reviewers can tell it from dead code:
-  `[PublicAPI]` or `[UsedImplicitly]` from
-  [JetBrains.Annotations](https://www.nuget.org/packages/JetBrains.Annotations)
-  — which the `inspect` gate already honours — and, for a published library's
-  public surface, `PublicAPI.Shipped.txt` via
+  from outside is marked, so tools and reviewers can tell it from dead code,
+  using [JetBrains.Annotations](https://www.nuget.org/packages/JetBrains.Annotations)
+  (which the `inspect` gate honours):
+  - `[PublicAPI]` — part of a library's surface, called by *other projects*.
+  - `[UsedImplicitly]` — called by *machinery* rather than by code: reflection,
+    serialisers, dependency injection, test frameworks, naming conventions.
+
+  Both are used wherever they apply, including in code AI workers generate.
+  A published library's public surface is additionally tracked in
+  `PublicAPI.Shipped.txt` via
   [Microsoft.CodeAnalysis.PublicApiAnalyzers](https://www.nuget.org/packages/Microsoft.CodeAnalysis.PublicApiAnalyzers).
   Code that is truly dead is deleted rather than covered or worked around.
+- **No `ConfigureAwait` noise.** `ConfigureAwait(false)` only matters where a
+  `SynchronizationContext` exists (UI frameworks, legacy ASP.NET). This
+  project's code runs in console processes, where it does nothing — so it is
+  not written. A library destined for hosts that do have one states the
+  intent once, as an assembly-level attribute via
+  [ConfigureAwait.Fody](https://github.com/Fody/ConfigureAwait), rather than
+  at every `await`.
 - **No nested classes, ever.** A private helper scoped to one file (a test
   double, a small worker class) is `file sealed class Foo` at namespace scope
   in the same `.cs` file.
@@ -252,14 +274,14 @@ proven to fire by the canary. See
 
 Every language in this repository — and in projects this workflow builds — is
 held to standards equivalent to these, adapted to its own conventions. Each
-gets the same layers C# has: formatter, linter, type checker where the language
-has one, and a canary proving each gate fires.
+gets the same layers C# has: layout and whitespace rules, a linter, a type
+checker where the language has one, and a canary proving each gate fires.
 
-| Language | Formatter | Linter / types | Configuration |
+| Language | Layout / whitespace | Linter / types | Configuration |
 | --- | --- | --- | --- |
-| Python | `ruff format` | `ruff` (every rule enabled), `pylint` + house-rule checkers, `pyright` strict; `pytest` at 100% coverage | `pyproject.toml` |
+| Python | ruff's pycodestyle rules + house-rule checkers | `ruff` (every rule enabled), `pylint` + house-rule checkers, `pyright` strict; `pytest` at 100% coverage | `pyproject.toml` |
 | Shell | — | `shellcheck` | — |
-| Markdown | — | `markdownlint`, `lychee` (links) | `.markdownlint-cli2.jsonc` |
+| Markdown | `markdownlint` | `markdownlint`, `lychee` (links) | `.markdownlint-cli2.jsonc` |
 | GitHub workflows | — | `actionlint` | — |
 
 The house rules above carry over where they make sense in another language:
@@ -277,10 +299,33 @@ functions in Python, for example.
 - **Never nest expressions.** One call inside one call is the ceiling, and a
   comprehension counts as a level; name the inner result instead.
 - **Blocks nest at most two deep**, or three when one is a `try`.
+- **80 columns, hard.**
+- **Boolean chains:** two booleans may share a line; three or more put each
+  operand on its own line, operator first (E9004):
+
+  ```python
+  return (
+      foo
+      and bar
+      and bat
+  )
+  ```
+
+- **Wrapped calls, signatures, and collections** put each item on its own
+  line, with a trailing comma and the closing bracket alone on its line —
+  the C# wrapping rule (E9005, COM812).
+- **Wrapped comprehensions** put the element and each `for` and `if` clause
+  on its own line (E9006).
+- **No formatter.** A formatter imposes its own layout — `ruff format` folds
+  a split boolean chain back onto one line, for example — so layout is
+  checked by lint rules and fixed by hand (or by the AI worker), as with C#.
+- **Split modules by intent, never with comment banners.** As with C#
+  classes, a module doing several jobs becomes several modules whose names
+  say what each does (see `scripts/gates/`).
 - Complexity at most 5, at most 5 branches and 3 returns per function, and no
   name shorter than three characters.
 
 ruff and pyright cover most of this. The rest — conditional expressions,
-nested calls, and the try-aware nesting rule — is enforced by custom pylint
-checkers in [`scripts/lint/house_rules.py`](../../scripts/lint/house_rules.py),
+nested calls, the try-aware nesting rule, and the three layout rules — is
+enforced by custom pylint checkers in [`scripts/lint/`](../../scripts/lint/house_rules.py),
 each with tests and a canary.

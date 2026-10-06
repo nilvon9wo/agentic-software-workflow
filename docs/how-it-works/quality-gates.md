@@ -1,7 +1,7 @@
 # Quality gates
 
 A gate is a deterministic check with a pass/fail verdict. Gates are defined
-once, in [`scripts/gates.py`](../../scripts/gates.py), and run the same way
+once, in [`scripts/gates/`](../../scripts/gates/__init__.py), and run the same way
 everywhere — by a developer, by CI, and by every AI worker before its work is
 accepted:
 
@@ -24,8 +24,8 @@ purpose with a reason recorded beside it.
 | `inspect` | ReSharper CLI `inspectcode` (free) | What Roslyn misses — redundant `using`s, ReSharper naming, and more — down to suggestion level |
 | `layout` | [`check_line_layout.py`](../../scripts/check_line_layout.py) | Lines over 120 characters; wrapped calls not closing with `)` on its own line |
 | `test` | `dotnet test` + coverlet | Test failures, and line **or** branch coverage below 100% |
-| `ruff-format`, `ruff` | ruff | Python formatting; lint with every rule enabled (naming, complexity ≤ 5, docstrings, …) |
-| `pylint` | pylint + [house-rule checkers](../../scripts/lint/house_rules.py) | No conditional expressions, no nested calls, try-aware block nesting, short names, duplicated code |
+| `ruff` | ruff | Python lint with every rule enabled (naming, complexity ≤ 5, docstrings, …) and pycodestyle whitespace rules. There is deliberately no formatter gate: a formatter's layout conflicts with the house layout rules |
+| `pylint` | pylint + [house-rule checkers](../../scripts/lint/house_rules.py) | No conditional expressions, no nested calls, try-aware block nesting, layout of boolean chains, wrapped items and comprehensions, short names, duplicated code |
 | `pyright` | pyright, strict mode | Python type errors |
 | `pytest` | pytest + coverage | Python test failures, and line or branch coverage below 100% |
 | `shellcheck` | shellcheck | Shell quoting and portability bugs |

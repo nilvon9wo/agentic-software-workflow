@@ -45,7 +45,7 @@ building from both sides does not cause conflicts.
 scripts/gates.sh                 # everything; the same check CI runs
 scripts/gates.sh run build test  # a subset while iterating
 dotnet format AgenticSoftwareWorkflow.slnx   # auto-fix formatting
-python -m ruff format scripts                # auto-fix Python formatting
+python -m ruff check --fix scripts tests/scripts   # auto-fix what ruff safely can (imports, trailing commas)
 dotnet mdsnippets                # refresh documentation snippets after changing a snippet's source
 ```
 
