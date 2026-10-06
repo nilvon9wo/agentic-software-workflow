@@ -11,7 +11,17 @@ public sealed class ClaudeInvocationTest
     {
         // Arrange
         IReadOnlyList<string> expectedArguments =
-            ["--print", "--output-format", "json", "--no-session-persistence", "--model", Model];
+            [
+                "--print",
+                "--output-format",
+                "json",
+                "--no-session-persistence",
+                "--strict-mcp-config",
+                "--setting-sources",
+                "project",
+                "--model",
+                Model,
+            ];
         ClaudeInvocation invocation;
 
         // Act
@@ -112,31 +122,31 @@ public sealed class ClaudeInvocationTest
     }
 
     [Fact]
-    public void WithSettingsFile_WhenGivenAPath_AppendsIt()
+    public void WithSettings_WhenGivenAPath_AppendsIt()
     {
         // Arrange
         ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
         ClaudeInvocation invocation;
 
         // Act
-        invocation = baseInvocation.WithSettingsFile("roles/reviewer.json");
+        invocation = baseInvocation.WithSettings("roles/reviewer.json");
 
         // Assert
         Assert.Equal(["--settings", "roles/reviewer.json"], invocation.Arguments.TakeLast(2));
     }
 
     [Fact]
-    public void WithSettingsFile_WhenThePathIsBlank_Throws()
+    public void WithSettings_WhenThePathIsBlank_Throws()
     {
         // Arrange
         ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
 
         // Act
         ArgumentException thrown =
-            Assert.Throws<ArgumentException>(() => baseInvocation.WithSettingsFile(" "));
+            Assert.Throws<ArgumentException>(() => baseInvocation.WithSettings(" "));
 
         // Assert
-        Assert.Equal("settingsPath", thrown.ParamName);
+        Assert.Equal("settingsFileOrJson", thrown.ParamName);
     }
 
     [Fact]
@@ -191,6 +201,9 @@ public sealed class ClaudeInvocationTest
                 "--output-format",
                 "json",
                 "--no-session-persistence",
+                "--strict-mcp-config",
+                "--setting-sources",
+                "project",
                 "--model",
                 "sonnet",
                 "--tools",
@@ -206,7 +219,7 @@ public sealed class ClaudeInvocationTest
         ClaudeInvocation reviewer = ClaudeInvocation.Headless("sonnet")
             .WithTools(["Read", "Grep", "Glob"])
             .WithPermissionMode(ClaudePermissionMode.DontAsk)
-            .WithSettingsFile(".claude/roles/code-reviewer.json");
+            .WithSettings(".claude/roles/code-reviewer.json");
         // end-snippet
 
         // Assert

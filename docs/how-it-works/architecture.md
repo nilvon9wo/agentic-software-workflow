@@ -144,22 +144,44 @@ issues.
 
 ### Separation of authority, mechanically
 
+Every role is defined once, in `WorkflowRoles`: a capability tier, the tools it
+is granted, and an `AgentAccess` — paths it may never read, paths it may never
+change, and the only commands it may run. The Claude Code adapter turns those
+into permission rules passed inline with `--settings`.
+
 | Rule | Mechanism |
 | --- | --- |
-| The implementer never sees withheld tests | They live outside the implementer's git worktree, and a permission deny rule blocks the path anyway |
-| Evaluators cannot change what they judge | Their role grants only read tools (`Read`, `Grep`, `Glob`) |
-| Nobody silently changes the spec | Spec files are write-denied to every role except the specifier; changes come back as `needs-human` issues |
-| An unattended run cannot skip permission checks | The conductor's `ClaudePermissionMode` has no `bypassPermissions` value — it cannot even be expressed |
+| The implementer never sees withheld tests | They are absent from its working copy, *and* a deny rule blocks the path, *and* its only commands are `dotnet build`, `test`, and `format` — so it cannot `cat` its way round the rule |
+| Nobody but the specifier changes the spec, and nobody but the test author the tests | Edit deny rules per role (`Specifier`, `TestAuthor`, `Implementer`) |
+| Evaluators cannot change what they judge | Their roles grant only read and search tools |
+| Workers see only what their role grants | Every run is isolated: `--strict-mcp-config` (no inherited MCP servers) and `--setting-sources project` (no personal settings widening a role) |
+| An unattended run cannot skip permission checks | `ClaudePermissionMode` has no `bypassPermissions` value — it cannot even be expressed |
 
-Here is a code-reviewer role as the conductor composes it — read tools only,
-anything not explicitly allowed is denied, plus a role-specific settings file:
+Why two layers for withheld tests? A `Read` deny rule governs the Read tool
+only; a role that can run arbitrary shell commands could still read the file.
+Defence in depth means a rule the agent cannot reach around — the file is not
+there — backed by one it cannot talk its way past.
+
+These guarantees are proven against a real Claude Code run by the
+[live checks](../contribute/local-development.md#live-checks), not assumed.
+Building them found two holes worth knowing about:
+
+- **Workers inherit the user's MCP connectors.** Without `--strict-mcp-config`,
+  a role granted only `Read` could also use every claude.ai connector the
+  user had configured.
+- **Shell tools differ by platform.** On Windows, headless Claude Code offers
+  PowerShell instead of Bash, so command allow-lists written for Bash do not
+  apply. Workers run in WSL or Linux, as the gates do.
+
+Here is a code-reviewer role's command line at its most explicit — read tools
+only, anything not explicitly allowed is unavailable, plus extra settings:
 
 <!-- snippet: compose-reviewer-invocation -->
 ```cs
 ClaudeInvocation reviewer = ClaudeInvocation.Headless("sonnet")
     .WithTools(["Read", "Grep", "Glob"])
     .WithPermissionMode(ClaudePermissionMode.DontAsk)
-    .WithSettingsFile(".claude/roles/code-reviewer.json");
+    .WithSettings(".claude/roles/code-reviewer.json");
 ```
 <!-- endSnippet -->
 

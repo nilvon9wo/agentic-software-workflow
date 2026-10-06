@@ -15,7 +15,7 @@ public sealed class ClaudeCodeAgentRunnerTest
 
     private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(5);
     private static readonly AgentRole Reviewer =
-        new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles]);
+        new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles], AgentAccess.ToolsOnly);
 
     private readonly IProcessCapable _processRunner = Substitute.For<IProcessCapable>();
 
@@ -59,6 +59,9 @@ public sealed class ClaudeCodeAgentRunnerTest
                 "--output-format",
                 "json",
                 "--no-session-persistence",
+                "--strict-mcp-config",
+                "--setting-sources",
+                "project",
                 "--model",
                 "sonnet",
                 "--tools",
@@ -74,7 +77,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     public async Task RunAsync_WhenTheRoleCanEdit_AcceptsEdits()
     {
         // Arrange
-        AgentRole implementer = new(CapabilityTier.Standard, [AgentTool.EditFiles]);
+        AgentRole implementer = new(CapabilityTier.Standard, [AgentTool.EditFiles], AgentAccess.ToolsOnly);
         IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
         AgentTask task = new(implementer, Prompt, WorkingDirectory, Timeout);
 
@@ -89,7 +92,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     public async Task RunAsync_WhenTheRoleHasNoTools_DisablesEveryTool()
     {
         // Arrange
-        AgentRole summariser = new(CapabilityTier.Small, []);
+        AgentRole summariser = new(CapabilityTier.Small, [], AgentAccess.ToolsOnly);
         IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
         AgentTask task = new(summariser, Prompt, WorkingDirectory, Timeout);
 
@@ -113,6 +116,28 @@ public sealed class ClaudeCodeAgentRunnerTest
 
         // Assert
         Assert.Equal(["--json-schema", "{\"type\":\"object\"}"], this.SentRequest().Arguments.TakeLast(2));
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenTheRoleHasAccessRules_PassesThemAsSettings()
+    {
+        // Arrange
+        AgentRole restricted = new(
+            CapabilityTier.Standard,
+            [AgentTool.ReadFiles],
+            new AgentAccess(["hidden-tests/**"], [], [])
+        );
+        IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
+        AgentTask task = new(restricted, Prompt, WorkingDirectory, Timeout);
+
+        // Act
+        _ = await runner.RunAsync(task, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            ["--settings", """{"permissions":{"allow":[],"deny":["Read(./hidden-tests/**)"]}}"""],
+            this.SentRequest().Arguments.TakeLast(2)
+        );
     }
 
     [Fact]
@@ -153,7 +178,11 @@ public sealed class ClaudeCodeAgentRunnerTest
         Fin<AgentResult> result;
 
         // begin-snippet: run-an-agent
-        AgentRole reviewer = new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles]);
+        AgentRole reviewer = new(
+            CapabilityTier.Standard,
+            [AgentTool.ReadFiles, AgentTool.SearchFiles],
+            AgentAccess.ToolsOnly
+        );
         AgentTask task = new(reviewer, "Review the change.", "/repository", TimeSpan.FromMinutes(5));
         IAgentic runner = new ClaudeCodeAgentRunner(processRunner);
 

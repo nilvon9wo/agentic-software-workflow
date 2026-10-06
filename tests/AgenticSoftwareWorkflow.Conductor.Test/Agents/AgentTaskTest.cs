@@ -9,7 +9,11 @@ public sealed class AgentTaskTest
     private const string WorkingDirectory = "/repository";
     private const string Schema = "{\"type\":\"object\"}";
 
-    private static readonly AgentRole Reviewer = new(CapabilityTier.Standard, [AgentTool.ReadFiles]);
+    private static readonly AgentRole Reviewer = new(
+        CapabilityTier.Standard,
+        [AgentTool.ReadFiles],
+        AgentAccess.ToolsOnly
+    );
     private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(5);
 
     [Fact]

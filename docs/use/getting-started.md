@@ -25,7 +25,11 @@ directory, and a time limit:
 
 <!-- snippet: run-an-agent -->
 ```cs
-AgentRole reviewer = new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles]);
+AgentRole reviewer = new(
+    CapabilityTier.Standard,
+    [AgentTool.ReadFiles, AgentTool.SearchFiles],
+    AgentAccess.ToolsOnly
+);
 AgentTask task = new(reviewer, "Review the change.", "/repository", TimeSpan.FromMinutes(5));
 IAgentic runner = new ClaudeCodeAgentRunner(processRunner);
 
