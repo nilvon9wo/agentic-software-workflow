@@ -10,7 +10,8 @@ public sealed class ClaudeInvocation
 {
     private const string PrintFlag = "--print";
     private const string OutputFormatFlag = "--output-format";
-    private const string JsonOutputFormat = "json";
+    private const string StreamJsonOutputFormat = "stream-json";
+    private const string VerboseFlag = "--verbose";
     private const string NoSessionPersistenceFlag = "--no-session-persistence";
     private const string StrictMcpConfigFlag = "--strict-mcp-config";
     private const string SettingSourcesFlag = "--setting-sources";
@@ -30,8 +31,10 @@ public sealed class ClaudeInvocation
     public IReadOnlyList<string> Arguments { get; }
 
     /// <summary>
-    /// A non-interactive, non-persisted, isolated run whose result is a single
-    /// JSON document, so the conductor parses a contract rather than scraping prose.
+    /// A non-interactive, non-persisted, isolated run that reports as a stream of
+    /// JSON messages ending in its result, so the conductor parses a contract
+    /// rather than scraping prose. The stream (which needs <c>--verbose</c>) is
+    /// what carries rate-limit reports, so a usage limit is read, not guessed.
     /// </summary>
     /// <remarks>
     /// Isolated means the run sees only what its role grants: no MCP servers
@@ -46,7 +49,8 @@ public sealed class ClaudeInvocation
             [
                 PrintFlag,
                 OutputFormatFlag,
-                JsonOutputFormat,
+                StreamJsonOutputFormat,
+                VerboseFlag,
                 NoSessionPersistenceFlag,
                 StrictMcpConfigFlag,
                 SettingSourcesFlag,

@@ -7,43 +7,41 @@ namespace AgenticSoftwareWorkflow.Conductor.Claude;
 
 /// <summary>
 /// Turns how a `claude -p` process ended into the agent's result, or into the
-/// failure (<see cref="AgentTimedOut"/>, <see cref="AgentProcessFailed"/>, …)
-/// that explains why there is none.
+/// failure (<see cref="AgentTimedOut"/>, <see cref="UsageLimitReached"/>,
+/// <see cref="AgentProcessFailed"/>, …) that explains why there is none.
 /// </summary>
 internal static class ClaudeOutputReader
 {
     private const string DeniedToolProperty = "tool_name";
     private const string UnknownErrorKind = "unknown";
-    private const string EmptyDocument = "the output was the JSON literal null";
 
     public static Fin<AgentResult> Read(ProcessOutcome outcome, TimeSpan timeout) =>
         outcome.HasTimedOut
             ? Fin.Fail<AgentResult>(new AgentTimedOut(timeout))
-            : ReadEnvelope(outcome).Bind(ToResult);
+            : ReadMessages(outcome);
 
-    private static Fin<ClaudeEnvelope> ReadEnvelope(ProcessOutcome outcome)
+    // A rejected usage limit explains the run's end whatever else it printed,
+    // so it is checked before the result and the exit code.
+    private static Fin<AgentResult> ReadMessages(ProcessOutcome outcome)
     {
-        Fin<ClaudeEnvelope> envelope = Parse(outcome.StandardOutput);
+        Fin<IReadOnlyList<JsonElement>> messages = ClaudeMessages.Parse(outcome.StandardOutput);
+        Option<UsageLimitReached> limit = messages.Match(
+            Succ: ClaudeMessages.RejectedLimit,
+            Fail: _ => Option<UsageLimitReached>.None
+        );
+        return limit.Match(
+            Some: Fin.Fail<AgentResult>,
+            None: () => ReadEnvelope(outcome, messages).Bind(ToResult)
+        );
+    }
+
+    private static Fin<ClaudeEnvelope> ReadEnvelope(ProcessOutcome outcome, Fin<IReadOnlyList<JsonElement>> messages)
+    {
+        Fin<ClaudeEnvelope> envelope = messages.Bind(ClaudeMessages.Result);
         return outcome.ExitCode == 0
             ? envelope
             : envelope.MapFail(_ => new AgentProcessFailed(outcome.ExitCode, outcome.StandardError));
     }
-
-    private static Fin<ClaudeEnvelope> Parse(string standardOutput)
-    {
-        Try<ClaudeEnvelope?> deserialize = Try.lift(
-            () => JsonSerializer.Deserialize<ClaudeEnvelope>(standardOutput)
-        );
-        return deserialize
-            .ToFin()
-            .MapFail(error => new AgentOutputMalformed(error.Message))
-            .Bind(RequirePresent);
-    }
-
-    private static Fin<ClaudeEnvelope> RequirePresent(ClaudeEnvelope? envelope) =>
-        envelope is null
-            ? Fin.Fail<ClaudeEnvelope>(new AgentOutputMalformed(EmptyDocument))
-            : Fin.Succ(envelope);
 
     private static Fin<AgentResult> ToResult(ClaudeEnvelope envelope) =>
         envelope.IsError
