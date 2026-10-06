@@ -25,7 +25,9 @@ main() {
   done
   cd "${repository_root}"
   dotnet build "${test_project}" --nologo --verbosity quiet
-  local -r output_directory="$(dotnet msbuild "${test_project}" -getProperty:OutputPath)"
+  local -r output_directory="$(
+    dotnet msbuild "${test_project}" -getProperty:OutputPath
+  )"
   # Run the test assembly directly: `dotnet test` would add the coverage
   # threshold, which a handful of explicit tests cannot meet.
   dotnet "${output_directory}${test_assembly}" \

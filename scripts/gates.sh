@@ -29,7 +29,11 @@ readonly node_version="24.21.0"
 readonly markdownlint_version="0.23.2"
 readonly lychee_version="0.24.2"
 readonly lychee_build="lychee-x86_64-unknown-linux-musl"
-readonly lychee_sha256="73657a111819a30c47c08352896796f23d64e4eb2b3ed39b6d32149241566fc5"
+readonly lychee_archive=\
+"https://github.com/lycheeverse/lychee/releases/download/\
+lychee-v${lychee_version}/${lychee_build}.tar.gz"
+readonly lychee_sha256=\
+"73657a111819a30c47c08352896796f23d64e4eb2b3ed39b6d32149241566fc5"
 
 require() {
   local -r command_name="$1"
@@ -44,21 +48,26 @@ ensure_python_tools() {
     mkdir -p "${tool_cache}"
     python3 -m venv "${virtual_environment}"
   fi
-  "${virtual_environment}/bin/python" -m pip install --quiet --disable-pip-version-check \
+  "${virtual_environment}/bin/python" -m pip install \
+    --quiet --disable-pip-version-check \
     --requirement "${repository_root}/requirements-dev.txt"
 }
 
 # A private Node, so a system Node (or, under WSL, Windows' Node leaking in
 # through PATH) can neither be required nor interfere.
 ensure_markdownlint() {
-  local -r stamp="${node_environment}/.markdownlint-cli2-${markdownlint_version}"
+  local -r stamp=\
+"${node_environment}/.markdownlint-cli2-${markdownlint_version}"
   local -r node="${node_environment}/bin/node"
-  if [[ ! -x "${node}" ]] || ! "${node}" --version | grep -qx "v${node_version}"; then
+  if [[ ! -x "${node}" ]] \
+    || ! "${node}" --version | grep -qx "v${node_version}"; then
     rm -rf "${node_environment}"
-    "${virtual_environment}/bin/nodeenv" --quiet --prebuilt --node="${node_version}" "${node_environment}"
+    "${virtual_environment}/bin/nodeenv" --quiet --prebuilt \
+      --node="${node_version}" "${node_environment}"
   fi
   if [[ ! -f "${stamp}" ]]; then
-    PATH="${node_environment}/bin:${PATH}" "${node_environment}/bin/npm" install --global --silent \
+    PATH="${node_environment}/bin:${PATH}" \
+      "${node_environment}/bin/npm" install --global --silent \
       "markdownlint-cli2@${markdownlint_version}"
     touch "${stamp}"
   fi
@@ -71,14 +80,16 @@ ensure_lychee() {
     require sha256sum
     local -r download="$(mktemp)"
     curl --fail --silent --show-error --location --output "${download}" \
-      "https://github.com/lycheeverse/lychee/releases/download/lychee-v${lychee_version}/${lychee_build}.tar.gz"
-    if ! echo "${lychee_sha256}  ${download}" | sha256sum --check --status; then
+      "${lychee_archive}"
+    if ! echo "${lychee_sha256}  ${download}" \
+      | sha256sum --check --status; then
       rm -f "${download}"
-      echo "lychee ${lychee_version} download does not match its pinned checksum." >&2
+      echo "lychee ${lychee_version} does not match its pinned checksum." >&2
       exit 1
     fi
     mkdir -p "${lychee_directory}/${lychee_version}"
-    tar --extract --gzip --file "${download}" --directory "${lychee_directory}/${lychee_version}" \
+    tar --extract --gzip --file "${download}" \
+      --directory "${lychee_directory}/${lychee_version}" \
       --strip-components=1 "${lychee_build}/lychee"
     rm -f "${download}"
   fi
