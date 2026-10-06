@@ -10,8 +10,7 @@ own and the closing bracket sits alone on its line:
         target=target,
     )
 
-Parameters are checked up to and including keyword-only ones; `*args`
-and `**kwargs` are not checked.
+Every parameter is checked, `*args` and `**kwargs` included.
 """
 
 # pyright: reportMissingTypeStubs=false
@@ -27,9 +26,12 @@ from source_text import (
     line_text,
     start_line,
     starts_line,
+    text_before,
 )
 
 CLOSING_PAREN = ")"
+# What may precede a parameter on its own line: nothing, or its star(s).
+PARAMETER_PREFIXES = frozenset({"", "*", "**"})
 
 type Items = Sequence[nodes.NodeNG]
 
@@ -52,13 +54,25 @@ def dict_items(node: nodes.Dict) -> list[nodes.NodeNG]:
 
 
 def parameters(arguments: nodes.Arguments) -> list[nodes.NodeNG]:
-    """The named parameters, in order."""
+    """Every parameter, in order: positional, *args, keyword-only, **kwargs."""
     named = [
         *arguments.posonlyargs,
         *(arguments.args or []),
+        arguments.vararg_node,
         *arguments.kwonlyargs,
+        arguments.kwarg_node,
     ]
     return as_nodes(named)
+
+
+def are_parameters_alone(named_parameters: Items) -> bool:
+    """True when each parameter starts a line, after any `*`/`**`."""
+    misplaced_parameters = [
+        parameter
+        for parameter in named_parameters
+        if text_before(parameter) not in PARAMETER_PREFIXES
+    ]
+    return not misplaced_parameters
 
 
 def parameter_parts(arguments: nodes.Arguments) -> list[nodes.NodeNG]:
@@ -68,6 +82,8 @@ def parameter_parts(arguments: nodes.Arguments) -> list[nodes.NodeNG]:
         *arguments.annotations,
         *arguments.kwonlyargs_annotations,
         *arguments.posonlyargs_annotations,
+        arguments.varargannotation,
+        arguments.kwargannotation,
         *(arguments.defaults or []),
         *(arguments.kw_defaults or []),
     ]
@@ -108,7 +124,7 @@ def is_signature_laid_out(
     """True when each parameter starts a line and `)` follows alone."""
     last_line = last_parameter_line(node.args)
     is_closed = is_closed_on_next_line(node, last_line)
-    return are_items_alone(named_parameters) and is_closed
+    return are_parameters_alone(named_parameters) and is_closed
 
 
 class WrappedItemsChecker(BaseChecker):

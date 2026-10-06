@@ -1,5 +1,9 @@
-# Specifications define what the tests and the code will be held to, so a
-# maintainer approves every change to them. Everything else merges by itself
-# once the quality gates pass. (Enforced by the master ruleset's
-# "require review from Code Owners".)
+# Governance: specifications define what the tests and code are held to; the
+# workflows, the approval check, and aswf.json (which names the maintainers)
+# define how this repository is governed. Listing them here asks a maintainer
+# to review; the "Maintainer approval" check is what enforces it (see
+# docs/how-it-works/quality-gates.md#maintainer-approval).
 /spec/ @nilvon9wo
+/.github/ @nilvon9wo
+/scripts/maintainer_approval.py @nilvon9wo
+/aswf.json @nilvon9wo
