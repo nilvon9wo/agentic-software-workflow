@@ -14,23 +14,18 @@ public static class WorkflowRoles
     private const string Format = "dotnet format";
 
     private static readonly AgentTool[] ReadOnly = [AgentTool.ReadFiles, AgentTool.SearchFiles];
-    private static readonly AgentTool[] ReadAndEdit = [AgentTool.ReadFiles, AgentTool.SearchFiles, AgentTool.EditFiles];
     private static readonly AgentTool[] ReadEditAndRun =
         [AgentTool.ReadFiles, AgentTool.SearchFiles, AgentTool.EditFiles, AgentTool.RunCommands];
 
     /// <summary>Labels, de-duplicates, and judges readiness: pure reasoning over the text it is given.</summary>
     public static AgentRole Triage { get; } = new(CapabilityTier.Small, [], AgentAccess.ToolsOnly);
 
-    /// <summary>Writes the specification; touches nothing else.</summary>
-    public static AgentRole Specifier { get; } = new(
-        CapabilityTier.Standard,
-        ReadAndEdit,
-        new AgentAccess(
-            [],
-            [WorkspaceLayout.Source, WorkspaceLayout.VisibleTests, WorkspaceLayout.HiddenTests],
-            []
-        )
-    );
+    /// <summary>
+    /// Reads the work item and the repository, and answers with a specification
+    /// or questions. It edits nothing: the specify stage writes the file from its
+    /// answer, so the role keeps the least authority its job needs.
+    /// </summary>
+    public static AgentRole Specifier { get; } = new(CapabilityTier.Standard, ReadOnly, AgentAccess.ToolsOnly);
 
     /// <summary>Writes visible and hidden tests from the specification; cannot change it.</summary>
     public static AgentRole TestAuthor { get; } = new(

@@ -34,7 +34,7 @@ AgentTask task = new(reviewer, "Review the change.", "/repository", TimeSpan.Fro
 IAgentic runner = new ClaudeCodeAgentRunner(processRunner);
 
 // Act
-result = await runner.RunAsync(task, cancellationToken);
+result = await runner.Run(task, cancellationToken);
 
 // Assert
 string outcome = result.Match(
@@ -50,11 +50,31 @@ agent reports — come back as a failed `Fin`, each with a stable code from
 `ClaudeCodeAgentRunner` carries the task out as a headless `claude -p` run;
 in production it is given a `SystemProcessRunner`.
 
-## Next: the workflow
+## Today: specifying an issue
 
-Filing a GitHub issue and having the workflow specify, test, implement,
-review, and open a pull request for it is the next milestone. The
-[architecture](../how-it-works/architecture.md#the-pipeline) describes the
-design; the
+The first pipeline stage runs end to end. From the repository root, in WSL
+(see [local development](../contribute/local-development.md#running-the-workflow)):
+
+```bash
+dotnet run --project src/AgenticSoftwareWorkflow.Cli -- specify 8
+```
+
+For issue 8, the conductor:
+
+1. creates a fresh git worktree from the latest `master`;
+2. briefs the specifier role with the issue and its maintainers' replies —
+   no one else's;
+3. either writes `spec/8.md` and opens a pull request for it, or posts its
+   questions on the issue, labels it `needs-human`, and assigns it to you.
+
+A specification defines what the tests and code will be held to, so its pull
+request waits for your approval (`CODEOWNERS` makes `spec/` yours). Answer
+questions in the issue thread; once you remove `needs-human`, run the command
+again and the specifier reads your answers.
+
+## Next
+
+The remaining stages — tests, implementation, review, repair — follow the
+[architecture](../how-it-works/architecture.md#the-pipeline); the
 [issues](https://github.com/nilvon9wo/agentic-software-workflow/issues) track
 progress.

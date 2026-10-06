@@ -10,17 +10,24 @@ public sealed class SystemProcessRunner : IProcessCapable
 {
     private const int TimedOutExitCode = -1;
 
-    public async Task<ProcessOutcome> RunAsync(ProcessRequest request, CancellationToken cancellationToken)
+    public async Task<ProcessOutcome> Run(ProcessRequest request, CancellationToken cancellationToken)
     {
         using Process process = Start(request);
         Task<string> standardOutput = process.StandardOutput.ReadToEndAsync(cancellationToken);
         Task<string> standardError = process.StandardError.ReadToEndAsync(cancellationToken);
         await process.StandardInput.WriteAsync(request.StandardInput.AsMemory(), cancellationToken);
         process.StandardInput.Close();
-        bool hasExited = await HasExitedWithinAsync(process, request.Timeout, cancellationToken);
-        return hasExited
-            ? await CollectAsync(process, standardOutput, standardError)
-            : Stop(process);
+        bool hasExited = await HasExitedWithin(process, request.Timeout, cancellationToken);
+        if (!hasExited)
+        {
+            return Stop(process);
+        }
+
+        // Awaited here, where they were started: awaiting a task handed in from
+        // elsewhere risks deadlock in hosts with a synchronization context (VSTHRD003).
+        string output = await standardOutput;
+        string error = await standardError;
+        return new ProcessOutcome(process.ExitCode, output, error, false);
     }
 
     private static Process Start(ProcessRequest request)
@@ -46,7 +53,7 @@ public sealed class SystemProcessRunner : IProcessCapable
         return Process.Start(startInfo)!;
     }
 
-    private static async Task<bool> HasExitedWithinAsync(
+    private static async Task<bool> HasExitedWithin(
         Process process,
         TimeSpan timeout,
         CancellationToken cancellationToken
@@ -66,17 +73,6 @@ public sealed class SystemProcessRunner : IProcessCapable
             // Only our own timeout lands here; the caller's cancellation propagates.
             return false;
         }
-    }
-
-    private static async Task<ProcessOutcome> CollectAsync(
-        Process process,
-        Task<string> standardOutput,
-        Task<string> standardError
-    )
-    {
-        string output = await standardOutput;
-        string error = await standardError;
-        return new ProcessOutcome(process.ExitCode, output, error, false);
     }
 
     private static ProcessOutcome Stop(Process process)

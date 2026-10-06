@@ -26,9 +26,13 @@ internal static class ClaudeTaskTranslator
             Some: withPermissionMode.WithSettings,
             None: () => withPermissionMode
         );
-        return task.OutputSchema.Match(
-            Some: withAccess.WithJsonSchema,
+        ClaudeInvocation withInstructions = task.Instructions.Match(
+            Some: withAccess.WithAppendedSystemPrompt,
             None: () => withAccess
+        );
+        return task.OutputSchema.Match(
+            Some: withInstructions.WithJsonSchema,
+            None: () => withInstructions
         );
     }
 

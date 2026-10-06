@@ -7,8 +7,11 @@ namespace AgenticSoftwareWorkflow.Conductor.Workflow;
 /// </summary>
 public static class WorkspaceLayout
 {
+    /// <summary>The folder holding each work item's specification.</summary>
+    public const string SpecificationDirectory = "spec";
+
     /// <summary>The specification and acceptance criteria.</summary>
-    public const string Specification = "spec/**";
+    public const string Specification = SpecificationDirectory + "/**";
 
     /// <summary>Tests the implementer is shown.</summary>
     public const string VisibleTests = "tests/**";

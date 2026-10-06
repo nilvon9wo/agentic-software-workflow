@@ -10,6 +10,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Each role's standing procedure, shipped inside the conductor (see RoleInstructions). -->
+    <EmbeddedResource Include="Workflow/Instructions/*.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="AgenticSoftwareWorkflow.Conductor.Test" />
   </ItemGroup>
 

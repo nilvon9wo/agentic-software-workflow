@@ -18,6 +18,15 @@
   </PropertyGroup>
 
   <!--
+    Every project gets the async-correctness analyzers, so a forgotten `await`
+    is a build error everywhere - which is what makes an `Async` name suffix
+    redundant (see coding-standards.md).
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
     One checkout is built from both Windows and WSL (see
     docs/contribute/local-development.md). Separate output roots per OS stop the
     two from overwriting each other's restore graphs and binaries.

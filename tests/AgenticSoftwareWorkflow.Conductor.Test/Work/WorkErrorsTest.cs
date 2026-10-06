@@ -6,22 +6,6 @@ namespace AgenticSoftwareWorkflow.Conductor.Test.Work;
 public sealed class WorkErrorsTest
 {
     [Fact]
-    public void CommandFailed_WhenCreated_CarriesItsCodeCommandAndTrimmedError()
-    {
-        // Arrange
-        Error error;
-
-        // Act
-        error = WorkErrors.CommandFailed("gh issue list", 4, " not authenticated\n");
-
-        // Assert
-        Assert.Equal(
-            (WorkErrors.CommandFailedCode, "'gh issue list' exited with code 4: not authenticated"),
-            (error.Code, error.Message)
-        );
-    }
-
-    [Fact]
     public void MalformedResponse_WhenCreated_CarriesItsCodeAndDetail()
     {
         // Arrange

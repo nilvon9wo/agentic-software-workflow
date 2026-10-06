@@ -20,33 +20,33 @@ internal static class Program
         string command = arguments.Length > 0 ? arguments[0] : string.Empty;
         return command switch
         {
-            EchoCommand => await EchoAsync(),
-            FailCommand => await FailAsync(arguments[1]),
-            HangCommand => await HangAsync(),
-            _ => await RejectAsync(command),
+            EchoCommand => await Echo(),
+            FailCommand => await Fail(arguments[1]),
+            HangCommand => await Hang(),
+            _ => await Reject(command),
         };
     }
 
-    private static async Task<int> EchoAsync()
+    private static async Task<int> Echo()
     {
         string input = await Console.In.ReadToEndAsync();
         await Console.Out.WriteAsync(input);
         return 0;
     }
 
-    private static async Task<int> FailAsync(string exitCode)
+    private static async Task<int> Fail(string exitCode)
     {
         await Console.Error.WriteAsync("failed");
         return int.Parse(exitCode, CultureInfo.InvariantCulture);
     }
 
-    private static async Task<int> HangAsync()
+    private static async Task<int> Hang()
     {
         await Task.Delay(Timeout.Infinite);
         return 0;
     }
 
-    private static async Task<int> RejectAsync(string command)
+    private static async Task<int> Reject(string command)
     {
         await Console.Error.WriteAsync($"unknown command '{command}'");
         return UsageExitCode;

@@ -23,7 +23,7 @@ public sealed class GitHubIssuesLiveTest
     private static readonly GitHubOptions Options = new(Repository, ["nilvon9wo"], AppContext.BaseDirectory);
 
     [Fact(Explicit = true)]
-    public async Task ReadAsync_WhenGivenARealIssue_ReadsItsTitleAndConversation()
+    public async Task Read_WhenGivenARealIssue_ReadsItsTitleAndConversation()
     {
         // Arrange
         IWorkSupplying issues = new GitHubIssues(new SystemProcessRunner(), Options);
@@ -31,21 +31,21 @@ public sealed class GitHubIssuesLiveTest
         Fin<WorkItem> read;
 
         // Act
-        read = await issues.ReadAsync(seven, TestContext.Current.CancellationToken);
+        read = await issues.Read(seven, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.StartsWith("Pipeline stage 1", AssertSuccess(read).Title, StringComparison.Ordinal);
     }
 
     [Fact(Explicit = true)]
-    public async Task ReadyAsync_WhenCalledAgainstTheRealRepository_Succeeds()
+    public async Task ListReady_WhenCalledAgainstTheRealRepository_Succeeds()
     {
         // Arrange
         IWorkSupplying issues = new GitHubIssues(new SystemProcessRunner(), Options);
         Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ReadyAsync(TestContext.Current.CancellationToken);
+        ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         _ = AssertSuccess(ready);

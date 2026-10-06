@@ -15,7 +15,7 @@ public sealed class ClaudeCodeAgentRunner(IProcessCapable processRunner, string 
     private readonly IProcessCapable _processRunner = processRunner;
     private readonly string _executable = executable;
 
-    public async Task<Fin<AgentResult>> RunAsync(AgentTask task, CancellationToken cancellationToken)
+    public async Task<Fin<AgentResult>> Run(AgentTask task, CancellationToken cancellationToken)
     {
         ClaudeInvocation invocation = ClaudeTaskTranslator.ToInvocation(task);
         ProcessRequest request = new(
@@ -25,7 +25,7 @@ public sealed class ClaudeCodeAgentRunner(IProcessCapable processRunner, string 
             task.WorkingDirectory,
             task.Timeout
         );
-        ProcessOutcome outcome = await this._processRunner.RunAsync(request, cancellationToken);
+        ProcessOutcome outcome = await this._processRunner.Run(request, cancellationToken);
         return ClaudeOutputReader.Read(outcome, task.Timeout);
     }
 }

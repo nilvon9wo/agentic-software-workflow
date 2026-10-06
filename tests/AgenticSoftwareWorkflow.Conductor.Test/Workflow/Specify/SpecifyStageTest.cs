@@ -1,0 +1,211 @@
+using AgenticSoftwareWorkflow.Conductor.Agents;
+using AgenticSoftwareWorkflow.Conductor.Processes;
+using AgenticSoftwareWorkflow.Conductor.Work;
+using AgenticSoftwareWorkflow.Conductor.Workflow;
+using AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
+using LanguageExt;
+using LanguageExt.Common;
+using NSubstitute;
+using static AgenticSoftwareWorkflow.Conductor.Test.Support.FinAssertions;
+
+namespace AgenticSoftwareWorkflow.Conductor.Test.Workflow.Specify;
+
+public sealed class SpecifyStageTest : IDisposable
+{
+    private const string Specification = "## Summary\n\nShow the time in UTC.";
+
+    private static readonly WorkItemId Seven = new("github:owner/repository", "7");
+    private static readonly WorkItem Item = new(Seven, "Add a clock", "Show the time.", ["ready"], []);
+    private static readonly AgentUsage NoUsage = new(0, 0, 0m, 0, []);
+
+    private readonly IWorkSupplying _work = Substitute.For<IWorkSupplying>();
+    private readonly IAgentic _agent = Substitute.For<IAgentic>();
+    private readonly DirectoryInfo _workspace = Directory.CreateTempSubdirectory("aswf-specify-");
+
+    public SpecifyStageTest()
+    {
+        _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item));
+        _ = this._work.Ask(Seven, Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
+    }
+
+    [Fact]
+    public async Task Run_WhenTheSpecifierSpecifies_WritesTheSpecificationFile()
+    {
+        // Arrange
+        this.SpecifierAnswers($$"""{"outcome":"specified","specification":"{{Specification.Replace("\n", "\\n")}}"}""");
+        SpecifyStage stage = new(this._work, this._agent);
+        Fin<SpecifyOutcome> outcome;
+
+        // Act
+        outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(new Specified("spec/7.md"), AssertSuccess(outcome));
+        string written = await File.ReadAllTextAsync(
+            Path.Combine(this._workspace.FullName, "spec", "7.md"),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(Specification, written);
+    }
+
+    [Fact]
+    public async Task Run_WhenTheSpecifierAsks_PostsTheQuestionsAndAwaitsAnswers()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"questions","questions":["Which zone?","Which format?"]}""");
+        SpecifyStage stage = new(this._work, this._agent);
+        Fin<SpecifyOutcome> outcome;
+
+        // Act
+        outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        AwaitingAnswers awaiting = Assert.IsType<AwaitingAnswers>(AssertSuccess(outcome));
+        Assert.Equal(["Which zone?", "Which format?"], awaiting.Questions);
+        _ = await this._work.Received(1).Ask(
+            Seven,
+            "**Questions before this can be specified**\n\n1. Which zone?\n2. Which format?\n\n"
+            + "Please reply in this thread. Only maintainers' replies are read.\n",
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenBriefingTheSpecifier_GivesItsRoleInstructionsAndContract()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"questions","questions":["Which zone?"]}""");
+        SpecifyStage stage = new(this._work, this._agent);
+
+        // Act
+        _ = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        AgentTask task = (AgentTask)this._agent.ReceivedCalls().Single().GetArguments()[0]!;
+        Assert.Equal(
+            (
+                WorkflowRoles.Specifier,
+                WorkItemBrief.Describe(Item),
+                this._workspace.FullName,
+                Prelude.Some(RoleInstructions.Specifier),
+                Prelude.Some(SpecifierAnswer.Schema)
+            ),
+            (task.Role, task.Prompt, task.WorkingDirectory, task.Instructions, task.OutputSchema)
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenTheItemCannotBeRead_FailsWithoutRunningTheSpecifier()
+    {
+        // Arrange
+        Error unreadable = Error.New(42, "unreadable");
+        _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Fail<WorkItem>(unreadable));
+        SpecifyStage stage = new(this._work, this._agent);
+        Fin<SpecifyOutcome> outcome;
+
+        // Act
+        outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal((42, 0), (AssertFailure(outcome).Code, this._agent.ReceivedCalls().Count()));
+    }
+
+    [Fact]
+    public async Task Run_WhenTheSpecifierRunFails_FailsWithItsError()
+    {
+        // Arrange
+        _ = this._agent
+            .Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>())
+            .Returns(Fin.Fail<AgentResult>(AgentErrors.TimedOut(TimeSpan.FromMinutes(15))));
+        SpecifyStage stage = new(this._work, this._agent);
+        Fin<SpecifyOutcome> outcome;
+
+        // Act
+        outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(AgentErrors.TimedOutCode, AssertFailure(outcome).Code);
+    }
+
+    [Fact]
+    public async Task Run_WhenThereIsNoStructuredOutput_FailsWithUnusableAnswer()
+    {
+        // Arrange
+        _ = this._agent
+            .Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ(new AgentResult("prose only", Option<string>.None, NoUsage, [])));
+        SpecifyStage stage = new(this._work, this._agent);
+        Fin<SpecifyOutcome> outcome;
+
+        // Act
+        outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            "The specifier's answer cannot be used: there was no structured output",
+            AssertFailure(outcome).Message
+        );
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("null")]
+    [InlineData("""{"outcome":"specified","specification":""}""")]
+    [InlineData("""{"outcome":"questions","questions":[]}""")]
+    [InlineData("""{"outcome":"shrug"}""")]
+    public async Task Run_WhenTheAnswerCannotBeActedOn_FailsWithUnusableAnswer(string answer)
+    {
+        // Arrange
+        this.SpecifierAnswers(answer);
+        SpecifyStage stage = new(this._work, this._agent);
+        Fin<SpecifyOutcome> outcome;
+
+        // Act
+        outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(SpecifyErrors.UnusableAnswerCode, AssertFailure(outcome).Code);
+    }
+
+    [Fact]
+    public async Task Run_WhenPostingTheQuestionsFails_FailsWithThatError()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"questions","questions":["Which zone?"]}""");
+        _ = this._work
+            .Ask(Seven, Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Fin.Fail<Unit>(CommandErrors.Failed("gh issue comment", 1, "rate limited")));
+        SpecifyStage stage = new(this._work, this._agent);
+        Fin<SpecifyOutcome> outcome;
+
+        // Act
+        outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(CommandErrors.FailedCode, AssertFailure(outcome).Code);
+    }
+
+    [Fact]
+    public async Task Run_WhenTheKeyIsNotAFileName_WritesAFileNamedSafely()
+    {
+        // Arrange
+        WorkItemId nested = new("jira:PROJECT", "PROJECT/12");
+        _ = this._work.Read(nested, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item with { Id = nested }));
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        SpecifyStage stage = new(this._work, this._agent);
+        Fin<SpecifyOutcome> outcome;
+
+        // Act
+        outcome = await stage.Run(nested, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(new Specified("spec/PROJECT-12.md"), AssertSuccess(outcome));
+    }
+
+    public void Dispose() => this._workspace.Delete(recursive: true);
+
+    private void SpecifierAnswers(string structuredOutput) =>
+        this._agent
+            .Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ(new AgentResult("", Prelude.Some(structuredOutput), NoUsage, [])));
+}

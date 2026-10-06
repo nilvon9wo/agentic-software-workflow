@@ -13,5 +13,5 @@ namespace AgenticSoftwareWorkflow.Conductor.Agents;
 /// </remarks>
 public interface IAgentic
 {
-    Task<Fin<AgentResult>> RunAsync(AgentTask task, CancellationToken cancellationToken);
+    Task<Fin<AgentResult>> Run(AgentTask task, CancellationToken cancellationToken);
 }

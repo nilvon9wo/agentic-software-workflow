@@ -1,0 +1,5 @@
+# Specifications define what the tests and the code will be held to, so a
+# maintainer approves every change to them. Everything else merges by itself
+# once the quality gates pass. (Enforced by the master ruleset's
+# "require review from Code Owners".)
+/spec/ @nilvon9wo

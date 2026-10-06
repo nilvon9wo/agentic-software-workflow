@@ -17,7 +17,7 @@ public sealed class WorkItemBriefTest
         brief = WorkItemBrief.Describe(item);
 
         // Assert
-        Assert.Equal("# Add a clock\n\nShow the time.\n", brief.ReplaceLineEndings("\n"));
+        Assert.Equal("# Add a clock\n\nShow the time.\n", brief);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public sealed class WorkItemBriefTest
         // Assert
         Assert.Equal(
             "# Add a clock\n\nShow the time.\n\n## maintainer replied\n\nUse UTC.\n",
-            brief.ReplaceLineEndings("\n")
+            brief
         );
     }
 

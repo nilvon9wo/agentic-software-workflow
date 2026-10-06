@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/AgenticSoftwareWorkflow.Conductor/AgenticSoftwareWorkflow.Conductor.csproj" />
+    <ProjectReference Include="../../src/AgenticSoftwareWorkflow.Cli/AgenticSoftwareWorkflow.Cli.csproj" />
     <!-- Built and copied beside the tests, which run it as a real child process. -->
     <ProjectReference Include="../AgenticSoftwareWorkflow.TestProcess/AgenticSoftwareWorkflow.TestProcess.csproj" />
   </ItemGroup>

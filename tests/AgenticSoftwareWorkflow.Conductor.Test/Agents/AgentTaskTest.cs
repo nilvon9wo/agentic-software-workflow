@@ -111,4 +111,48 @@ public sealed class AgentTaskTest
         // Assert
         Assert.Equal("jsonSchema", thrown.ParamName);
     }
+
+    [Fact]
+    public void WithInstructions_WhenGivenInstructions_CarriesThemAndKeepsTheSchema()
+    {
+        // Arrange
+        AgentTask task = new AgentTask(Reviewer, Prompt, WorkingDirectory, Timeout).WithOutputSchema(Schema);
+        AgentTask instructed;
+
+        // Act
+        instructed = task.WithInstructions("Review carefully.");
+
+        // Assert
+        Assert.Equal(
+            (Prelude.Some("Review carefully."), Prelude.Some(Schema)),
+            (instructed.Instructions, instructed.OutputSchema)
+        );
+    }
+
+    [Fact]
+    public void WithOutputSchema_WhenTheTaskHasInstructions_KeepsThem()
+    {
+        // Arrange
+        AgentTask task = new AgentTask(Reviewer, Prompt, WorkingDirectory, Timeout).WithInstructions("Review.");
+        AgentTask withSchema;
+
+        // Act
+        withSchema = task.WithOutputSchema(Schema);
+
+        // Assert
+        Assert.Equal(Prelude.Some("Review."), withSchema.Instructions);
+    }
+
+    [Fact]
+    public void WithInstructions_WhenTheInstructionsAreBlank_Throws()
+    {
+        // Arrange
+        AgentTask task = new(Reviewer, Prompt, WorkingDirectory, Timeout);
+
+        // Act
+        ArgumentException thrown = Assert.Throws<ArgumentException>(() => task.WithInstructions(" "));
+
+        // Assert
+        Assert.Equal("instructions", thrown.ParamName);
+    }
 }

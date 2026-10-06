@@ -10,5 +10,5 @@ public interface IProcessCapable
     /// <exception cref="System.ComponentModel.Win32Exception">
     /// The executable cannot be started — a misconfiguration, reported loudly.
     /// </exception>
-    Task<ProcessOutcome> RunAsync(ProcessRequest request, CancellationToken cancellationToken);
+    Task<ProcessOutcome> Run(ProcessRequest request, CancellationToken cancellationToken);
 }

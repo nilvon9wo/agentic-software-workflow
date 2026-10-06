@@ -150,6 +150,34 @@ public sealed class ClaudeInvocationTest
     }
 
     [Fact]
+    public void WithAppendedSystemPrompt_WhenGivenInstructions_AppendsThem()
+    {
+        // Arrange
+        ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
+        ClaudeInvocation invocation;
+
+        // Act
+        invocation = baseInvocation.WithAppendedSystemPrompt("Review carefully.");
+
+        // Assert
+        Assert.Equal(["--append-system-prompt", "Review carefully."], invocation.Arguments.TakeLast(2));
+    }
+
+    [Fact]
+    public void WithAppendedSystemPrompt_WhenTheInstructionsAreBlank_Throws()
+    {
+        // Arrange
+        ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
+
+        // Act
+        ArgumentException thrown =
+            Assert.Throws<ArgumentException>(() => baseInvocation.WithAppendedSystemPrompt(""));
+
+        // Assert
+        Assert.Equal("instructions", thrown.ParamName);
+    }
+
+    [Fact]
     public void WithJsonSchema_WhenGivenASchema_AppendsIt()
     {
         // Arrange
