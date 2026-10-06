@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using AgenticSoftwareWorkflow.Conductor.Agents;
 using AgenticSoftwareWorkflow.Conductor.Functional;
+using AgenticSoftwareWorkflow.Conductor.Gates;
 using AgenticSoftwareWorkflow.Conductor.Work;
 using LanguageExt;
 
@@ -14,9 +15,11 @@ namespace AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
 /// <remarks>
 /// The specifier only reads and answers; this stage, not the AI, writes the
 /// specification file. Deterministic code does what deterministic code can,
-/// and the role keeps the least authority its job needs.
+/// and the role keeps the least authority its job needs. The written file is
+/// held to the project's own checks before anything is proposed: a failure
+/// gets one repair, and a second failure is reported, never proposed.
 /// </remarks>
-public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
+public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent, IGateKeeping gate)
 {
     // GitHub content is the same whichever OS the conductor runs on.
     private const char LineBreak = '\n';
@@ -26,6 +29,7 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
 
     private readonly IWorkSupplying _work = work;
     private readonly IAgentic _agent = agent;
+    private readonly IGateKeeping _gate = gate;
 
     public async Task<Fin<SpecifyOutcome>> Run(
         WorkItemId id,
@@ -37,8 +41,8 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
         return await item.Then(read => this.Begin(read, workingDirectory, cancellationToken));
     }
 
-    private static AgentTask SpecifierTask(WorkItem item, string workingDirectory) =>
-        new AgentTask(WorkflowRoles.Specifier, WorkItemBrief.Describe(item), workingDirectory, Timeout)
+    private static AgentTask SpecifierTask(SpecifyAttempt attempt) =>
+        new AgentTask(WorkflowRoles.Specifier, attempt.Brief, attempt.WorkingDirectory, Timeout)
             .WithInstructions(RoleInstructions.Specifier)
             .WithOutputSchema(SpecifierAnswer.Schema);
 
@@ -79,19 +83,18 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
         return comment.ToString();
     }
 
-    private static async Task<Fin<SpecifyOutcome>> WriteSpecification(
-        WorkItem item,
+    private static async Task<Specified> WriteSpecification(
+        SpecifyAttempt attempt,
         string specification,
-        string workingDirectory,
         CancellationToken cancellationToken
     )
     {
-        string fileName = SpecificationFileName.For(item);
+        string fileName = SpecificationFileName.For(attempt.Item);
         string relativePath = $"{WorkspaceLayout.SpecificationDirectory}/{fileName}";
-        string fullPath = Path.Combine(workingDirectory, WorkspaceLayout.SpecificationDirectory, fileName);
+        string fullPath = Path.Combine(attempt.WorkingDirectory, WorkspaceLayout.SpecificationDirectory, fileName);
         _ = Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
         await File.WriteAllTextAsync(fullPath, specification, cancellationToken);
-        return Fin.Succ<SpecifyOutcome>(new Specified(relativePath));
+        return new Specified(relativePath);
     }
 
     // An answered item stops waiting before the specifier reads the answers;
@@ -118,35 +121,53 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
         return await resolved.Then(_ => this.Specify(item, workingDirectory, cancellationToken));
     }
 
-    private async Task<Fin<SpecifyOutcome>> Specify(
+    private Task<Fin<SpecifyOutcome>> Specify(
         WorkItem item,
         string workingDirectory,
         CancellationToken cancellationToken
-    )
+    ) =>
+        this.Attempt(SpecifyAttempt.First(item, workingDirectory), cancellationToken);
+
+    private async Task<Fin<SpecifyOutcome>> Attempt(SpecifyAttempt attempt, CancellationToken cancellationToken)
     {
-        Fin<AgentResult> result = await this._agent.Run(SpecifierTask(item, workingDirectory), cancellationToken);
+        Fin<AgentResult> result = await this._agent.Run(SpecifierTask(attempt), cancellationToken);
         Fin<SpecifierAnswer> answer = result.Bind(ReadAnswer);
-        return await answer.Then(read => this.ActOn(item, read, workingDirectory, cancellationToken));
+        return await answer.Then(read => this.ActOn(attempt, read, cancellationToken));
     }
 
     private Task<Fin<SpecifyOutcome>> ActOn(
-        WorkItem item,
+        SpecifyAttempt attempt,
         SpecifierAnswer answer,
-        string workingDirectory,
         CancellationToken cancellationToken
     ) =>
         answer switch
         {
             { Outcome: SpecifierAnswer.SpecifiedOutcome, Specification: { Length: > 0 } specification } =>
-                WriteSpecification(item, specification, workingDirectory, cancellationToken),
+                this.WriteThenCheck(attempt, specification, cancellationToken),
             { Outcome: SpecifierAnswer.QuestionsOutcome, Questions: { Count: > 0 } questions } =>
-                this.Ask(item.Id, questions, cancellationToken),
+                this.Ask(attempt.Item.Id, questions, cancellationToken),
             _ => Task.FromResult(
                 Fin.Fail<SpecifyOutcome>(
                     new SpecifierAnswerUnusable($"the outcome '{answer.Outcome}' came without its content")
                 )
             ),
         };
+
+    private async Task<Fin<SpecifyOutcome>> WriteThenCheck(
+        SpecifyAttempt attempt,
+        string specification,
+        CancellationToken cancellationToken
+    )
+    {
+        Specified written = await WriteSpecification(attempt, specification, cancellationToken);
+        Fin<Unit> checkedByGates = await this._gate.Check(attempt.WorkingDirectory, cancellationToken);
+        return await checkedByGates.Match(
+            Succ: _ => Task.FromResult(Fin.Succ<SpecifyOutcome>(written)),
+            Fail: failure => attempt.MayRepair
+                ? this.Attempt(attempt.Repairing(specification, failure.Message), cancellationToken)
+                : Task.FromResult(Fin.Fail<SpecifyOutcome>(failure))
+        );
+    }
 
     private async Task<Fin<SpecifyOutcome>> Ask(
         WorkItemId id,

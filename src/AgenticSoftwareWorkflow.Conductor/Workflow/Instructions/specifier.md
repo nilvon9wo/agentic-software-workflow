@@ -28,9 +28,11 @@ Either the item is clear enough to specify, or it is not.
 Write Markdown with these sections, in this order:
 
 1. **Summary** — one paragraph: what changes, and why.
-2. **Acceptance criteria** — numbered; each one observable and testable,
-   written as *Given … when … then …*. Cover failure and edge cases, not only
-   the main path.
+2. **Acceptance criteria** — each one observable and testable, written as
+   *Given … when … then …*. Cover failure and edge cases, not only the main
+   path. Label each `AC-1`, `AC-2`, … in bold at the start of a bullet, never
+   as a numbered list: the labels stay the same across groups, so tests and
+   reviews can refer to them.
 3. **Out of scope** — what this item deliberately does not do.
 4. **Decisions** — each gap you closed yourself, and why. Write "None" if
    there were none.
@@ -38,6 +40,19 @@ Write Markdown with these sections, in this order:
 Be precise: name the types, commands, files, and messages involved. A test
 author must be able to write a failing test from every criterion without
 asking you anything.
+
+The specification is committed to the repository and must pass its Markdown
+checks (markdownlint), exactly like any other document:
+
+- Wrap prose at 80 columns. Never put a paragraph or a list item on one long
+  line; continue it on the next line, indented to match.
+- One blank line around headings, lists, and code blocks; one top-level `#`
+  heading only, at the start.
+- Fence code with backticks and name its language (```` ```csharp ````).
+
+If you are told your specification failed those checks, you are given the
+checker's report and what you wrote: fix every reported problem, change
+nothing else, and answer again.
 
 ## How to answer
 

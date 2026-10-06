@@ -1,5 +1,6 @@
 using AgenticSoftwareWorkflow.Cli;
 using AgenticSoftwareWorkflow.Conductor.Agents;
+using AgenticSoftwareWorkflow.Conductor.Gates;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.Processes;
 using AgenticSoftwareWorkflow.Conductor.Work;
@@ -18,7 +19,8 @@ public sealed class CommandLineTest : IDisposable
           "repository": "owner/repository",
           "baseBranch": "master",
           "maintainers": ["maintainer"],
-          "commitAuthor": { "name": "repository-bot", "email": "bot@example.com" }
+          "commitAuthor": { "name": "repository-bot", "email": "bot@example.com" },
+          "documentGate": ["true"]
         }
         """;
 
@@ -110,6 +112,33 @@ public sealed class CommandLineTest : IDisposable
             "cannot be read: the file is the JSON literal null\n",
             this._output.ToString().ReplaceLineEndings("\n"),
             StringComparison.Ordinal
+        );
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(""", "documentGate": []""")]
+    public async Task Run_WhenTheSettingsNameNoDocumentGate_RefusesToRun(string documentGate)
+    {
+        // Arrange
+        await this.WriteSettings(
+            $$"""
+            {
+              "repository": "owner/repository",
+              "baseBranch": "master",
+              "maintainers": ["maintainer"],
+              "commitAuthor": { "name": "repository-bot", "email": "bot@example.com" }{{documentGate}}
+            }
+            """
+        );
+
+        // Act
+        int exitCode = await this.Run(["specify", "7"], TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            (CommandLine.Failed, true),
+            (exitCode, this._output.ToString().Contains("it names no documentGate", StringComparison.Ordinal))
         );
     }
 
@@ -217,7 +246,10 @@ public sealed class CommandLineTest : IDisposable
             test._settingsUsed.Add(settings);
             GitRepository git = new(test._processes, repositoryRoot, settings.CommitAuthor);
             IChangeProposing changes = Substitute.For<IChangeProposing>();
-            return new SpecifyCommand(test._work, test._agent, git, changes, settings.BaseBranch);
+            IGateKeeping gate = Substitute.For<IGateKeeping>();
+            _ = gate.Check(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
+            SpecifyStage stage = new(test._work, test._agent, gate);
+            return new SpecifyCommand(stage, test._work, git, changes, settings.BaseBranch);
         }
 
         public RunLoop CreateRunLoop(ConductorSettings settings, CommandContext context, RunLoopOptions options) =>

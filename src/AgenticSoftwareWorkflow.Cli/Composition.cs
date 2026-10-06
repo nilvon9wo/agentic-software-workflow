@@ -1,4 +1,5 @@
 using AgenticSoftwareWorkflow.Conductor.Claude;
+using AgenticSoftwareWorkflow.Conductor.Gates;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.GitHub;
 using AgenticSoftwareWorkflow.Conductor.Processes;
@@ -19,9 +20,16 @@ internal sealed class Composition : IConductorComposing
     public SpecifyCommand CreateSpecifyCommand(ConductorSettings settings, string repositoryRoot)
     {
         GitHubOptions github = GitHubOptionsFor(settings, repositoryRoot);
-        return new SpecifyCommand(
-            new GitHubIssues(this._processes, github),
+        GitHubIssues issues = new(this._processes, github);
+        SpecifyStage stage = new(
+            issues,
             new ClaudeCodeAgentRunner(this._processes),
+            // Never null here: ConductorSettings.Load refuses settings without a documentGate.
+            new CommandGate(this._processes, settings.DocumentGate!)
+        );
+        return new SpecifyCommand(
+            stage,
+            issues,
             new GitRepository(this._processes, repositoryRoot, settings.CommitAuthor),
             new GitHubPullRequests(this._processes, github, settings.BaseBranch),
             settings.BaseBranch
