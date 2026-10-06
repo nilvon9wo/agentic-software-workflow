@@ -1,12 +1,12 @@
 using AgenticSoftwareWorkflow.Conductor.Work;
-using AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
+using AgenticSoftwareWorkflow.Conductor.Workflow;
 using LanguageExt;
 
 namespace AgenticSoftwareWorkflow.Cli;
 
 /// <summary>
 /// What <c>aswf</c> does with its arguments. Kept apart from <see cref="Program"/>
-/// so it can be tested with fake output and a fake command factory.
+/// so it can be tested with fake output and fake commands.
 /// </summary>
 internal static class CommandLine
 {
@@ -15,42 +15,66 @@ internal static class CommandLine
     public const int UsageError = 64;
 
     private const string SpecifyVerb = "specify";
-    private const string Usage = "Usage: aswf specify <issue-number>";
+    private const string RunVerb = "run";
+    private const string OnceFlag = "--once";
+    private const string PassComplete = "The pass is complete.";
+
+    private const string Usage = """
+        Usage: aswf specify <issue-number>   specify one issue
+               aswf run [--once]             work through the ready issues, then keep watching (or stop)
+        """;
 
     public static Task<int> Run(
         IReadOnlyList<string> arguments,
-        string repositoryRoot,
-        TextWriter output,
-        Func<ConductorSettings, string, SpecifyCommand> createSpecifyCommand,
+        CommandContext context,
         CancellationToken cancellationToken
     ) =>
-        IsSpecify(arguments, out int number)
-            ? Specify(number, repositoryRoot, output, createSpecifyCommand, cancellationToken)
-            : Report(output, Usage, UsageError);
+        arguments switch
+        {
+            [SpecifyVerb, { } number] when int.TryParse(number, out int issue) =>
+                Specify(issue, context, cancellationToken),
+            [RunVerb] => RunLoop(RunLoopOptions.Continuous, context, cancellationToken),
+            [RunVerb, OnceFlag] => RunLoop(RunLoopOptions.Once, context, cancellationToken),
+            _ => Report(context.Output, Usage, UsageError),
+        };
 
-    private static bool IsSpecify(IReadOnlyList<string> arguments, out int number)
-    {
-        number = 0;
-        return arguments is [SpecifyVerb, _] && int.TryParse(arguments[1], out number);
-    }
+    private static Task<int> Specify(int issue, CommandContext context, CancellationToken cancellationToken) =>
+        WithSettings(
+            context,
+            settings => context.Composer
+                .CreateSpecifyCommand(settings, context.RepositoryRoot)
+                .Run(new WorkItemId($"github:{settings.Repository}", $"{issue}"), cancellationToken)
+        );
 
-    private static async Task<int> Specify(
-        int number,
-        string repositoryRoot,
-        TextWriter output,
-        Func<ConductorSettings, string, SpecifyCommand> createSpecifyCommand,
+    private static Task<int> RunLoop(
+        RunLoopOptions options,
+        CommandContext context,
         CancellationToken cancellationToken
+    ) =>
+        WithSettings(
+            context,
+            async settings =>
+            {
+                await context.Composer
+                    .CreateRunLoop(settings, context, options)
+                    .Run(cancellationToken);
+                return Fin.Succ(PassComplete);
+            }
+        );
+
+    private static async Task<int> WithSettings(
+        CommandContext context,
+        Func<ConductorSettings, Task<Fin<string>>> command
     )
     {
-        Fin<ConductorSettings> settings = ConductorSettings.Load(repositoryRoot);
+        Fin<ConductorSettings> settings = ConductorSettings.Load(context.RepositoryRoot);
         Fin<string> report = await settings.Match(
-            Succ: loaded => createSpecifyCommand(loaded, repositoryRoot)
-                .Run(new WorkItemId($"github:{loaded.Repository}", $"{number}"), cancellationToken),
+            Succ: command,
             Fail: error => Task.FromResult(Fin.Fail<string>(error))
         );
         return await report.Match(
-            Succ: message => Report(output, message, Succeeded),
-            Fail: error => Report(output, $"Failed ({error.GetType().Name}): {error.Message}", Failed)
+            Succ: message => Report(context.Output, message, Succeeded),
+            Fail: error => Report(context.Output, $"Failed ({error.GetType().Name}): {error.Message}", Failed)
         );
     }
 

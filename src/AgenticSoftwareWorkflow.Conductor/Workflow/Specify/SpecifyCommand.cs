@@ -18,16 +18,16 @@ public sealed class SpecifyCommand(
     GitRepository git,
     IChangeProposing changes,
     string baseBranch
-)
+) : IWorkProcessing
 {
     private const string BranchPrefix = "aswf/specify-";
 
     private readonly SpecifyStage _stage = new(work, agent);
+    private readonly IWorkSupplying _work = work;
     private readonly GitRepository _git = git;
     private readonly IChangeProposing _changes = changes;
     private readonly string _baseBranch = baseBranch;
 
-    /// <summary>What happened, in a sentence fit for a person to read.</summary>
     public async Task<Fin<string>> Run(WorkItemId id, CancellationToken cancellationToken)
     {
         string branch = BranchPrefix + id.SafeKey;
@@ -92,6 +92,9 @@ public sealed class SpecifyCommand(
         Fin<Unit> pushed = await committed.Then(_ => this._git.Push(workspace, cancellationToken));
         ChangeProposal proposal = new(workspace.Branch, $"Specification for {id}", DescribeProposal(id));
         Fin<string> proposed = await pushed.Then(_ => this._changes.Propose(proposal, cancellationToken));
-        return proposed.Map(address => $"Proposed the specification for {id} for review: {address}");
+        Fin<Unit> marked = await proposed.Then(_ => this._work.MarkSpecified(id, cancellationToken));
+        return proposed.Bind(
+            address => marked.Map(_ => $"Proposed the specification for {id} for review: {address}")
+        );
     }
 }
