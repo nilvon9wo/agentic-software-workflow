@@ -114,6 +114,9 @@ def test_as_arguments_when_called_returns_each_path_as_text() -> None:
 
 
 def test_parse_json_when_given_a_report_returns_it() -> None:
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     parsed: object = tools.parse_json(
         '[{"line": 3}]',
@@ -125,6 +128,9 @@ def test_parse_json_when_given_a_report_returns_it() -> None:
 
 
 def test_parse_json_when_given_nothing_returns_the_empty_document() -> None:
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     parsed: object = tools.parse_json("  \n", tools.NO_OUTPUT_JSON_LIST)
 
@@ -133,6 +139,9 @@ def test_parse_json_when_given_nothing_returns_the_empty_document() -> None:
 
 
 def test_parse_json_report_when_given_a_report_returns_it() -> None:
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     parsed: object = tools.parse_json_report(
         '{"errors": 1}',
@@ -146,6 +155,9 @@ def test_parse_json_report_when_given_a_report_returns_it() -> None:
 def test_parse_json_report_when_given_a_crash_returns_the_empty_document() -> (
     None
 ):
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     parsed: object = tools.parse_json_report(
         "panic: no such flag",

@@ -91,6 +91,9 @@ def test_run_snippets_when_every_document_is_current_passes(
 
 
 def test_describe_drift_when_documents_drifted_names_them() -> None:
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     description: str = snippet_gate.describe_drift([GUIDE])
 
@@ -99,6 +102,9 @@ def test_describe_drift_when_documents_drifted_names_them() -> None:
 
 
 def test_describe_drift_when_nothing_drifted_is_empty() -> None:
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     description: str = snippet_gate.describe_drift([])
 

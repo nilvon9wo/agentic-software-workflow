@@ -35,6 +35,9 @@ public sealed class ClaudeInvocationTest
     [InlineData("   ")]
     public void Headless_WhenTheModelIsBlank_Throws(string blankModel)
     {
+        // Arrange
+        // Nothing to arrange: the inputs come from the [InlineData] rows.
+
         // Act
         ArgumentException thrown =
             Assert.Throws<ArgumentException>(() => ClaudeInvocation.Headless(blankModel));

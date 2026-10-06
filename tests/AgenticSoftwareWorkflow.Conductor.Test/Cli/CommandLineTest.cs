@@ -56,6 +56,9 @@ public sealed class CommandLineTest : IDisposable
     [InlineData("unknown", "7")]
     public async Task Run_WhenTheArgumentsAreNotUnderstood_PrintsUsage(params string[] arguments)
     {
+        // Arrange
+        // Nothing to arrange: the [InlineData] rows are the input; the constructor arranges the rest.
+
         // Act
         int exitCode = await this.Run(arguments);
 

@@ -224,6 +224,9 @@ def test_main_when_called_reads_the_pull_request_its_files_and_reviews(
 
 
 def test_read_maintainers_when_called_reads_the_repository_settings() -> None:
+    # Arrange
+    # Nothing to arrange: it reads the repository's real settings file.
+
     # Act
     maintainers: list[str] = maintainer_approval.read_maintainers(
         maintainer_approval.SETTINGS_FILE,

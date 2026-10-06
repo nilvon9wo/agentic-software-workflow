@@ -11,6 +11,9 @@ public sealed class ClaudeCapabilitiesTest
     [InlineData(CapabilityTier.Strongest, "opus")]
     public void ModelFor_WhenGivenATier_ReturnsItsModelAlias(CapabilityTier tier, string expectedAlias)
     {
+        // Arrange
+        // Nothing to arrange: the inputs come from the [InlineData] rows.
+
         // Act
         string alias = ClaudeCapabilities.ModelFor(tier);
 

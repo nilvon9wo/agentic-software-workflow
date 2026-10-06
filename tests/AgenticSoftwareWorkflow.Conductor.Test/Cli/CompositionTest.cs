@@ -27,6 +27,9 @@ public sealed class CompositionTest
     [Fact]
     public async Task Main_WhenGivenNoArguments_ExitsWithAUsageError()
     {
+        // Arrange
+        // Nothing to arrange: running with no arguments is the scenario.
+
         // Act
         int exitCode = await Program.Main([]);
 

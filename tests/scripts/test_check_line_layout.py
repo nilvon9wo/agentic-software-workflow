@@ -194,6 +194,9 @@ def test_describe_when_called_formats_the_violation_for_editors_and_logs() -> (
 
 
 def test_to_roots_when_given_no_arguments_returns_the_default_roots() -> None:
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     roots: list[Path] = check_line_layout.to_roots([])
 
@@ -202,6 +205,9 @@ def test_to_roots_when_given_no_arguments_returns_the_default_roots() -> None:
 
 
 def test_to_roots_when_given_arguments_returns_them_as_paths() -> None:
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     roots: list[Path] = check_line_layout.to_roots(["one", "two"])
 

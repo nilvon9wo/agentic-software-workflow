@@ -19,6 +19,9 @@ public sealed class AgentTaskTest
     [Fact]
     public void Constructor_WhenThePromptIsBlank_Throws()
     {
+        // Arrange
+        // Nothing to arrange: the inputs are the class's shared constants. The blank prompt is inline.
+
         // Act
         ArgumentException thrown =
             Assert.Throws<ArgumentException>(() => new AgentTask(Reviewer, " ", WorkingDirectory, Timeout));
@@ -30,6 +33,9 @@ public sealed class AgentTaskTest
     [Fact]
     public void Constructor_WhenTheWorkingDirectoryIsBlank_Throws()
     {
+        // Arrange
+        // Nothing to arrange: the inputs are the class's shared constants. The blank directory is inline.
+
         // Act
         ArgumentException thrown =
             Assert.Throws<ArgumentException>(() => new AgentTask(Reviewer, Prompt, "", Timeout));
@@ -41,6 +47,9 @@ public sealed class AgentTaskTest
     [Fact]
     public void Constructor_WhenTheTimeoutIsNotPositive_Throws()
     {
+        // Arrange
+        // Nothing to arrange: the inputs are the class's shared constants. The zero timeout is inline.
+
         // Act
         ArgumentOutOfRangeException thrown = Assert.Throws<ArgumentOutOfRangeException>(
             () => new AgentTask(Reviewer, Prompt, WorkingDirectory, TimeSpan.Zero)
@@ -53,6 +62,9 @@ public sealed class AgentTaskTest
     [Fact]
     public void Constructor_WhenGivenNoSchema_HasNoOutputSchema()
     {
+        // Arrange
+        // Nothing to arrange: the inputs are the class's shared constants.
+
         // Act
         AgentTask task = new(Reviewer, Prompt, WorkingDirectory, Timeout);
 

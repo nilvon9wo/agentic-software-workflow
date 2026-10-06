@@ -24,6 +24,9 @@ public sealed class WorkItemTest
     [Fact]
     public void ToString_WhenCalledOnAnId_ShowsItsSourceAndKey()
     {
+        // Arrange
+        // Nothing to arrange: the inputs are the class's shared constants.
+
         // Act
         string text = Id.ToString();
 

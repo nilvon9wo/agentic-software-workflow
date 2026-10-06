@@ -9,6 +9,9 @@ public sealed class ClaudePermissionSettingsTest
     [Fact]
     public void For_WhenTheRoleHasNoAccessRules_ProducesNoSettings()
     {
+        // Arrange
+        // Nothing to arrange: the input is the predefined ToolsOnly access.
+
         // Act
         Option<string> settings = ClaudePermissionSettings.For(AgentAccess.ToolsOnly);
 

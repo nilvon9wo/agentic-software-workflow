@@ -4,6 +4,9 @@ import exit_codes
 
 
 def test_exit_code_for_when_successful_returns_zero() -> None:
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     exit_code: int = exit_codes.exit_code_for(has_succeeded=True)
 
@@ -12,6 +15,9 @@ def test_exit_code_for_when_successful_returns_zero() -> None:
 
 
 def test_exit_code_for_when_unsuccessful_returns_one() -> None:
+    # Arrange
+    # Nothing to arrange: the input is a literal in the Act.
+
     # Act
     exit_code: int = exit_codes.exit_code_for(has_succeeded=False)
 

@@ -37,6 +37,9 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Implementer_WhenDefined_CannotReadTheHiddenTests()
     {
+        // Arrange
+        // Nothing to arrange: the role catalogue is static.
+
         // Act
         IReadOnlyList<string> unreadable = WorkflowRoles.Implementer.Access.UnreadablePaths;
 
@@ -47,6 +50,9 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Implementer_WhenDefined_CannotChangeTheDefinitionOfSuccess()
     {
+        // Arrange
+        // Nothing to arrange: the role catalogue is static.
+
         // Act
         IReadOnlyList<string> uneditable = WorkflowRoles.Implementer.Access.UneditablePaths;
 
@@ -60,6 +66,9 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Implementer_WhenDefined_RunsOnlyBuildTestAndFormat()
     {
+        // Arrange
+        // Nothing to arrange: the role catalogue is static.
+
         // Act
         IReadOnlyList<string> commands = WorkflowRoles.Implementer.Access.AllowedCommands;
 
@@ -70,6 +79,9 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void TestAuthor_WhenDefined_CannotChangeTheSpecificationOrTheCode()
     {
+        // Arrange
+        // Nothing to arrange: the role catalogue is static.
+
         // Act
         IReadOnlyList<string> uneditable = WorkflowRoles.TestAuthor.Access.UneditablePaths;
 
@@ -80,6 +92,9 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Triage_WhenDefined_IsCheapAndHasNoTools()
     {
+        // Arrange
+        // Nothing to arrange: the role catalogue is static.
+
         // Act
         AgentRole triage = WorkflowRoles.Triage;
 
@@ -90,6 +105,9 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Arbitrator_WhenDefined_UsesTheStrongestTier()
     {
+        // Arrange
+        // Nothing to arrange: the role catalogue is static.
+
         // Act
         CapabilityTier tier = WorkflowRoles.Arbitrator.Tier;
 
