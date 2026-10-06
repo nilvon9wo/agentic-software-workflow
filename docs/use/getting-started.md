@@ -18,7 +18,7 @@ including why, on Windows, the gates run in WSL.
 
 ## Today: running an AI worker
 
-The conductor asks for AI work through one port, `IAgentRunner`. A role says
+The conductor asks for AI work through one port, `IAgentic`. A role says
 how capable a model it needs and which capabilities it is granted — never a
 vendor's model or tool names — and a task gives it a prompt, a working
 directory, and a time limit:
@@ -27,7 +27,7 @@ directory, and a time limit:
 ```cs
 AgentRole reviewer = new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles]);
 AgentTask task = new(reviewer, "Review the change.", "/repository", TimeSpan.FromMinutes(5));
-IAgentRunner runner = new ClaudeCodeAgentRunner(processRunner);
+IAgentic runner = new ClaudeCodeAgentRunner(processRunner);
 
 // Act
 result = await runner.RunAsync(task, cancellationToken);

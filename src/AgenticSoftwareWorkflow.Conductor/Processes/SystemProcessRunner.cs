@@ -6,7 +6,7 @@ namespace AgenticSoftwareWorkflow.Conductor.Processes;
 /// Runs a real operating-system process, capturing its output and stopping it
 /// (with any children it started) if it outlives its timeout.
 /// </summary>
-public sealed class SystemProcessRunner : IProcessRunner
+public sealed class SystemProcessRunner : IProcessCapable
 {
     private const int TimedOutExitCode = -1;
 

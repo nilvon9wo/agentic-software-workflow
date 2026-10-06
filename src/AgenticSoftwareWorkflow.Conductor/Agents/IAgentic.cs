@@ -11,7 +11,7 @@ namespace AgenticSoftwareWorkflow.Conductor.Agents;
 /// agent reports — come back as a failed <see cref="Fin{A}"/>, so the workflow
 /// decides what happens next. Exceptions are reserved for misconfiguration.
 /// </remarks>
-public interface IAgentRunner
+public interface IAgentic
 {
     Task<Fin<AgentResult>> RunAsync(AgentTask task, CancellationToken cancellationToken);
 }
