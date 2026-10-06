@@ -9,11 +9,8 @@ public sealed class ClaudePermissionSettingsTest
     [Fact]
     public void For_WhenTheRoleHasNoAccessRules_ProducesNoSettings()
     {
-        // Arrange
-        Option<string> settings;
-
         // Act
-        settings = ClaudePermissionSettings.For(AgentAccess.ToolsOnly);
+        Option<string> settings = ClaudePermissionSettings.For(AgentAccess.ToolsOnly);
 
         // Assert
         Assert.Equal(Option<string>.None, settings);
@@ -26,10 +23,9 @@ public sealed class ClaudePermissionSettingsTest
         AgentAccess access = new(["hidden-tests/**"], ["spec/**"], ["dotnet test"]);
         string expectedSettings = "{\"permissions\":{\"allow\":[\"Bash(dotnet test:*)\"],"
             + "\"deny\":[\"Read(./hidden-tests/**)\",\"Edit(./spec/**)\"]}}";
-        Option<string> settings;
 
         // Act
-        settings = ClaudePermissionSettings.For(access);
+        Option<string> settings = ClaudePermissionSettings.For(access);
 
         // Assert
         Assert.Equal(Prelude.Some(expectedSettings), settings);
@@ -40,10 +36,9 @@ public sealed class ClaudePermissionSettingsTest
     {
         // Arrange
         AgentAccess access = new([], [], ["dotnet build"]);
-        Option<string> settings;
 
         // Act
-        settings = ClaudePermissionSettings.For(access);
+        Option<string> settings = ClaudePermissionSettings.For(access);
 
         // Assert
         Assert.Equal(Prelude.Some("""{"permissions":{"allow":["Bash(dotnet build:*)"],"deny":[]}}"""), settings);

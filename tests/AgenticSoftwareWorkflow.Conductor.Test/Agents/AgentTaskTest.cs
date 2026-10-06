@@ -53,11 +53,8 @@ public sealed class AgentTaskTest
     [Fact]
     public void Constructor_WhenGivenNoSchema_HasNoOutputSchema()
     {
-        // Arrange
-        AgentTask task;
-
         // Act
-        task = new AgentTask(Reviewer, Prompt, WorkingDirectory, Timeout);
+        AgentTask task = new(Reviewer, Prompt, WorkingDirectory, Timeout);
 
         // Assert
         Assert.Equal(Option<string>.None, task.OutputSchema);
@@ -68,10 +65,9 @@ public sealed class AgentTaskTest
     {
         // Arrange
         AgentTask task = new(Reviewer, Prompt, WorkingDirectory, Timeout);
-        AgentTask withSchema;
 
         // Act
-        withSchema = task.WithOutputSchema(Schema);
+        AgentTask withSchema = task.WithOutputSchema(Schema);
 
         // Assert
         Assert.Equal(
@@ -117,10 +113,9 @@ public sealed class AgentTaskTest
     {
         // Arrange
         AgentTask task = new AgentTask(Reviewer, Prompt, WorkingDirectory, Timeout).WithOutputSchema(Schema);
-        AgentTask instructed;
 
         // Act
-        instructed = task.WithInstructions("Review carefully.");
+        AgentTask instructed = task.WithInstructions("Review carefully.");
 
         // Assert
         Assert.Equal(
@@ -134,10 +129,9 @@ public sealed class AgentTaskTest
     {
         // Arrange
         AgentTask task = new AgentTask(Reviewer, Prompt, WorkingDirectory, Timeout).WithInstructions("Review.");
-        AgentTask withSchema;
 
         // Act
-        withSchema = task.WithOutputSchema(Schema);
+        AgentTask withSchema = task.WithOutputSchema(Schema);
 
         // Assert
         Assert.Equal(Prelude.Some("Review."), withSchema.Instructions);

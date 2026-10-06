@@ -40,10 +40,9 @@ public sealed class SpecifyCommandTest : IDisposable
         // Arrange
         this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
         SpecifyCommand command = this.Command();
-        Fin<string> report;
 
         // Act
-        report = await command.Run(Seven, TestContext.Current.CancellationToken);
+        Fin<string> report = await command.Run(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
@@ -79,10 +78,9 @@ public sealed class SpecifyCommandTest : IDisposable
         // Arrange
         this.SpecifierAnswers("""{"outcome":"questions","questions":["Which zone?"]}""");
         SpecifyCommand command = this.Command();
-        Fin<string> report;
 
         // Act
-        report = await command.Run(Seven, TestContext.Current.CancellationToken);
+        Fin<string> report = await command.Run(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
@@ -99,10 +97,9 @@ public sealed class SpecifyCommandTest : IDisposable
             .Run(Arg.Any<ProcessRequest>(), Arg.Any<CancellationToken>())
             .Returns(new ProcessOutcome(128, "", "fatal", false));
         SpecifyCommand command = this.Command();
-        Fin<string> report;
 
         // Act
-        report = await command.Run(Seven, TestContext.Current.CancellationToken);
+        Fin<string> report = await command.Run(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         _ = Assert.IsType<CommandFailed>(AssertFailure(report));
@@ -117,10 +114,9 @@ public sealed class SpecifyCommandTest : IDisposable
             .Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>())
             .Returns(Fin.Fail<AgentResult>(new AgentTimedOut(TimeSpan.FromMinutes(15))));
         SpecifyCommand command = this.Command();
-        Fin<string> report;
 
         // Act
-        report = await command.Run(Seven, TestContext.Current.CancellationToken);
+        Fin<string> report = await command.Run(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         _ = Assert.IsType<AgentTimedOut>(AssertFailure(report));
@@ -136,10 +132,9 @@ public sealed class SpecifyCommandTest : IDisposable
             .Run(Arg.Is<ProcessRequest>(request => request.Arguments.Contains("remove")), Arg.Any<CancellationToken>())
             .Returns(new ProcessOutcome(1, "", "locked", false));
         SpecifyCommand command = this.Command();
-        Fin<string> report;
 
         // Act
-        report = await command.Run(Seven, TestContext.Current.CancellationToken);
+        Fin<string> report = await command.Run(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("'git worktree remove' exited with code 1: locked", AssertFailure(report).Message);

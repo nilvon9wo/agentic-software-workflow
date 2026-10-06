@@ -7,11 +7,8 @@ public sealed class RoleInstructionsTest
     [Fact]
     public void Specifier_WhenLoaded_IsTheEmbeddedSpecifierProcedure()
     {
-        // Arrange
-        string instructions;
-
         // Act
-        instructions = RoleInstructions.Specifier;
+        string instructions = RoleInstructions.Specifier;
 
         // Assert
         Assert.StartsWith("# Specifier", instructions, StringComparison.Ordinal);

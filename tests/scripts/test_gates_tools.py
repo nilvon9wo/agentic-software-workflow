@@ -17,10 +17,9 @@ def test_resolve_executable_when_on_path_returns_its_full_path(
         return "/usr/bin/lychee"
 
     monkeypatch.setattr(shutil, "which", fake_which)
-    resolved: str
 
     # Act
-    resolved = tools.resolve_executable("lychee")
+    resolved: str = tools.resolve_executable("lychee")
 
     # Assert
     assert resolved == "/usr/bin/lychee"
@@ -34,10 +33,9 @@ def test_resolve_executable_when_not_on_path_returns_its_name(
         return None
 
     monkeypatch.setattr(shutil, "which", fake_which)
-    resolved: str
 
     # Act
-    resolved = tools.resolve_executable("lychee")
+    resolved: str = tools.resolve_executable("lychee")
 
     # Assert
     assert resolved == "lychee"
@@ -54,10 +52,11 @@ def test_execute_when_the_tool_runs_returns_what_it_printed(
         return subprocess.CompletedProcess(command, 0, stdout="output")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    completed: subprocess.CompletedProcess[str]
 
     # Act
-    completed = tools.execute(["lychee", "--version"])
+    completed: subprocess.CompletedProcess[str] = tools.execute(
+        ["lychee", "--version"],
+    )
 
     # Assert
     assert completed.stdout == "output"
@@ -74,10 +73,11 @@ def test_execute_when_the_tool_is_missing_reports_command_not_found(
         raise FileNotFoundError(command[0])
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    completed: subprocess.CompletedProcess[str]
 
     # Act
-    completed = tools.execute(["lychee", "--version"])
+    completed: subprocess.CompletedProcess[str] = tools.execute(
+        ["lychee", "--version"],
+    )
 
     # Assert
     assert (completed.returncode, completed.stderr) == (
@@ -94,10 +94,9 @@ def test_combined_output_when_called_puts_stdout_first() -> None:
         stdout="out\n",
         stderr="err\n",
     )
-    output: str
 
     # Act
-    output = tools.combined_output(completed)
+    output: str = tools.combined_output(completed)
 
     # Assert
     assert output == "out\nerr\n"
@@ -106,43 +105,36 @@ def test_combined_output_when_called_puts_stdout_first() -> None:
 def test_as_arguments_when_called_returns_each_path_as_text() -> None:
     # Arrange
     paths = [Path("docs") / "README.md"]
-    arguments: list[str]
 
     # Act
-    arguments = tools.as_arguments(paths)
+    arguments: list[str] = tools.as_arguments(paths)
 
     # Assert
     assert arguments == [str(paths[0])]
 
 
 def test_parse_json_when_given_a_report_returns_it() -> None:
-    # Arrange
-    parsed: object
-
     # Act
-    parsed = tools.parse_json('[{"line": 3}]', tools.NO_OUTPUT_JSON_LIST)
+    parsed: object = tools.parse_json(
+        '[{"line": 3}]',
+        tools.NO_OUTPUT_JSON_LIST,
+    )
 
     # Assert
     assert parsed == [{"line": 3}]
 
 
 def test_parse_json_when_given_nothing_returns_the_empty_document() -> None:
-    # Arrange
-    parsed: object
-
     # Act
-    parsed = tools.parse_json("  \n", tools.NO_OUTPUT_JSON_LIST)
+    parsed: object = tools.parse_json("  \n", tools.NO_OUTPUT_JSON_LIST)
 
     # Assert
     assert parsed == []
 
 
 def test_parse_json_report_when_given_a_report_returns_it() -> None:
-    # Arrange
-    parsed: object
-
     # Act
-    parsed = tools.parse_json_report(
+    parsed: object = tools.parse_json_report(
         '{"errors": 1}',
         tools.NO_OUTPUT_JSON_OBJECT,
     )
@@ -154,11 +146,8 @@ def test_parse_json_report_when_given_a_report_returns_it() -> None:
 def test_parse_json_report_when_given_a_crash_returns_the_empty_document() -> (
     None
 ):
-    # Arrange
-    parsed: object
-
     # Act
-    parsed = tools.parse_json_report(
+    parsed: object = tools.parse_json_report(
         "panic: no such flag",
         tools.NO_OUTPUT_JSON_OBJECT,
     )

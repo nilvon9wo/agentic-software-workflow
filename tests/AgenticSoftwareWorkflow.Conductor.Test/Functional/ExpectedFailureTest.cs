@@ -47,10 +47,9 @@ public sealed class ExpectedFailureTest
     {
         // Arrange
         ExpectedFailure failure = FailuresByName[failureName];
-        string message;
 
         // Act
-        message = failure.Message;
+        string message = failure.Message;
 
         // Assert
         Assert.Equal(expectedMessage, message);
@@ -61,10 +60,9 @@ public sealed class ExpectedFailureTest
     {
         // Arrange
         ExpectedFailure failure = new AgentTimedOut(TimeSpan.FromSeconds(1));
-        bool isExpected;
 
         // Act
-        isExpected = failure.IsExpected;
+        bool isExpected = failure.IsExpected;
 
         // Assert
         Assert.True(isExpected);

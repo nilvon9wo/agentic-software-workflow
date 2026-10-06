@@ -49,10 +49,9 @@ public sealed class GitHubIssuesTest
             )
         );
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ListReady(TestContext.Current.CancellationToken);
+        Fin<IReadOnlyList<WorkItemId>> ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal([new WorkItemId(Source, "3"), new WorkItemId(Source, "8")], AssertSuccess(ready));
@@ -86,10 +85,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(new ProcessOutcome(4, "", "not authenticated", false));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ListReady(TestContext.Current.CancellationToken);
+        Fin<IReadOnlyList<WorkItemId>> ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(new CommandFailed("gh issue list", 4, "not authenticated"), AssertFailure(ready));
@@ -101,10 +99,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(new ProcessOutcome(-1, "", "", true));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ListReady(TestContext.Current.CancellationToken);
+        Fin<IReadOnlyList<WorkItemId>> ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("'gh issue list' exited with code -1: timed out", AssertFailure(ready).Message);
@@ -116,10 +113,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(Succeeded("<html>"));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ListReady(TestContext.Current.CancellationToken);
+        Fin<IReadOnlyList<WorkItemId>> ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         _ = Assert.IsType<WorkResponseMalformed>(AssertFailure(ready));
@@ -131,10 +127,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(Succeeded(Issue));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<WorkItem> read;
 
         // Act
-        read = await issues.Read(Seven, TestContext.Current.CancellationToken);
+        Fin<WorkItem> read = await issues.Read(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         WorkItem item = AssertSuccess(read);
@@ -150,10 +145,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(Succeeded(Issue));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<WorkItem> read;
 
         // Act
-        read = await issues.Read(Seven, TestContext.Current.CancellationToken);
+        Fin<WorkItem> read = await issues.Read(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
@@ -173,10 +167,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(Succeeded("""{ "number": 7 }"""));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<WorkItem> read;
 
         // Act
-        read = await issues.Read(Seven, TestContext.Current.CancellationToken);
+        Fin<WorkItem> read = await issues.Read(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         WorkItem item = AssertSuccess(read);
@@ -189,10 +182,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(Succeeded("null"));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<WorkItem> read;
 
         // Act
-        read = await issues.Read(Seven, TestContext.Current.CancellationToken);
+        Fin<WorkItem> read = await issues.Read(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
@@ -206,10 +198,12 @@ public sealed class GitHubIssuesTest
     {
         // Arrange
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<WorkItem> read;
 
         // Act
-        read = await issues.Read(new WorkItemId("jira:PROJECT", "7"), TestContext.Current.CancellationToken);
+        Fin<WorkItem> read = await issues.Read(
+            new WorkItemId("jira:PROJECT", "7"),
+            TestContext.Current.CancellationToken
+        );
 
         // Assert
         _ = Assert.IsType<ForeignWorkItem>(AssertFailure(read));
@@ -222,10 +216,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(Succeeded(""), Succeeded(""));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<Unit> asked;
 
         // Act
-        asked = await issues.Ask(Seven, "Which time zone?", TestContext.Current.CancellationToken);
+        Fin<Unit> asked = await issues.Ask(Seven, "Which time zone?", TestContext.Current.CancellationToken);
 
         // Assert
         _ = AssertSuccess(asked);
@@ -247,10 +240,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(new ProcessOutcome(1, "", "rate limited", false));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<Unit> asked;
 
         // Act
-        asked = await issues.Ask(Seven, "Which time zone?", TestContext.Current.CancellationToken);
+        Fin<Unit> asked = await issues.Ask(Seven, "Which time zone?", TestContext.Current.CancellationToken);
 
         // Assert
         _ = Assert.IsType<CommandFailed>(AssertFailure(asked));
@@ -263,10 +255,9 @@ public sealed class GitHubIssuesTest
         // Arrange
         this.Responds(Succeeded(""));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
-        Fin<Unit> resolved;
 
         // Act
-        resolved = await issues.Resolve(Seven, TestContext.Current.CancellationToken);
+        Fin<Unit> resolved = await issues.Resolve(Seven, TestContext.Current.CancellationToken);
 
         // Assert
         _ = AssertSuccess(resolved);

@@ -28,10 +28,9 @@ public sealed class GitHubIssuesLiveTest
         // Arrange
         IWorkSupplying issues = new GitHubIssues(new SystemProcessRunner(), Options);
         WorkItemId seven = new($"github:{Repository}", "7");
-        Fin<WorkItem> read;
 
         // Act
-        read = await issues.Read(seven, TestContext.Current.CancellationToken);
+        Fin<WorkItem> read = await issues.Read(seven, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.StartsWith("Pipeline stage 1", AssertSuccess(read).Title, StringComparison.Ordinal);
@@ -42,10 +41,9 @@ public sealed class GitHubIssuesLiveTest
     {
         // Arrange
         IWorkSupplying issues = new GitHubIssues(new SystemProcessRunner(), Options);
-        Fin<IReadOnlyList<WorkItemId>> ready;
 
         // Act
-        ready = await issues.ListReady(TestContext.Current.CancellationToken);
+        Fin<IReadOnlyList<WorkItemId>> ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
         _ = AssertSuccess(ready);

@@ -22,10 +22,9 @@ public sealed class GitHubPullRequestsTest
         // Arrange
         this.Responds(Succeeded($"{Address}\n"), Succeeded(""));
         IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
-        Fin<string> proposed;
 
         // Act
-        proposed = await pullRequests.Propose(Proposal, TestContext.Current.CancellationToken);
+        Fin<string> proposed = await pullRequests.Propose(Proposal, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(Address, AssertSuccess(proposed));
@@ -48,10 +47,9 @@ public sealed class GitHubPullRequestsTest
         // Arrange
         this.Responds(new ProcessOutcome(1, "", "no commits", false));
         IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
-        Fin<string> proposed;
 
         // Act
-        proposed = await pullRequests.Propose(Proposal, TestContext.Current.CancellationToken);
+        Fin<string> proposed = await pullRequests.Propose(Proposal, TestContext.Current.CancellationToken);
 
         // Assert
         _ = Assert.IsType<CommandFailed>(AssertFailure(proposed));
@@ -64,10 +62,9 @@ public sealed class GitHubPullRequestsTest
         // Arrange
         this.Responds(Succeeded(Address), new ProcessOutcome(1, "", "auto-merge is disabled", false));
         IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
-        Fin<string> proposed;
 
         // Act
-        proposed = await pullRequests.Propose(Proposal, TestContext.Current.CancellationToken);
+        Fin<string> proposed = await pullRequests.Propose(Proposal, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(

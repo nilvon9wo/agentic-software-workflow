@@ -33,10 +33,9 @@ public sealed class ClaudeOutputReaderTest
     {
         // Arrange
         ProcessOutcome outcome = new(-1, "", "", true);
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         _ = Assert.IsType<AgentTimedOut>(AssertFailure(result));
@@ -47,10 +46,9 @@ public sealed class ClaudeOutputReaderTest
     {
         // Arrange
         ProcessOutcome outcome = Finished(Success, CompleteEnvelope);
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         AgentResult answer = AssertSuccess(result);
@@ -72,10 +70,9 @@ public sealed class ClaudeOutputReaderTest
     {
         // Arrange
         ProcessOutcome outcome = Finished(Success, CompleteEnvelope);
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         Assert.Equal(Prelude.Some("{ \"answer\": \"ok\" }"), AssertSuccess(result).StructuredOutputJson);
@@ -86,10 +83,9 @@ public sealed class ClaudeOutputReaderTest
     {
         // Arrange
         ProcessOutcome outcome = Finished(Success, """{ "is_error": false }""");
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         AgentResult answer = AssertSuccess(result);
@@ -119,10 +115,9 @@ public sealed class ClaudeOutputReaderTest
             }
             """;
         ProcessOutcome outcome = Finished(Success, envelope);
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         Assert.Equal(["Bash", "{ \"unexpected\": true }"], AssertSuccess(result).DeniedTools);
@@ -134,10 +129,9 @@ public sealed class ClaudeOutputReaderTest
         // Arrange
         const string envelope = """{ "is_error": false, "permission_denials": [ { "tool_name": 7 }, "Edit" ] }""";
         ProcessOutcome outcome = Finished(Success, envelope);
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         Assert.Equal(["{ \"tool_name\": 7 }", "\"Edit\""], AssertSuccess(result).DeniedTools);
@@ -149,10 +143,9 @@ public sealed class ClaudeOutputReaderTest
         // Arrange
         const string envelope = """{ "is_error": true, "subtype": "error_max_turns", "result": "out of turns" }""";
         ProcessOutcome outcome = Finished(Failure, envelope);
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         Assert.Equal(new AgentReportedError("error_max_turns", "out of turns"), AssertFailure(result));
@@ -163,10 +156,9 @@ public sealed class ClaudeOutputReaderTest
     {
         // Arrange
         ProcessOutcome outcome = Finished(Success, """{ "is_error": true }""");
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         Assert.Equal("The agent reported an error (unknown): ", AssertFailure(result).Message);
@@ -177,10 +169,9 @@ public sealed class ClaudeOutputReaderTest
     {
         // Arrange
         ProcessOutcome outcome = Finished(Success, "Hello!");
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         _ = Assert.IsType<AgentOutputMalformed>(AssertFailure(result));
@@ -191,10 +182,9 @@ public sealed class ClaudeOutputReaderTest
     {
         // Arrange
         ProcessOutcome outcome = Finished(Success, "null");
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         Assert.Equal(
@@ -208,10 +198,9 @@ public sealed class ClaudeOutputReaderTest
     {
         // Arrange
         ProcessOutcome outcome = new(Failure, "", "Not logged in", false);
-        Fin<AgentResult> result;
 
         // Act
-        result = ClaudeOutputReader.Read(outcome, Timeout);
+        Fin<AgentResult> result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
         Assert.Equal(new AgentProcessFailed(1, "Not logged in"), AssertFailure(result));

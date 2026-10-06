@@ -22,10 +22,11 @@ def test_run_actionlint_when_a_workflow_is_wrong_reports_each_error(
     report = json.dumps(ACTIONLINT_REPORT)
     tool = a_tool_printing(report, exit_code=1)
     monkeypatch.setattr(workflow_gate, "execute", tool)
-    result: GateResult
 
     # Act
-    result = workflow_gate.run_actionlint(a_target(workflow_paths=[CI]))
+    result: GateResult = workflow_gate.run_actionlint(
+        a_target(workflow_paths=[CI]),
+    )
 
     # Assert
     assert result.findings == [

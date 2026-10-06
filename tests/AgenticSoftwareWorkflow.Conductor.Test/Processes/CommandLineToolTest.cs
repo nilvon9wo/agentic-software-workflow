@@ -15,10 +15,9 @@ public sealed class CommandLineToolTest
         // Arrange
         this.Responds(new ProcessOutcome(0, "output", "", false));
         CommandLineTool git = new(this._processes, "git", "/repository");
-        Fin<string> result;
 
         // Act
-        result = await git.Run(["status"], TestContext.Current.CancellationToken);
+        Fin<string> result = await git.Run(["status"], TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("output", AssertSuccess(result));
@@ -48,10 +47,9 @@ public sealed class CommandLineToolTest
         // Arrange
         this.Responds(new ProcessOutcome(128, "", " fatal: not a git repository\n", false));
         CommandLineTool git = new(this._processes, "git", "/repository");
-        Fin<string> result;
 
         // Act
-        result = await git.Run(["worktree", "add", "-b", "branch"], TestContext.Current.CancellationToken);
+        Fin<string> result = await git.Run(["worktree", "add", "-b", "branch"], TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(
@@ -66,10 +64,9 @@ public sealed class CommandLineToolTest
         // Arrange
         this.Responds(new ProcessOutcome(-1, "", "", true));
         CommandLineTool git = new(this._processes, "git", "/repository");
-        Fin<string> result;
 
         // Act
-        result = await git.Run(["fetch"], TestContext.Current.CancellationToken);
+        Fin<string> result = await git.Run(["fetch"], TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("'git fetch' exited with code -1: timed out", AssertFailure(result).Message);

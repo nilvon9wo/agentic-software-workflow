@@ -34,7 +34,7 @@ AgentTask task = new(reviewer, "Review the change.", "/repository", TimeSpan.Fro
 IAgentic runner = new ClaudeCodeAgentRunner(processRunner);
 
 // Act
-result = await runner.Run(task, cancellationToken);
+Fin<AgentResult> result = await runner.Run(task, cancellationToken);
 
 // Assert
 string outcome = result.Match(

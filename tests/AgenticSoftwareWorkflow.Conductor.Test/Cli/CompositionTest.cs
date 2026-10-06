@@ -16,10 +16,9 @@ public sealed class CompositionTest
             ["maintainer"],
             new GitIdentity("repository-bot", "bot@example.com")
         );
-        SpecifyCommand command;
 
         // Act
-        command = Composition.CreateSpecifyCommand(settings, "/repository");
+        SpecifyCommand command = Composition.CreateSpecifyCommand(settings, "/repository");
 
         // Assert
         Assert.NotNull(command);
@@ -28,11 +27,8 @@ public sealed class CompositionTest
     [Fact]
     public async Task Main_WhenGivenNoArguments_ExitsWithAUsageError()
     {
-        // Arrange
-        int exitCode;
-
         // Act
-        exitCode = await Program.Main([]);
+        int exitCode = await Program.Main([]);
 
         // Assert
         Assert.Equal(CommandLine.UsageError, exitCode);

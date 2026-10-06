@@ -24,10 +24,9 @@ public sealed class SystemProcessRunnerTest
     {
         // Arrange
         ProcessRequest request = Request(["echo"], "hello from stdin", Generous);
-        ProcessOutcome outcome;
 
         // Act
-        outcome = await this._runner.Run(request, TestContext.Current.CancellationToken);
+        ProcessOutcome outcome = await this._runner.Run(request, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(new ProcessOutcome(0, "hello from stdin", "", false), outcome);
@@ -38,10 +37,9 @@ public sealed class SystemProcessRunnerTest
     {
         // Arrange
         ProcessRequest request = Request(["fail", "3"], "", Generous);
-        ProcessOutcome outcome;
 
         // Act
-        outcome = await this._runner.Run(request, TestContext.Current.CancellationToken);
+        ProcessOutcome outcome = await this._runner.Run(request, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(new ProcessOutcome(3, "", "failed", false), outcome);
@@ -52,10 +50,9 @@ public sealed class SystemProcessRunnerTest
     {
         // Arrange
         ProcessRequest request = Request(["hang"], "", Brief);
-        ProcessOutcome outcome;
 
         // Act
-        outcome = await this._runner.Run(request, TestContext.Current.CancellationToken);
+        ProcessOutcome outcome = await this._runner.Run(request, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(new ProcessOutcome(-1, "", "", true), outcome);

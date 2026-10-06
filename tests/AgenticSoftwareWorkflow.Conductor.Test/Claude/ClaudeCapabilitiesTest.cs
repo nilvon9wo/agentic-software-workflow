@@ -11,11 +11,8 @@ public sealed class ClaudeCapabilitiesTest
     [InlineData(CapabilityTier.Strongest, "opus")]
     public void ModelFor_WhenGivenATier_ReturnsItsModelAlias(CapabilityTier tier, string expectedAlias)
     {
-        // Arrange
-        string alias;
-
         // Act
-        alias = ClaudeCapabilities.ModelFor(tier);
+        string alias = ClaudeCapabilities.ModelFor(tier);
 
         // Assert
         Assert.Equal(expectedAlias, alias);
@@ -41,10 +38,9 @@ public sealed class ClaudeCapabilitiesTest
         // Arrange
         AgentTool[] everyCapability =
             [AgentTool.ReadFiles, AgentTool.SearchFiles, AgentTool.EditFiles, AgentTool.RunCommands];
-        IReadOnlyList<string> toolNames;
 
         // Act
-        toolNames = ClaudeCapabilities.ToolNamesFor(everyCapability);
+        IReadOnlyList<string> toolNames = ClaudeCapabilities.ToolNamesFor(everyCapability);
 
         // Assert
         Assert.Equal(["Read", "Grep", "Glob", "Edit", "Write", "Bash"], toolNames);

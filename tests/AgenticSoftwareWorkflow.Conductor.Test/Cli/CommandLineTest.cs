@@ -56,11 +56,8 @@ public sealed class CommandLineTest : IDisposable
     [InlineData("unknown", "7")]
     public async Task Run_WhenTheArgumentsAreNotUnderstood_PrintsUsage(params string[] arguments)
     {
-        // Arrange
-        int exitCode;
-
         // Act
-        exitCode = await this.Run(arguments);
+        int exitCode = await this.Run(arguments);
 
         // Assert
         Assert.Equal(
@@ -74,10 +71,9 @@ public sealed class CommandLineTest : IDisposable
     {
         // Arrange
         string path = Path.Combine(this._root.FullName, "aswf.json");
-        int exitCode;
 
         // Act
-        exitCode = await this.Run(["specify", "7"]);
+        int exitCode = await this.Run(["specify", "7"]);
 
         // Assert
         Assert.Equal(CommandLine.Failed, exitCode);
@@ -93,10 +89,9 @@ public sealed class CommandLineTest : IDisposable
     {
         // Arrange
         await this.WriteSettings("null");
-        int exitCode;
 
         // Act
-        exitCode = await this.Run(["specify", "7"]);
+        int exitCode = await this.Run(["specify", "7"]);
 
         // Assert
         Assert.Equal(CommandLine.Failed, exitCode);
@@ -112,10 +107,9 @@ public sealed class CommandLineTest : IDisposable
     {
         // Arrange
         await this.WriteSettings(Settings);
-        int exitCode;
 
         // Act
-        exitCode = await this.Run(["specify", "7"]);
+        int exitCode = await this.Run(["specify", "7"]);
 
         // Assert
         Assert.Equal(
@@ -140,10 +134,9 @@ public sealed class CommandLineTest : IDisposable
         _ = this._processes
             .Run(Arg.Any<ProcessRequest>(), Arg.Any<CancellationToken>())
             .Returns(new ProcessOutcome(128, "", "fatal", false));
-        int exitCode;
 
         // Act
-        exitCode = await this.Run(["specify", "7"]);
+        int exitCode = await this.Run(["specify", "7"]);
 
         // Assert
         Assert.Equal(

@@ -30,10 +30,11 @@ def test_run_markdownlint_when_rules_are_broken_reports_each_line(
     # Arrange
     tool = a_tool_printing(MARKDOWNLINT_OUTPUT, exit_code=1)
     monkeypatch.setattr(markdown_gates, "execute", tool)
-    result: GateResult
 
     # Act
-    result = markdown_gates.run_markdownlint(a_target(markdown_paths=[README]))
+    result: GateResult = markdown_gates.run_markdownlint(
+        a_target(markdown_paths=[README]),
+    )
 
     # Assert
     assert result.findings == [
@@ -48,10 +49,11 @@ def test_run_lychee_when_a_link_is_broken_reports_its_line(
     # Arrange
     report = json.dumps(LYCHEE_REPORT)
     monkeypatch.setattr(markdown_gates, "execute", a_tool_printing(report))
-    result: GateResult
 
     # Act
-    result = markdown_gates.run_lychee(a_target(markdown_paths=[README]))
+    result: GateResult = markdown_gates.run_lychee(
+        a_target(markdown_paths=[README]),
+    )
 
     # Assert
     assert result.findings == [
@@ -65,10 +67,11 @@ def test_run_lychee_when_every_link_resolves_reports_nothing(
     # Arrange
     report = json.dumps({"error_map": {}})
     monkeypatch.setattr(markdown_gates, "execute", a_tool_printing(report))
-    result: GateResult
 
     # Act
-    result = markdown_gates.run_lychee(a_target(markdown_paths=[README]))
+    result: GateResult = markdown_gates.run_lychee(
+        a_target(markdown_paths=[README]),
+    )
 
     # Assert
     assert result.has_passed

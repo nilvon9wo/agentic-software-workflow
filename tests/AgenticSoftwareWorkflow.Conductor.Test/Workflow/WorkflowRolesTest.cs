@@ -26,10 +26,9 @@ public sealed class WorkflowRolesTest
     {
         // Arrange
         AgentRole judge = RolesByName[roleName];
-        bool canEdit;
 
         // Act
-        canEdit = judge.CanEdit;
+        bool canEdit = judge.CanEdit;
 
         // Assert
         Assert.False(canEdit, $"{roleName} must only read.");
@@ -38,11 +37,8 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Implementer_WhenDefined_CannotReadTheHiddenTests()
     {
-        // Arrange
-        IReadOnlyList<string> unreadable;
-
         // Act
-        unreadable = WorkflowRoles.Implementer.Access.UnreadablePaths;
+        IReadOnlyList<string> unreadable = WorkflowRoles.Implementer.Access.UnreadablePaths;
 
         // Assert
         Assert.Contains(WorkspaceLayout.HiddenTests, unreadable);
@@ -51,11 +47,8 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Implementer_WhenDefined_CannotChangeTheDefinitionOfSuccess()
     {
-        // Arrange
-        IReadOnlyList<string> uneditable;
-
         // Act
-        uneditable = WorkflowRoles.Implementer.Access.UneditablePaths;
+        IReadOnlyList<string> uneditable = WorkflowRoles.Implementer.Access.UneditablePaths;
 
         // Assert
         Assert.Equal(
@@ -67,11 +60,8 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Implementer_WhenDefined_RunsOnlyBuildTestAndFormat()
     {
-        // Arrange
-        IReadOnlyList<string> commands;
-
         // Act
-        commands = WorkflowRoles.Implementer.Access.AllowedCommands;
+        IReadOnlyList<string> commands = WorkflowRoles.Implementer.Access.AllowedCommands;
 
         // Assert
         Assert.Equal(["dotnet build", "dotnet test", "dotnet format"], commands);
@@ -80,11 +70,8 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void TestAuthor_WhenDefined_CannotChangeTheSpecificationOrTheCode()
     {
-        // Arrange
-        IReadOnlyList<string> uneditable;
-
         // Act
-        uneditable = WorkflowRoles.TestAuthor.Access.UneditablePaths;
+        IReadOnlyList<string> uneditable = WorkflowRoles.TestAuthor.Access.UneditablePaths;
 
         // Assert
         Assert.Equal([WorkspaceLayout.Specification, WorkspaceLayout.Source], uneditable);
@@ -93,11 +80,8 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Triage_WhenDefined_IsCheapAndHasNoTools()
     {
-        // Arrange
-        AgentRole triage;
-
         // Act
-        triage = WorkflowRoles.Triage;
+        AgentRole triage = WorkflowRoles.Triage;
 
         // Assert
         Assert.Equal((CapabilityTier.Small, 0), (triage.Tier, triage.Tools.Count));
@@ -106,11 +90,8 @@ public sealed class WorkflowRolesTest
     [Fact]
     public void Arbitrator_WhenDefined_UsesTheStrongestTier()
     {
-        // Arrange
-        CapabilityTier tier;
-
         // Act
-        tier = WorkflowRoles.Arbitrator.Tier;
+        CapabilityTier tier = WorkflowRoles.Arbitrator.Tier;
 
         // Assert
         Assert.Equal(CapabilityTier.Strongest, tier);

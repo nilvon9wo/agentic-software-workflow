@@ -13,10 +13,9 @@ public sealed class AgentRoleTest
             [AgentTool.ReadFiles, AgentTool.EditFiles],
             AgentAccess.ToolsOnly
         );
-        bool canEdit;
 
         // Act
-        canEdit = implementer.CanEdit;
+        bool canEdit = implementer.CanEdit;
 
         // Assert
         Assert.True(canEdit);
@@ -31,10 +30,9 @@ public sealed class AgentRoleTest
             [AgentTool.ReadFiles, AgentTool.SearchFiles],
             AgentAccess.ToolsOnly
         );
-        bool canEdit;
 
         // Act
-        canEdit = reviewer.CanEdit;
+        bool canEdit = reviewer.CanEdit;
 
         // Assert
         Assert.False(canEdit);

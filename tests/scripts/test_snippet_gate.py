@@ -52,10 +52,9 @@ def test_run_snippets_when_a_document_is_stale_reports_it(
 ) -> None:
     # Arrange
     arrange_guide(monkeypatch, tmp_path, rewritten_as=CURRENT)
-    result: GateResult
 
     # Act
-    result = snippet_gate.run_snippets(a_target())
+    result: GateResult = snippet_gate.run_snippets(a_target())
 
     # Assert
     assert result.findings == [
@@ -83,32 +82,25 @@ def test_run_snippets_when_every_document_is_current_passes(
 ) -> None:
     # Arrange
     arrange_guide(monkeypatch, tmp_path, rewritten_as=STALE)
-    result: GateResult
 
     # Act
-    result = snippet_gate.run_snippets(a_target())
+    result: GateResult = snippet_gate.run_snippets(a_target())
 
     # Assert
     assert result.has_passed
 
 
 def test_describe_drift_when_documents_drifted_names_them() -> None:
-    # Arrange
-    description: str
-
     # Act
-    description = snippet_gate.describe_drift([GUIDE])
+    description: str = snippet_gate.describe_drift([GUIDE])
 
     # Assert
     assert "  guide.md\n" in description
 
 
 def test_describe_drift_when_nothing_drifted_is_empty() -> None:
-    # Arrange
-    description: str
-
     # Act
-    description = snippet_gate.describe_drift([])
+    description: str = snippet_gate.describe_drift([])
 
     # Assert
     assert description == ""
