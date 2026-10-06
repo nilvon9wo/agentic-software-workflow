@@ -2,7 +2,6 @@ using AgenticSoftwareWorkflow.Conductor.GitHub;
 using AgenticSoftwareWorkflow.Conductor.Processes;
 using AgenticSoftwareWorkflow.Conductor.Work;
 using LanguageExt;
-using LanguageExt.Common;
 using NSubstitute;
 using static AgenticSoftwareWorkflow.Conductor.Test.Support.FinAssertions;
 
@@ -93,11 +92,7 @@ public sealed class GitHubIssuesTest
         ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
-        Error error = AssertFailure(ready);
-        Assert.Equal(
-            (CommandErrors.FailedCode, "'gh issue list' exited with code 4: not authenticated"),
-            (error.Code, error.Message)
-        );
+        Assert.Equal(new CommandFailed("gh issue list", 4, "not authenticated"), AssertFailure(ready));
     }
 
     [Fact]
@@ -127,7 +122,7 @@ public sealed class GitHubIssuesTest
         ready = await issues.ListReady(TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(WorkErrors.MalformedResponseCode, AssertFailure(ready).Code);
+        _ = Assert.IsType<WorkResponseMalformed>(AssertFailure(ready));
     }
 
     [Fact]
@@ -217,7 +212,8 @@ public sealed class GitHubIssuesTest
         read = await issues.Read(new WorkItemId("jira:PROJECT", "7"), TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal((WorkErrors.ForeignItemCode, 0), (AssertFailure(read).Code, this.Requests().Count));
+        _ = Assert.IsType<ForeignWorkItem>(AssertFailure(read));
+        Assert.Empty(this.Requests());
     }
 
     [Fact]
@@ -257,7 +253,8 @@ public sealed class GitHubIssuesTest
         asked = await issues.Ask(Seven, "Which time zone?", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal((CommandErrors.FailedCode, 1), (AssertFailure(asked).Code, this.Requests().Count));
+        _ = Assert.IsType<CommandFailed>(AssertFailure(asked));
+        _ = Assert.Single(this.Requests());
     }
 
     [Fact]

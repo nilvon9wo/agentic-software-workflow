@@ -54,7 +54,8 @@ public sealed class GitHubPullRequestsTest
         proposed = await pullRequests.Propose(Proposal, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal((CommandErrors.FailedCode, 1), (AssertFailure(proposed).Code, this.Commands().Count));
+        _ = Assert.IsType<CommandFailed>(AssertFailure(proposed));
+        _ = Assert.Single(this.Commands());
     }
 
     [Fact]

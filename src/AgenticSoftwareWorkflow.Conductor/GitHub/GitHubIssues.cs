@@ -96,7 +96,7 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
     private Fin<WorkItemId> RequireOwn(WorkItemId id) =>
         id.Source == this.Source
             ? Fin.Succ(id)
-            : Fin.Fail<WorkItemId>(WorkErrors.ForeignItem(id, this.Source));
+            : Fin.Fail<WorkItemId>(new ForeignWorkItem(id, this.Source));
 
     private WorkItem ToWorkItem(GitHubIssue issue) =>
         new(

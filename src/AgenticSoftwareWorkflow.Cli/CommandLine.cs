@@ -50,7 +50,7 @@ internal static class CommandLine
         );
         return await report.Match(
             Succ: message => Report(output, message, Succeeded),
-            Fail: error => Report(output, $"Failed ({error.Code}): {error.Message}", Failed)
+            Fail: error => Report(output, $"Failed ({error.GetType().Name}): {error.Message}", Failed)
         );
     }
 

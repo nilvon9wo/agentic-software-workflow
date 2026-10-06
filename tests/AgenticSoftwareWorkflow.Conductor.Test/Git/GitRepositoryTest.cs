@@ -51,7 +51,8 @@ public sealed class GitRepositoryTest
         created = await repository.CreateWorkspace("aswf/specify-7", "master", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal((CommandErrors.FailedCode, 1), (AssertFailure(created).Code, this.Commands().Count));
+        _ = Assert.IsType<CommandFailed>(AssertFailure(created));
+        _ = Assert.Single(this.Commands());
     }
 
     [Fact]

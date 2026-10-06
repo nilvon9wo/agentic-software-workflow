@@ -4,7 +4,7 @@ namespace AgenticSoftwareWorkflow.Conductor.Processes;
 
 /// <summary>
 /// A command-line tool (git, gh) run from one directory: its standard output
-/// when it succeeds, or a <see cref="CommandErrors"/> failure naming the
+/// when it succeeds, or a <see cref="CommandFailed"/> failure naming the
 /// command and what it printed when it does not.
 /// </summary>
 public sealed class CommandLineTool(IProcessCapable processes, string executable, string workingDirectory)
@@ -38,10 +38,10 @@ public sealed class CommandLineTool(IProcessCapable processes, string executable
         outcome switch
         {
             { HasTimedOut: true } => Fin.Fail<string>(
-                CommandErrors.Failed(command, TimedOutExitCode, TimedOutMessage)
+                new CommandFailed(command, TimedOutExitCode, TimedOutMessage)
             ),
             { ExitCode: 0 } => Fin.Succ(outcome.StandardOutput),
-            _ => Fin.Fail<string>(CommandErrors.Failed(command, outcome.ExitCode, outcome.StandardError)),
+            _ => Fin.Fail<string>(new CommandFailed(command, outcome.ExitCode, outcome.StandardError)),
         };
 
     /// <summary>

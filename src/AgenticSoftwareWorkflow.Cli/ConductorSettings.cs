@@ -2,7 +2,6 @@ using System.Text.Json;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using JetBrains.Annotations;
 using LanguageExt;
-using LanguageExt.Common;
 
 namespace AgenticSoftwareWorkflow.Cli;
 
@@ -20,7 +19,6 @@ internal sealed record ConductorSettings(
 )
 {
     public const string FileName = "aswf.json";
-    public const int UnreadableCode = 5001;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -30,14 +28,14 @@ internal sealed record ConductorSettings(
         Try<ConductorSettings?> read = Try.lift(
             () => JsonSerializer.Deserialize<ConductorSettings>(File.ReadAllText(path), JsonOptions)
         );
-        return read.ToFin().MapFail(error => Unreadable(path, error.Message)).Bind(settings => Require(settings, path));
+        return read
+            .ToFin()
+            .MapFail(error => new SettingsUnreadable(path, error.Message))
+            .Bind(settings => Require(settings, path));
     }
 
     private static Fin<ConductorSettings> Require(ConductorSettings? settings, string path) =>
         settings is null
-            ? Fin.Fail<ConductorSettings>(Unreadable(path, "the file is the JSON literal null"))
+            ? Fin.Fail<ConductorSettings>(new SettingsUnreadable(path, "the file is the JSON literal null"))
             : Fin.Succ(settings);
-
-    private static Error Unreadable(string path, string reason) =>
-        Error.New(UnreadableCode, $"The conductor's settings at {path} cannot be read: {reason}");
 }

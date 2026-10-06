@@ -21,13 +21,13 @@ internal static class GitHubIssueReader
         Try<T?> deserialize = Try.lift(() => JsonSerializer.Deserialize<T>(json, Options));
         return deserialize
             .ToFin()
-            .MapFail(error => WorkErrors.MalformedResponse(error.Message))
+            .MapFail(error => new WorkResponseMalformed(error.Message))
             .Bind(RequirePresent);
     }
 
     private static Fin<T> RequirePresent<T>(T? value)
         where T : class =>
         value is null
-            ? Fin.Fail<T>(WorkErrors.MalformedResponse(EmptyDocument))
+            ? Fin.Fail<T>(new WorkResponseMalformed(EmptyDocument))
             : Fin.Succ(value);
 }

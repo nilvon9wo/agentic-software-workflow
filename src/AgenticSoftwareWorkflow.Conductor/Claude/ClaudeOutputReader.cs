@@ -2,13 +2,13 @@ using System.Text.Json;
 using AgenticSoftwareWorkflow.Conductor.Agents;
 using AgenticSoftwareWorkflow.Conductor.Processes;
 using LanguageExt;
-using LanguageExt.Common;
 
 namespace AgenticSoftwareWorkflow.Conductor.Claude;
 
 /// <summary>
 /// Turns how a `claude -p` process ended into the agent's result, or into the
-/// <see cref="AgentErrors"/> failure that explains why there is none.
+/// failure (<see cref="AgentTimedOut"/>, <see cref="AgentProcessFailed"/>, …)
+/// that explains why there is none.
 /// </summary>
 internal static class ClaudeOutputReader
 {
@@ -18,7 +18,7 @@ internal static class ClaudeOutputReader
 
     public static Fin<AgentResult> Read(ProcessOutcome outcome, TimeSpan timeout) =>
         outcome.HasTimedOut
-            ? Fin.Fail<AgentResult>(AgentErrors.TimedOut(timeout))
+            ? Fin.Fail<AgentResult>(new AgentTimedOut(timeout))
             : ReadEnvelope(outcome).Bind(ToResult);
 
     private static Fin<ClaudeEnvelope> ReadEnvelope(ProcessOutcome outcome)
@@ -26,7 +26,7 @@ internal static class ClaudeOutputReader
         Fin<ClaudeEnvelope> envelope = Parse(outcome.StandardOutput);
         return outcome.ExitCode == 0
             ? envelope
-            : envelope.MapFail(_ => AgentErrors.ProcessFailed(outcome.ExitCode, outcome.StandardError));
+            : envelope.MapFail(_ => new AgentProcessFailed(outcome.ExitCode, outcome.StandardError));
     }
 
     private static Fin<ClaudeEnvelope> Parse(string standardOutput)
@@ -36,13 +36,13 @@ internal static class ClaudeOutputReader
         );
         return deserialize
             .ToFin()
-            .MapFail(error => AgentErrors.MalformedOutput(error.Message))
+            .MapFail(error => new AgentOutputMalformed(error.Message))
             .Bind(RequirePresent);
     }
 
     private static Fin<ClaudeEnvelope> RequirePresent(ClaudeEnvelope? envelope) =>
         envelope is null
-            ? Fin.Fail<ClaudeEnvelope>(AgentErrors.MalformedOutput(EmptyDocument))
+            ? Fin.Fail<ClaudeEnvelope>(new AgentOutputMalformed(EmptyDocument))
             : Fin.Succ(envelope);
 
     private static Fin<AgentResult> ToResult(ClaudeEnvelope envelope) =>
@@ -50,8 +50,8 @@ internal static class ClaudeOutputReader
             ? Fin.Fail<AgentResult>(ReportedError(envelope))
             : Fin.Succ(Describe(envelope));
 
-    private static Error ReportedError(ClaudeEnvelope envelope) =>
-        AgentErrors.AgentReportedError(envelope.Subtype ?? UnknownErrorKind, envelope.Result ?? string.Empty);
+    private static AgentReportedError ReportedError(ClaudeEnvelope envelope) =>
+        new(envelope.Subtype ?? UnknownErrorKind, envelope.Result ?? string.Empty);
 
     private static AgentResult Describe(ClaudeEnvelope envelope) =>
         new(
