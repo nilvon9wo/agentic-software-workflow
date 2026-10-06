@@ -7,7 +7,9 @@ One definition means "the gates passed" can never mean two different things.
 
 - `model`: what the gates work with (targets, findings, results).
 - `tools`: running external tools and reading their reports.
-- `dotnet_gates`, `layout_gate`, `python_gates`, `shell_gates`: the gates,
-  grouped by the language they check.
+- `repository_files`: which files are the repository's own.
+- `dotnet_gates`, `layout_gate`, `python_gates`, `shell_gates`,
+  `markdown_gates`, `workflow_gate`, `snippet_gate`: the gates, grouped by
+  what they check.
 - `registry`: which gates exist, in the order they run.
 """

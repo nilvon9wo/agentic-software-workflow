@@ -29,10 +29,13 @@ purpose with a reason recorded beside it.
 | `pyright` | pyright, strict mode | Python type errors |
 | `pytest` | pytest + coverage | Python test failures, and line or branch coverage below 100% |
 | `shellcheck` | shellcheck | Shell quoting and portability bugs |
+| `markdownlint` | markdownlint-cli2 | Markdown structure and style, by `.markdownlint-cli2.jsonc` |
+| `lychee` | lychee, offline | Broken relative links and anchors; remote URLs are never fetched, so another site being down cannot fail the gate |
+| `actionlint` | actionlint | GitHub workflow syntax, expressions, and the shell in `run:` steps |
+| `snippets` | `dotnet mdsnippets` | A documentation snippet that no longer matches the tested code it was copied from. The gate puts every document back as it found it: it reports, never edits |
 
-CI also runs `mdsnippets` (every documentation snippet matches the tested code
-it was copied from), `markdownlint`, `lychee` (no broken relative links or
-anchors), and `actionlint` (GitHub workflow files).
+CI runs exactly `scripts/gates.sh` and nothing else, so there is no check that
+only CI can fail. `gates.sh` provisions every tool itself, at pinned versions.
 
 ## What testing the gates revealed
 

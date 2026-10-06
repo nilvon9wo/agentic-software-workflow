@@ -13,18 +13,30 @@ from pathlib import Path
 
 from exit_codes import exit_code_for
 from gates.model import Gate, GateResult, Target
-from gates.registry import PYTHON_TEST_GATE, STATIC_GATES, TEST_GATE
+from gates.registry import (
+    PYTHON_TEST_GATE,
+    SNIPPETS_GATE,
+    STATIC_GATES,
+    TEST_GATE,
+)
+from gates.repository_files import documents, workflows
 from gates.tools import REPOSITORY_ROOT
 
 SCRIPTS = Path("scripts")
 SHELL_SCRIPTS = sorted(SCRIPTS.glob("*.sh"))
-REPOSITORY = Target(
-    dotnet_project=Path("AgenticSoftwareWorkflow.slnx"),
-    csharp_paths=[Path("src"), Path("tests")],
-    python_paths=[SCRIPTS, Path("tests/scripts")],
-    shell_paths=SHELL_SCRIPTS,
-)
-ALL_GATES = (*STATIC_GATES, TEST_GATE, PYTHON_TEST_GATE)
+ALL_GATES = (*STATIC_GATES, SNIPPETS_GATE, TEST_GATE, PYTHON_TEST_GATE)
+
+
+def repository_target() -> Target:
+    """The real code and docs; the canary is never part of it."""
+    return Target(
+        dotnet_project=Path("AgenticSoftwareWorkflow.slnx"),
+        csharp_paths=[Path("src"), Path("tests")],
+        python_paths=[SCRIPTS, Path("tests/scripts")],
+        shell_paths=SHELL_SCRIPTS,
+        markdown_paths=documents(),
+        workflow_paths=workflows(),
+    )
 
 
 def describe_verdict(result: GateResult) -> str:
@@ -69,9 +81,11 @@ def main(arguments: Sequence[str]) -> int:
     Never stops early, so one run shows everything that needs fixing.
     """
     print(f"Running gates in {REPOSITORY_ROOT}", flush=True)
+    gates = select(arguments)
+    repository = repository_target()
     results: list[GateResult] = []
-    for gate in select(arguments):
-        result = gate.run(REPOSITORY)
+    for gate in gates:
+        result = gate.run(repository)
         report(result)
         results.append(result)
     failures = [result for result in results if not result.has_passed]
