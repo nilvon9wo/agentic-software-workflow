@@ -1,76 +1,37 @@
 # Agentic Software Workflow
 
-A deliberately small, from-scratch C#/.NET experiment in deterministic workflow orchestration combined with bounded AI steps.
+Turn a specification into working, tested, documented software with AI workers
+— reliably, with a human involved only where human judgment is needed, and
+within a Claude Pro subscription.
 
-## What this first slice does
+The approach: a small deterministic **conductor** runs the workflow, headless
+**Claude Code** workers do the judgment work in narrowly permitted roles, and
+**quality gates** that cannot be argued with decide whether the work is done.
+GitHub issues are the queue, and the project is built by its own workflow.
 
-```text
-requirement
-    ↓
-Claude: requirements → specification
-    ↓
-Claude: specification → visible + hidden tests
-    ↓
-Claude: specification + visible tests → implementation
-    ↓
-deterministic: build
-    ↓
-deterministic: visible tests
-    ↓
-deterministic: hidden tests
-    ↓
-Claude: read-only code evaluation
+> **Status: foundation.** The quality gates (with a canary proving each one
+> works), CI, and the conductor's first component are in place. The pipeline
+> stages are being built next — see the
+> [issues](https://github.com/nilvon9wo/agentic-software-workflow/issues).
+
+## Documentation
+
+| Page | Covers |
+| --- | --- |
+| [Vision](docs/vision.md) | What this project is ultimately for |
+| [Architecture](docs/how-it-works/architecture.md) | How it works, and why it is built this way |
+| [Quality gates](docs/how-it-works/quality-gates.md) | Every check, what it catches, and how the checks are themselves checked |
+| [Getting started](docs/use/getting-started.md) | Using it today |
+| [Contributing](docs/contribute/README.md) | Standards and local development, for humans and AI alike |
+
+## Quick start
+
+```bash
+git clone https://github.com/nilvon9wo/agentic-software-workflow.git
+cd agentic-software-workflow
+scripts/gates.sh          # run every quality gate (on Windows, from WSL)
 ```
 
-The implementation AI is never given the hidden-test contents by the workflow. The code evaluator is read-only by design: it emits an evaluation artifact rather than modifying source. The current v0 enforces the AI boundary by controlling what artifacts are placed into the implementation prompt; OS-level capability isolation comes later.
+## License
 
-This is intentionally not yet a general-purpose agent framework. The first goal is to make the boundaries observable and then evolve them based on actual use.
-
-## Requirements
-
-- .NET 10 SDK
-- An Anthropic API key
-
-> A Claude consumer subscription and Claude API access are separate billing/access mechanisms. This project currently calls the Anthropic API directly, so it requires API credentials and API billing/credits.
-
-## Configure
-
-PowerShell:
-
-```powershell
-$env:ANTHROPIC_API_KEY = "your-api-key"
-$env:ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
-```
-
-The default model is Haiku 4.5 to keep the first experiments inexpensive. Override `ANTHROPIC_MODEL` when a stronger model is useful.
-
-## Run the framework tests
-
-```powershell
-dotnet test
-```
-
-## Run the first workflow
-
-```powershell
-dotnet run --project src/AgenticWorkflow
-```
-
-Generated artifacts and the test subject appear under `workspace/`.
-
-## Important current limitations
-
-This is intentionally a v0:
-
-- no MCP yet
-- no skills yet
-- no persistent workflow-instance state
-- no resumability
-- no retries or repair loops
-- no human gates
-- no parallel scheduling
-- no formal capability/permission enforcement yet
-- no GitHub integration
-- AI output is JSON-constrained by prompting and lightly parsed rather than using provider-native structured output
-
-Those are upcoming experiments, not accidental omissions.
+[MIT](LICENSE)

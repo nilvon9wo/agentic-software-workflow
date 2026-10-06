@@ -1,0 +1,31 @@
+<Project>
+
+  <!--
+    Without EnforceCodeStyleInBuild, the error-severity IDE0xxx rules in
+    .editorconfig are enforced only by an IDE's live analysis (or
+    `dotnet format`), never by `dotnet build` or CI. The prototype this repo
+    replaced shipped with exactly that gap: every rule said `error`, and the
+    build still passed with zero diagnostics.
+  -->
+  <PropertyGroup>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <LangVersion>latest</LangVersion>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!--
+    One checkout is built from both Windows and WSL (see
+    docs/contribute/local-development.md). Separate output roots per OS stop the
+    two from overwriting each other's restore graphs and binaries.
+  -->
+  <PropertyGroup>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath Condition="'$(OS)' == 'Windows_NT'">$(MSBuildThisFileDirectory).artifacts/windows</ArtifactsPath>
+    <ArtifactsPath Condition="'$(OS)' != 'Windows_NT'">$(MSBuildThisFileDirectory).artifacts/linux</ArtifactsPath>
+  </PropertyGroup>
+
+</Project>
