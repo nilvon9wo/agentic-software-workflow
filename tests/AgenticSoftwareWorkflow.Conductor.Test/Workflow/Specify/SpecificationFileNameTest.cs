@@ -74,5 +74,5 @@ public sealed class SpecificationFileNameTest
         Assert.Equal("8.md", fileName);
     }
 
-    private static WorkItem Item(string title) => new(Eight, title, "", [], []);
+    private static WorkItem Item(string title) => new(Eight, title, "", [], [], false);
 }

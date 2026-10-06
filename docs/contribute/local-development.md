@@ -104,6 +104,12 @@ behalf. It needs, **in WSL**:
   approve the workers' pull requests;
 - `git` pushing through that same account (`gh auth login` sets this up).
 
+The same holds for an AI working interactively (Claude Code) on Windows: there
+`gh` is usually signed in as the maintainer, so its GitHub writes — comments,
+labels, pull requests — go through WSL's `gh` instead. Otherwise they look
+like the maintainer's own, GitHub notifies no one, and its questions could be
+mistaken for answers.
+
 ```bash
 dotnet run --project src/AgenticSoftwareWorkflow.Cli -- specify <issue-number>
 ```

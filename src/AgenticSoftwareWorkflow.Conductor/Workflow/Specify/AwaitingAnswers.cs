@@ -8,7 +8,8 @@ public sealed record AwaitingAnswers(IReadOnlyList<string> Questions) : SpecifyO
 {
     public override TResult Match<TResult>(
         Func<Specified, TResult> specified,
-        Func<AwaitingAnswers, TResult> awaitingAnswers
+        Func<AwaitingAnswers, TResult> awaitingAnswers,
+        Func<StillWaiting, TResult> stillWaiting
     ) =>
         awaitingAnswers(this);
 }

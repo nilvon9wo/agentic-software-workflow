@@ -58,7 +58,9 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
                 cancellationToken
             )
         );
-        return viewed.Bind(GitHubIssueReader.ReadIssue).Map(this.ToWorkItem);
+        Fin<GitHubIssue> issue = viewed.Bind(GitHubIssueReader.ReadIssue);
+        Fin<string> workerLogin = await issue.Then(_ => this.WorkerLogin(cancellationToken));
+        return issue.Bind(read => workerLogin.Map(login => this.ToWorkItem(read, login)));
     }
 
     public async Task<Fin<Unit>> Ask(WorkItemId id, string question, CancellationToken cancellationToken)
@@ -98,20 +100,29 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
             ? Fin.Succ(id)
             : Fin.Fail<WorkItemId>(new ForeignWorkItem(id, this.Source));
 
-    private WorkItem ToWorkItem(GitHubIssue issue) =>
+    private WorkItem ToWorkItem(GitHubIssue issue, string workerLogin) =>
         new(
             this.IdOf(issue.Number),
             issue.Title ?? string.Empty,
             issue.Body ?? string.Empty,
             [.. (issue.Labels ?? []).Select(label => label.Name)],
-            [.. (issue.Comments ?? []).Select(this.ToWorkComment)]
+            [.. (issue.Comments ?? []).Select(comment => this.ToWorkComment(comment, workerLogin))],
+            IsWaiting(issue)
         );
 
-    private WorkComment ToWorkComment(GitHubComment comment)
+    private WorkComment ToWorkComment(GitHubComment comment, string workerLogin)
     {
         string author = comment.Author?.Login ?? UnknownAuthor;
         bool isTrusted = this._options.Maintainers.Contains(author, StringComparer.OrdinalIgnoreCase);
-        return new WorkComment(author, comment.Body ?? string.Empty, isTrusted);
+        bool isFromWorkflow = string.Equals(author, workerLogin, StringComparison.OrdinalIgnoreCase);
+        return new WorkComment(author, comment.Body ?? string.Empty, isTrusted, isFromWorkflow);
+    }
+
+    // Whoever gh is signed in as asked the questions: the workers' account.
+    private async Task<Fin<string>> WorkerLogin(CancellationToken cancellationToken)
+    {
+        Fin<string> printed = await this._gh.Run(["api", "user", "--jq", ".login"], string.Empty, cancellationToken);
+        return printed.Map(login => login.Trim());
     }
 
     private Task<Fin<string>> Edit(

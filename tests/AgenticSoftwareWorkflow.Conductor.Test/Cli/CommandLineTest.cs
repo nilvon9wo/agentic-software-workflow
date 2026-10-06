@@ -33,7 +33,7 @@ public sealed class CommandLineTest : IDisposable
     {
         _ = this._work
             .Read(Arg.Any<WorkItemId>(), Arg.Any<CancellationToken>())
-            .Returns(call => Fin.Succ(new WorkItem(call.Arg<WorkItemId>(), "Title", "Body", [], [])));
+            .Returns(call => Fin.Succ(new WorkItem(call.Arg<WorkItemId>(), "Title", "Body", [], [], false)));
         _ = this._work
             .Ask(Arg.Any<WorkItemId>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Fin.Succ(Unit.Default));

@@ -1,12 +1,15 @@
 namespace AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
 
-/// <summary>The specification was written, at a path relative to the working copy.</summary>
-public sealed record Specified(string SpecificationPath) : SpecifyOutcome
+/// <summary>
+/// The item is still waiting on a maintainer's answer to an earlier question,
+/// so nothing was run: the specifier would only ask again.
+/// </summary>
+public sealed record StillWaiting : SpecifyOutcome
 {
     public override TResult Match<TResult>(
         Func<Specified, TResult> specified,
         Func<AwaitingAnswers, TResult> awaitingAnswers,
         Func<StillWaiting, TResult> stillWaiting
     ) =>
-        specified(this);
+        stillWaiting(this);
 }

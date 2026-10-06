@@ -15,8 +15,18 @@ public sealed class SpecifyStageTest : IDisposable
     private const string Specification = "## Summary\n\nShow the time in UTC.";
 
     private static readonly WorkItemId Seven = new("github:owner/repository", "7");
-    private static readonly WorkItem Item = new(Seven, "Add a clock", "Show the time.", ["ready"], []);
+    private static readonly WorkItem Item = new(Seven, "Add a clock", "Show the time.", ["ready"], [], false);
     private static readonly AgentUsage NoUsage = new(0, 0, 0m, 0, []);
+
+    private static readonly WorkItem Answered = Item with
+    {
+        Comments =
+        [
+            new WorkComment("repository-bot", "Which zone?", false, true),
+            new WorkComment("maintainer", "Use UTC.", true, false),
+        ],
+        IsWaiting = true,
+    };
 
     private readonly IWorkSupplying _work = Substitute.For<IWorkSupplying>();
     private readonly IAgentic _agent = Substitute.For<IAgentic>();
@@ -224,6 +234,71 @@ public sealed class SpecifyStageTest : IDisposable
 
         // Assert
         Assert.Equal(new Specified("spec/PROJECT-12-add-a-clock.md"), AssertSuccess(outcome));
+    }
+
+    [Fact]
+    public async Task Run_WhenTheItemIsStillWaiting_ReportsItWithoutRunningTheSpecifier()
+    {
+        // Arrange
+        _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item with { IsWaiting = true }));
+        SpecifyStage stage = new(this._work, this._agent);
+
+        // Act
+        Fin<SpecifyOutcome> outcome = await stage.Run(
+            Seven,
+            this._workspace.FullName,
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal((new StillWaiting(), 0), (AssertSuccess(outcome), this._agent.ReceivedCalls().Count()));
+    }
+
+    [Fact]
+    public async Task Run_WhenTheItemHasBeenAnswered_ResolvesItBeforeSpecifying()
+    {
+        // Arrange
+        _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Answered));
+        _ = this._work.Resolve(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        SpecifyStage stage = new(this._work, this._agent);
+
+        // Act
+        Fin<SpecifyOutcome> outcome = await stage.Run(
+            Seven,
+            this._workspace.FullName,
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        _ = AssertSuccess(outcome);
+        Received.InOrder(
+            () =>
+            {
+                _ = this._work.Resolve(Seven, Arg.Any<CancellationToken>());
+                _ = this._agent.Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>());
+            }
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenResolvingTheAnsweredItemFails_FailsWithoutRunningTheSpecifier()
+    {
+        // Arrange
+        Error rateLimited = new CommandFailed("gh issue edit", 1, "rate limited");
+        _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Answered));
+        _ = this._work.Resolve(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Fail<Unit>(rateLimited));
+        SpecifyStage stage = new(this._work, this._agent);
+
+        // Act
+        Fin<SpecifyOutcome> outcome = await stage.Run(
+            Seven,
+            this._workspace.FullName,
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal((rateLimited, 0), (AssertFailure(outcome), this._agent.ReceivedCalls().Count()));
     }
 
     public void Dispose() => this._workspace.Delete(recursive: true);
