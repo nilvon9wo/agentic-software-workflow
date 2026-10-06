@@ -1,0 +1,18 @@
+<Project>
+
+  <!--
+    Central package management: every version lives here, once, so an agent
+    adding a reference to one project cannot silently drift it from another.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="coverlet.MTP" Version="10.1.0" />
+    <PackageVersion Include="NSubstitute" Version="6.2.0" />
+    <PackageVersion Include="Xfty.Xunit" Version="1.0.0-beta.12" />
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.1" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <!--
+      Coverage is not an optional CI extra: every `dotnet test`, local or CI,
+      fails below 100% line and branch coverage. Filters live in testconfig.json.
+    -->
+    <TestingPlatformCommandLineArguments>$(TestingPlatformCommandLineArguments) --coverlet --coverlet-threshold 100 --coverlet-threshold-type line --coverlet-threshold-type branch</TestingPlatformCommandLineArguments>
+    <RootNamespace>AgenticSoftwareWorkflow.Conductor.Test</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Xfty.Xunit" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/AgenticSoftwareWorkflow.Conductor/AgenticSoftwareWorkflow.Conductor.csproj" />
+  </ItemGroup>
+
+</Project>

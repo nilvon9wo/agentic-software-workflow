@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AgenticSoftwareWorkflow.Conductor/AgenticSoftwareWorkflow.Conductor.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AgenticSoftwareWorkflow.Conductor.Test/AgenticSoftwareWorkflow.Conductor.Test.csproj" />
+  </Folder>
+</Solution>

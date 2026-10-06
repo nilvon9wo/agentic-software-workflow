@@ -1,6 +1,30 @@
 # Remove the line below if you want to inherit .editorconfig settings from higher directories
 root = true
 
+# Every file, every language: the baseline each language section refines.
+# Linters that ignore .editorconfig (ruff, markdownlint, actionlint) carry the
+# same values in their own config; see docs/contribute/coding-standards.md.
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+# Python: PEP 8 layout; rules live in ruff.toml, types in pyrightconfig.json.
+[*.py]
+indent_size = 4
+
+# YAML (GitHub workflows), JSON, MSBuild XML: two-space structural data.
+[*.{yml,yaml,json,csproj,props,targets,slnx,xml}]
+indent_size = 2
+
+# Markdown: trailing double-space is a hard line break, so it is not "trailing whitespace" here.
+[*.md]
+trim_trailing_whitespace = false
+
 # C# (and, if it's ever added, VB) files
 [*.{cs,vb}]
 
@@ -331,3 +355,9 @@ csharp_wrap_before_invocation_rpar = true
 csharp_wrap_before_declaration_rpar = true
 resharper_wrap_before_invocation_rpar = true
 resharper_wrap_before_declaration_rpar = true
+
+# Tests: the house AAA rule declares the Act's result in Arrange and assigns it
+# in Act, so a test can always point at the single Act line. ReSharper's
+# "join declaration and initializer" suggestion would erase that boundary.
+[tests/**.cs]
+resharper_join_declaration_and_initializer_highlighting = none

@@ -1,0 +1,15 @@
+{
+  // Markdown standards: the counterpart of .editorconfig for docs.
+  "config": {
+    "default": true,
+    // Prose is wrapped near 80 for diffs, but tables, links and generated
+    // snippet blocks legitimately run longer; 120 is the hard ceiling, as in code.
+    "MD013": { "line_length": 120, "tables": false, "code_blocks": false },
+    // mdsnippets emits HTML comment anchors around generated snippets.
+    "MD033": false,
+    // mdsnippets places its anchor tag directly above each generated fence;
+    // the generated block is rewritten on every run, so it cannot be spaced.
+    "MD031": false
+  },
+  "ignores": [".artifacts/**", ".venv-*/**", "**/bin/**", "**/obj/**"]
+}

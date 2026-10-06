@@ -1,6 +1,6 @@
 # Coding Standards
 
-The rules this port's code is held to. They apply to anyone changing this
+The rules this project's code is held to. They apply to anyone changing this
 repo — human or AI. When a change is reviewed, this is the checklist.
 
 **The authoritative style rules:**
@@ -8,8 +8,8 @@ repo — human or AI. When a change is reviewed, this is the checklist.
 - **`.editorconfig`**, at the repo root. Every rule in it is `severity = error`
   on purpose — see [Everything is `error`](#everything-is-error) below.
   `EnforceCodeStyleInBuild=true`, so `dotnet build` fails on most of them;
-  the two it does not run (IDE1006 naming, IDE0130 namespace-folder) are caught
-  by `dotnet format` in CI — see [Quality gates](#quality-gates). Notable rules:
+  what the build cannot check is covered by the other
+  [quality gates](../how-it-works/quality-gates.md). Notable rules:
   IDE0058 (discard unused fluent-return values with `_ =`), IDE0032 (where a
   private field is exposed by a *trivial* public property, collapse the pair to
   a public auto-property), IDE0022 (expression-bodied members where possible),
@@ -26,9 +26,8 @@ repo — human or AI. When a change is reviewed, this is the checklist.
      This is a smell to investigate, not a hard limit to contort code around.
   4. Never more than one expression per line.
   5. Blocks must not be nested more than two deep.
-  6. Never nest expressions. The accepted ceiling is one `Field.Of(...)` inside
-     one call (as in `RecordProvider.FieldConfigLambda`); anything deeper gets
-     a named intermediate.
+  6. Never nest expressions. The accepted ceiling is one simple call inside
+     one call; anything deeper gets a named intermediate.
   7. Use variables or methods to name the results of all complex expressions.
   8. All classes, methods, and variables must be named to communicate
      intentions — never a single letter or abbreviation.
@@ -50,8 +49,8 @@ repo — human or AI. When a change is reviewed, this is the checklist.
   19. Avoid circular dependencies.
 
 This page covers what those two don't: naming, formatting, class structure,
-design principles carried over from the Apex original, and this port's own
-testing conventions.
+design principles, testing conventions, and the equivalent rules for the other
+languages in the repository.
 
 ---
 
@@ -75,7 +74,7 @@ Standard modern C# / .NET-runtime style: `PascalCase` everywhere, except where a
 convention says otherwise.
 
 | Symbol | Style |
-|---|---|
+| --- | --- |
 | types, namespaces, methods, non-private properties & events, type parameters (`TRecord`) | `PascalCase` |
 | interfaces | `IPascalCase` |
 | `const` | `PascalCase` |
@@ -91,17 +90,15 @@ have. The exception is IDE0032's own fix: where a *trivial* public property
 already exposes the field (`public string Name => this._name;`), collapse the
 pair to `public string Name { get; }`.
 
-`dotnet build` does **not** run the naming analyzer (IDE1006) even with
-`EnforceCodeStyleInBuild`; nor IDE0130 (namespace matches folder), which only
-fires for `partial` types split across files. `dotnet format` in CI is the gate
-for both — see [Quality gates](#quality-gates).
+Naming (IDE1006) is enforced by `dotnet build` — verified by the
+[canary](../how-it-works/quality-gates.md#proving-the-gates-work).
 
 ---
 
 ## Formatting
 
 - **Line length: 80 soft, 120 hard.** Never over 120 (`.editorconfig`
-  `max_line_length = 120`; CI checks with `awk 'length>120'`). There is
+  `max_line_length = 120`; Roslyn ignores it, so the `layout` gate enforces it). There is
   essentially always a clearer way to express a line that long.
 - **One expression per line; one variable declaration per line.**
 - **Long strings** are broken and `+`-concatenated across lines, never left to
@@ -110,7 +107,7 @@ for both — see [Quality gates](#quality-gates).
   the statement that opened it — symmetric with the opener, never dangling after
   the last argument. (`.editorconfig`
   `csharp_wrap_before_invocation_rpar` / `_declaration_rpar`, plus the
-  ReSharper equivalents.)
+  ReSharper equivalents; enforced by the `layout` gate.)
 
   ```csharp
   // no
@@ -144,9 +141,7 @@ file; a 120-line class doing two unrelated jobs is not.
 Decision order for a class that is getting large:
 
 1. **Is there a real collaborator to extract** — something with its own name,
-   its own contract, its own tests? Extract it. (`MasterTemplate.Copy` became a
-   copy constructor; `RecordProvider`'s execution pipeline became
-   `RecordProviderPlan` + `RecordProviderExecution`.)
+   its own contract, its own tests? Extract it.
 2. **Is the surface irreducible** — a fluent builder, a forwarding wrapper, a
    visitor, or a set of overloads that must stay consistent with a sibling
    type's? Keep it in one file, or split into concern-partials **whose file and
@@ -159,18 +154,10 @@ Decision order for a class that is getting large:
 
 ## Quality gates
 
-CI (`.github/workflows/ci.yml`) fails the build on any of:
-
-| Gate | Covers |
-|---|---|
-| `dotnet build` (`EnforceCodeStyleInBuild`) | compilation; every `.editorconfig` analyzer that runs in-build (IDE00xx, CA1xxx, …) |
-| `dotnet format Xfty.slnx --verify-no-changes --severity info` | whitespace/formatting; **IDE1006 naming and IDE0130 namespace-folder**, which the build does not run |
-| `dotnet test` (cross-platform slnf) | the full suite, all TFMs |
-| `windows-net472` job | the netstandard2.0 build actually runs (net472) |
-| `verify-doc-examples.py` / `verify-doc-links.py` | every documented code call is exercised by a test; every relative doc link resolves |
-
-Run the same `dotnet format` check locally before pushing — see
-[local-development](local-development.md).
+Every rule that a tool can check is checked by a gate, and every gate is
+proven to fire by the canary. See
+[quality gates](../how-it-works/quality-gates.md) for the list, and
+[local development](local-development.md) for running them.
 
 ---
 
@@ -182,58 +169,31 @@ Run the same `dotnet format` check locally before pushing — see
   wall of near-identical `if (bad) throw` guards collapses the same way — one
   `Assert...`/reject helper, one line per rule.
 - **Flyweight whenever possible.** Interned instances obtained through a
-  `Get(...)` factory (see `LookupKey.Get`, `SharedAncestor.Get`), never `new`.
+  `Get(...)` factory, never `new`.
 - **Explicit over stateful.** Reject registry / mutable-builder APIs where a
-  complete, explicit `Dictionary` plus a stateless static class will do (see
-  `ProviderLookups`). Where a collaborator needs values it does not yet all
+  complete, explicit `Dictionary` plus a stateless static class will do.
+  Where a collaborator needs values it does not yet all
   have, pseudo-closure the ones it has via the constructor; where it needs many
   things at once, a fluent builder is acceptable.
-- **Immutability.** Clone aggressively (`RecordCloneFactory`); derive a new
-  object rather than mutating (`MasterTemplate.Copy()`, `GenerationContext`'s
-  `With*` methods).
+- **Immutability.** Derive a new object rather than mutating — as
+  `ClaudeInvocation`'s `With*` methods do.
 - Remove dead code rather than working around it.
 - **No nested classes, ever.** A private helper scoped to one file (a test
   double, a small worker class) is `file sealed class Foo` at namespace scope
-  in the same `.cs` file — C#'s direct equivalent of Apex's private-inner-
-  class-scoped-to-one-`.cls`-file pattern.
-
----
-
-## C# gotchas specific to this port
-
-- **`init`-only properties** are read-only after construction by design
-  (compile-time only) — `PropertyInfo.SetValue` bypasses that restriction via
-  reflection, which `IdMocker`, `RecordCloneFactory`, and `RecordInjector`
-  all rely on deliberately. Don't "fix" a reflection-based writer to respect
-  `init` — that would break the mechanism.
-- **`PropertyInfo` equality** across two `Field.Of<T>(nameof(...))` calls for
-  the same property is reference-equal (reflection caches `PropertyInfo`
-  instances per type), so it works as a dictionary key without a custom
-  comparer — but a `PropertyInfo` obtained through a *different* route
-  (e.g. `GetType().GetProperty(...)` vs. `typeof(T).GetProperty(...)`) may not
-  be, so this port is consistent about always going through `Field.Of<T>`.
-- **`static` state does not reset between xUnit test methods** the way it did
-  between Apex test methods — see
-  [reference/salesforce-considerations](../reference/salesforce-considerations.md).
-  This is the single most important behavioral difference to keep in mind
-  while writing tests, and it has caused real cross-test-contamination bugs
-  during this port's development (see the fixed-defects list in
-  [porting-history](porting-history.md)).
+  in the same `.cs` file.
 
 ---
 
 ## Testing and coverage
 
-- **Line coverage ~100%**, measured with `coverlet.collector` (see
-  [local-development](local-development.md#measuring-coverage)).
-- **Branch coverage is the real goal** — every guard, `switch`, and ternary,
-  both sides, checked by hand.
-- **The framework must never make a consumer debug it.** Any error that could
-  trace back to XFTY is loud: a clear `XftyConfigurationException` naming the
-  misconfiguration and the fix — never a silent `null` or an opaque downstream
-  exception. Accessors that can miss throw at the call site.
+- **100% line and branch coverage**, enforced by every `dotnet test` — see
+  [coverage standards](coverage-standards.md).
+- **Errors are loud.** A misconfiguration fails at the call site with an
+  exception naming the problem and the fix — never a silent `null` or an
+  opaque downstream exception.
 - **One test class per unit under test**, sitting beside it under the mirrored
-  folder structure in `Xfty.Test/` — `Xfty/Core/Bundle.cs` → `Xfty.Test/Core/BundleTest.cs`.
+  folder structure under `tests/` — `src/X/Claude/ClaudeInvocation.cs` →
+  `tests/X.Test/Claude/ClaudeInvocationTest.cs`.
   Split a class that mixes fundamentally different scenarios (e.g. a fluent-API
   affordance test vs. an end-to-end scenario test).
 - **One behaviour per test method.** A positive and a negative case are two
@@ -244,20 +204,44 @@ Run the same `dotnet format` check locally before pushing — see
   assign it in Act, read it in Assert. Nothing acts in Assert.
 - **AAA comments, verbatim**: `// Arrange`, `// Act`, `// Assert`, and
   `// Sanity Check` (a pre-Act assertion that the arranged state is what the
-  test assumes) — carried over unchanged from the Apex original's convention.
+  test assumes). Expecting a throw, the Act captures the exception
+  (`ArgumentException thrown = Assert.Throws<ArgumentException>(() => ...);`)
+  and the Assert checks it — e.g. its `ParamName`, which proves *which* guard
+  fired.
 - **Names:** `<MethodUnderTest>_When<Condition>_<ExpectedOutcome>` — PascalCase,
-  no `Test` prefix — e.g. `IsSatisfiedBy_WhenTheFieldIsBlank_ReturnsFalse`,
-  `Of_WhenTheListIsNull_Throws`. For an end-to-end / scenario test,
-  `<MethodUnderTest>` is the entry point exercised (`Supply_…`,
-  `SupplyBundle_…`, `Flush_…`).
+  no `Test` prefix — e.g. `WithTools_WhenGivenNoToolNames_Throws`. For an
+  end-to-end / scenario test, `<MethodUnderTest>` is the entry point exercised.
 - **`[Theory]` for data-row variations** where xUnit's parameterisation fits;
-  otherwise a thin `[Fact]` calling a shared private runner that holds the
-  `// Arrange` / `// Act` / `// Assert` is the direct equivalent of the Apex
-  pattern of one data-row test method per case plus a shared runner.
+  otherwise a thin `[Fact]` per case calling a shared private runner that holds
+  the `// Arrange` / `// Act` / `// Assert`.
 - **`Assert.*`, never a bare boolean check standing in for one.** Expecting a
   throw: `Assert.Throws<TheSpecificException>(() => act())` — the *exact*
   type, never a bare `Exception`.
-- **Test doubles are code too.** Don't paste near-identical
-  `IRecordProvider`/`IProviderLookup` implementations across test files — a
-  `file sealed class` fixture per file is fine, but reuse a shared helper
-  method for anything reused within one file.
+- **Test doubles are code too.** Prefer NSubstitute to hand-written doubles;
+  where a hand-written one is clearer, it is a `file sealed class` in the test
+  file, and anything reused within one file is a shared helper method.
+- **Test data**: use [Xfty](https://github.com/nilvon9wo/ExtremeCSharpTestDataFactory)
+  where tests need populated records rather than hand-building them. Problems
+  found with Xfty are reported upstream, not worked around.
+
+---
+
+## Other languages
+
+Every language in this repository — and in projects this workflow builds — is
+held to standards equivalent to these, adapted to its own conventions. Each
+gets the same layers C# has: formatter, linter, type checker where the language
+has one, and a canary proving each gate fires.
+
+| Language | Formatter | Linter / types | Configuration |
+| --- | --- | --- | --- |
+| Python | `ruff format` | `ruff` (every rule enabled), `pyright` strict | `ruff.toml`, `pyrightconfig.json` |
+| Shell | — | `shellcheck` | — |
+| Markdown | — | `markdownlint`, `lychee` (links) | `.markdownlint-cli2.jsonc` |
+| GitHub workflows | — | `actionlint` | — |
+
+The house rules above carry over where they make sense in another language:
+intention-revealing names, short single-purpose functions (ruff caps
+complexity at 5 and nesting at 2), no magic values, explicit over implicit,
+and every suppression justified in a comment beside it. Naming follows each
+language's convention — `snake_case` functions in Python, for example.

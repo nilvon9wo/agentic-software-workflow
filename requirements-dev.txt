@@ -1,0 +1,7 @@
+# Tooling for the quality gates, pinned exactly: the gate scripts parse these
+# tools' output, and that output has changed between minor releases.
+# pyright and shellcheck come from PyPI so no system Node or package manager is
+# needed: `pip install -r requirements-dev.txt` is the whole setup, on any OS.
+ruff==0.16.4
+pyright==1.1.414
+shellcheck-py==0.11.0.1
