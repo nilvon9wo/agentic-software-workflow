@@ -49,6 +49,9 @@ exactly. The rules most often missed:
 - Roles and their access rules live in `WorkflowRoles`. After changing one,
   run `scripts/live-checks.sh` (spends subscription usage; needs `claude` in
   WSL) — a rule never seen to block anything is not proven.
+- Changes to `spec/`, `.github/`, `scripts/maintainer_approval.py`, or
+  `aswf.json` need a maintainer's approval (the "Maintainer approval" check).
+  Never weaken that check or work around it.
 - Report problems found in Xfty (the test data factory) rather than working
   around them.
 - The maintainer is on a Claude Pro plan: work serially, spawn sub-agents only

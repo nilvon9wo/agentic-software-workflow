@@ -1,0 +1,36 @@
+name: Maintainer approval (on review)
+
+# pull_request_target does not fire on reviews, so this re-runs the trusted
+# "Maintainer approval" check when a review is submitted or dismissed. It
+# decides nothing itself: the verdict always comes from the base-branch check.
+# If a pull request tampered with this file, the worst it could do is fail to
+# re-run that check - which leaves the pull request blocked, not merged.
+
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  actions: write
+
+jobs:
+  rerun:
+    name: Re-run maintainer approval
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-run the trusted check for this pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          run_id="$(gh api "repos/${REPOSITORY}/actions/workflows/approval.yml/runs?per_page=50" \
+            --jq "[.workflow_runs[]
+                   | select(any(.pull_requests[]; .number == ${PULL_REQUEST})
+                            or .head_branch == \"${HEAD_REF}\")][0].id // empty")"
+          if [ -z "${run_id}" ]; then
+            echo "No maintainer-approval run found for pull request ${PULL_REQUEST}." >&2
+            exit 1
+          fi
+          gh run rerun "${run_id}" --repo "${REPOSITORY}"

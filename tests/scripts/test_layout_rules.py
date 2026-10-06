@@ -283,6 +283,45 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
         # Assert
         assert reported == []
 
+    def test_visit_functiondef_when_star_parameters_have_lines_reports_nothing(
+        self,
+    ) -> None:
+        # Arrange
+        source = """
+            def run(
+                gate: str,
+                *targets: str,
+                **options: object,
+            ) -> None:
+                pass
+            """
+        reported: Reports
+
+        # Act
+        reported = self.lint(source)
+
+        # Assert
+        assert reported == []
+
+    def test_visit_functiondef_when_star_parameters_share_a_line_reports_it(
+        self,
+    ) -> None:
+        # Arrange
+        source = """
+            def run(
+                gate: str,
+                *targets: str, **options: object,
+            ) -> None:
+                pass
+            """
+        reported: Reports
+
+        # Act
+        reported = self.lint(source)
+
+        # Assert
+        assert reported == [("wrapped-items-layout", 2)]
+
     def test_visit_functiondef_when_parameters_share_a_line_reports_it(
         self,
     ) -> None:
