@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JetBrains.Annotations;
 
 namespace AgenticSoftwareWorkflow.Conductor.Claude;
 
@@ -7,6 +8,7 @@ namespace AgenticSoftwareWorkflow.Conductor.Claude;
 /// The JSON document `claude -p --output-format json` prints when it finishes.
 /// Only the fields the conductor uses are read; the rest are ignored.
 /// </summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)] // created by the JSON deserializer
 internal sealed record ClaudeEnvelope(
     [property: JsonPropertyName("result")] string? Result,
     [property: JsonPropertyName("is_error")] bool IsError,
