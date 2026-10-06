@@ -11,6 +11,12 @@
   <ItemGroup>
     <PackageVersion Include="coverlet.MTP" Version="10.1.0" />
     <!-- Errors as values (Fin/Try). v5 is beta; pinned exactly, upgraded deliberately. -->
+    <!--
+      [PublicAPI] / [UsedImplicitly]: marks code used from outside the repository
+      or by machinery (serialisers, reflection), so it is not mistaken for dead
+      code. Compile-time only: the attributes vanish from the built assembly.
+    -->
+    <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageVersion Include="LanguageExt.Core" Version="5.0.0-beta-77" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="Xfty.Xunit" Version="1.0.0-beta.12" />

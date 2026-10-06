@@ -3,10 +3,11 @@
 How this project turns the [vision](../vision.md) into a working system — and
 why each piece is built (or *not* built) the way it is.
 
-> **Status.** The foundation is in place: the quality gates, their canary, CI,
-> branch protection with auto-merge, and the conductor's agent runner
-> (`IAgentic` with its Claude Code adapter). The pipeline stages below are
-> the design being built next, tracked as GitHub issues.
+> **Status.** In place: the quality gates and their canary, CI, branch
+> protection with auto-merge, the agent runner (`IAgentic` with its Claude
+> Code adapter), the role catalogue with enforced access rules, and the work
+> source (`IWorkSupplying` with its GitHub Issues adapter). Next: the first
+> pipeline stage, issue → specification. Tracked as GitHub issues.
 
 ## The one idea that matters most
 
@@ -130,7 +131,11 @@ as it does.
 
 **Trust.** The repository is public, so anyone can comment. Only comments from
 the maintainers count as answers; everything else is untrusted input, and
-treated as data, never as instructions. This matters: text an AI reads can try
+treated as data, never as instructions. Trust is by explicit login, never by
+GitHub's "collaborator" association — the workers' own bot account is a
+collaborator too, and its questions must never be mistaken for answers. When a
+worker is briefed on an item (`WorkItemBrief`), untrusted comments are left
+out entirely. This matters: text an AI reads can try
 to steer it (prompt injection), and issue comments are text anyone can write.
 
 **Triage.** A human is not needed to triage everything. A triage worker can

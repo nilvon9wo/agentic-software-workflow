@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from gates.model import Finding, GateResult, JsonObject, Target
-from gates.tools import combined_output, execute
+from gates.tools import CompletedTool, combined_output, execute
 
 MSBUILD_DIAGNOSTIC = re.compile(
     r"(?P<path>[^\s(:]+\.cs)\((?P<line>\d+),\d+\): "
@@ -129,5 +129,27 @@ def run_inspect(target: Target) -> GateResult:
         completed = execute(command)
         results = read_sarif_results(report)
     findings = [sarif_finding(result) for result in results]
-    output = combined_output(completed)
+    output = describe_inspection(findings, completed)
     return GateResult("inspect", completed.returncode, findings, output)
+
+
+def describe_finding(finding: Finding) -> str:
+    """One finding as `file:line: rule`."""
+    return f"{finding.file_name}:{finding.line_number}: {finding.rule}"
+
+
+def describe_inspection(
+    findings: Sequence[Finding],
+    completed: CompletedTool,
+) -> str:
+    """The findings, or the tool's own output when it failed outright.
+
+    inspectcode logs JetBrains-internal errors (optional Roslyn components it
+    cannot load) on every run; they say nothing about the code, and burying
+    the findings under them makes a failure hard to read for a human or an AI.
+    """
+    if findings:
+        descriptions = [describe_finding(finding) for finding in findings]
+        return "\n".join(descriptions)
+    else:
+        return combined_output(completed)
