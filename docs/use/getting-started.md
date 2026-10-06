@@ -39,7 +39,7 @@ result = await runner.Run(task, cancellationToken);
 // Assert
 string outcome = result.Match(
     Succ: answer => answer.Text,
-    Fail: error => $"failed ({error.Code}): {error.Message}"
+    Fail: error => $"failed: {error.Message}"
 );
 ```
 <!-- endSnippet -->
