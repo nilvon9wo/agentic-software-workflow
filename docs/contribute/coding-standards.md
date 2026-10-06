@@ -258,8 +258,10 @@ proven to fire by the canary. See
   other inputs) is a second Act in disguise.
 - **The Act is exactly one statement**, and it declares the result it captures
   (`TimeSpan timeout = failure.Timeout;`); the Assert reads it. Nothing acts in
-  Assert. A declaration is not arranging anything, so it never sits in Arrange;
-  when nothing is arranged, there is no `// Arrange`.
+  Assert. A declaration is not arranging anything, so it never sits in Arrange.
+  When a test arranges nothing itself, `// Arrange` still appears, followed by
+  a comment saying why (`// Nothing to arrange: the role catalogue is static.`,
+  `// Arranged in the constructor.`).
 - **AAA comments, verbatim**: `// Arrange`, `// Act`, `// Assert`, and
   `// Sanity Check` (a pre-Act assertion that the arranged state is what the
   test assumes). Expecting a throw, the Act captures the exception

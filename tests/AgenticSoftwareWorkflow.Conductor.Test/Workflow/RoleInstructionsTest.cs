@@ -7,6 +7,9 @@ public sealed class RoleInstructionsTest
     [Fact]
     public void Specifier_WhenLoaded_IsTheEmbeddedSpecifierProcedure()
     {
+        // Arrange
+        // Nothing to arrange: the instructions are embedded at build time.
+
         // Act
         string instructions = RoleInstructions.Specifier;
 
@@ -17,6 +20,9 @@ public sealed class RoleInstructionsTest
     [Fact]
     public void Load_WhenTheInstructionsAreNotEmbedded_ThrowsNamingTheFileAndTheFix()
     {
+        // Arrange
+        // Nothing to arrange: the input is a literal in the Act.
+
         // Act
         InvalidOperationException thrown =
             Assert.Throws<InvalidOperationException>(() => RoleInstructions.Load("missing.md"));
