@@ -40,9 +40,9 @@ public sealed class SpecifyStageTest : IDisposable
         outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(new Specified("spec/7.md"), AssertSuccess(outcome));
+        Assert.Equal(new Specified("spec/7-add-a-clock.md"), AssertSuccess(outcome));
         string written = await File.ReadAllTextAsync(
-            Path.Combine(this._workspace.FullName, "spec", "7.md"),
+            Path.Combine(this._workspace.FullName, "spec", "7-add-a-clock.md"),
             TestContext.Current.CancellationToken
         );
         Assert.Equal(Specification, written);
@@ -199,7 +199,7 @@ public sealed class SpecifyStageTest : IDisposable
         outcome = await stage.Run(nested, this._workspace.FullName, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(new Specified("spec/PROJECT-12.md"), AssertSuccess(outcome));
+        Assert.Equal(new Specified("spec/PROJECT-12-add-a-clock.md"), AssertSuccess(outcome));
     }
 
     public void Dispose() => this._workspace.Delete(recursive: true);
