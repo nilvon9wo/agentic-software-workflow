@@ -42,6 +42,9 @@ public sealed class SpecifyCommand(
     private static string DescribeWaiting(WorkItemId id, AwaitingAnswers awaiting) =>
         $"{id} is waiting on answers to {awaiting.Questions.Count} question(s).";
 
+    private static string DescribeStillWaiting(WorkItemId id) =>
+        $"{id} is still waiting on a maintainer's answer; nothing was run.";
+
     private static string DescribeProposal(WorkItemId id) =>
         $"""
         The specifier role wrote this specification for {id}.
@@ -69,7 +72,8 @@ public sealed class SpecifyCommand(
     ) =>
         outcome.Match(
             specified => this.Propose(id, workspace, specified, cancellationToken),
-            awaiting => Task.FromResult(Fin.Succ(DescribeWaiting(id, awaiting)))
+            awaiting => Task.FromResult(Fin.Succ(DescribeWaiting(id, awaiting))),
+            _ => Task.FromResult(Fin.Succ(DescribeStillWaiting(id)))
         );
 
     private async Task<Fin<string>> Propose(

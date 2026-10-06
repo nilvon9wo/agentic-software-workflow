@@ -14,7 +14,7 @@ public sealed class SpecifyCommandTest : IDisposable
     private const string Address = "https://github.com/owner/repository/pull/9";
 
     private static readonly WorkItemId Seven = new("github:owner/repository", "7");
-    private static readonly WorkItem Item = new(Seven, "Add a clock", "Show the time.", ["ready"], []);
+    private static readonly WorkItem Item = new(Seven, "Add a clock", "Show the time.", ["ready"], [], false);
     private static readonly AgentUsage NoUsage = new(0, 0, 0m, 0, []);
     private static readonly GitIdentity Bot = new("repository-bot", "bot@example.com");
 
@@ -138,6 +138,23 @@ public sealed class SpecifyCommandTest : IDisposable
 
         // Assert
         Assert.Equal("'git worktree remove' exited with code 1: locked", AssertFailure(report).Message);
+    }
+
+    [Fact]
+    public async Task Run_WhenTheItemIsStillWaiting_ReportsThatNothingWasRun()
+    {
+        // Arrange
+        _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item with { IsWaiting = true }));
+        SpecifyCommand command = this.Command();
+
+        // Act
+        Fin<string> report = await command.Run(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            "github:owner/repository#7 is still waiting on a maintainer's answer; nothing was run.",
+            AssertSuccess(report)
+        );
     }
 
     public void Dispose() => this._root.Delete(recursive: true);

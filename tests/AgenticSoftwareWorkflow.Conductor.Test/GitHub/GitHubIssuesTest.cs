@@ -140,10 +140,10 @@ public sealed class GitHubIssuesTest
     }
 
     [Fact]
-    public async Task Read_WhenMaintainersAndOthersHaveCommented_ReadsEachCommentAndTrustsOnlyTheMaintainers()
+    public async Task Read_WhenOthersHaveCommented_TrustsOnlyMaintainersAndMarksTheWorkflowsOwn()
     {
         // Arrange
-        this.Responds(Succeeded(Issue));
+        this.Responds(Succeeded(Issue), Succeeded("repository-bot\n"));
         IWorkSupplying issues = new GitHubIssues(this._processes, Options);
 
         // Act
@@ -152,13 +152,55 @@ public sealed class GitHubIssuesTest
         // Assert
         Assert.Equal(
             [
-                new WorkComment("Maintainer", "Use UTC.", true),
-                new WorkComment("repository-bot", "Which zone?", false),
-                new WorkComment("ghost", "From a deleted account.", false),
-                new WorkComment("maintainer", "", true),
+                new WorkComment("Maintainer", "Use UTC.", true, false),
+                new WorkComment("repository-bot", "Which zone?", false, true),
+                new WorkComment("ghost", "From a deleted account.", false, false),
+                new WorkComment("maintainer", "", true, false),
             ],
             AssertSuccess(read).Comments
         );
+    }
+
+    [Fact]
+    public async Task Read_WhenTheIssueIsLabelledNeedsHuman_IsWaiting()
+    {
+        // Arrange
+        this.Responds(Succeeded("""{ "number": 7, "labels": [ { "name": "needs-human" } ] }"""));
+        IWorkSupplying issues = new GitHubIssues(this._processes, Options);
+
+        // Act
+        Fin<WorkItem> read = await issues.Read(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(AssertSuccess(read).IsWaiting);
+    }
+
+    [Fact]
+    public async Task Read_WhenCalled_AsksGitHubWhichAccountTheWorkersUse()
+    {
+        // Arrange
+        this.Responds(Succeeded(Issue), Succeeded("repository-bot\n"));
+        IWorkSupplying issues = new GitHubIssues(this._processes, Options);
+
+        // Act
+        _ = await issues.Read(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal("api user --jq .login", string.Join(' ', this.Requests()[1].Arguments));
+    }
+
+    [Fact]
+    public async Task Read_WhenTheWorkersAccountCannotBeFound_FailsWithThatError()
+    {
+        // Arrange
+        this.Responds(Succeeded(Issue), new ProcessOutcome(1, "", "not logged in", false));
+        IWorkSupplying issues = new GitHubIssues(this._processes, Options);
+
+        // Act
+        Fin<WorkItem> read = await issues.Read(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = Assert.IsType<CommandFailed>(AssertFailure(read));
     }
 
     [Fact]

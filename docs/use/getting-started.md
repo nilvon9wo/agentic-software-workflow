@@ -71,8 +71,10 @@ For issue 8, the conductor:
 
 A specification defines what the tests and code will be held to, so its pull
 request waits for your approval (`CODEOWNERS` makes `spec/` yours). Answer
-questions in the issue thread; once you remove `needs-human`, run the command
-again and the specifier reads your answers.
+questions in the issue thread, then run the command again. It sees that a
+maintainer has replied since its question, removes `needs-human` and your
+assignment, and the specifier reads your answers. Run it before you have
+replied and it says the item is still waiting, without running the specifier.
 
 ## Next
 

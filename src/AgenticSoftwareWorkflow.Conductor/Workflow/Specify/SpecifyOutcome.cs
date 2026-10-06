@@ -1,6 +1,9 @@
 namespace AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
 
-/// <summary>How the specify stage ended: see <see cref="Specified"/> and <see cref="AwaitingAnswers"/>.</summary>
+/// <summary>
+/// How the specify stage ended: see <see cref="Specified"/>,
+/// <see cref="AwaitingAnswers"/>, and <see cref="StillWaiting"/>.
+/// </summary>
 public abstract record SpecifyOutcome
 {
     /// <summary>
@@ -9,6 +12,7 @@ public abstract record SpecifyOutcome
     /// </summary>
     public abstract TResult Match<TResult>(
         Func<Specified, TResult> specified,
-        Func<AwaitingAnswers, TResult> awaitingAnswers
+        Func<AwaitingAnswers, TResult> awaitingAnswers,
+        Func<StillWaiting, TResult> stillWaiting
     );
 }

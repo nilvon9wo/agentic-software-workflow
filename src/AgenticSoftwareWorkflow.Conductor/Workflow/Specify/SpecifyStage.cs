@@ -34,7 +34,7 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
     )
     {
         Fin<WorkItem> item = await this._work.Read(id, cancellationToken);
-        return await item.Then(read => this.Specify(read, workingDirectory, cancellationToken));
+        return await item.Then(read => this.Begin(read, workingDirectory, cancellationToken));
     }
 
     private static AgentTask SpecifierTask(WorkItem item, string workingDirectory) =>
@@ -92,6 +92,30 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
         _ = Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
         await File.WriteAllTextAsync(fullPath, specification, cancellationToken);
         return Fin.Succ<SpecifyOutcome>(new Specified(relativePath));
+    }
+
+    // An answered item stops waiting before the specifier reads the answers;
+    // an unanswered one is left alone, so no agent run is spent re-asking.
+    private Task<Fin<SpecifyOutcome>> Begin(
+        WorkItem item,
+        string workingDirectory,
+        CancellationToken cancellationToken
+    ) =>
+        item switch
+        {
+            { IsAnswered: true } => this.ResolveThenSpecify(item, workingDirectory, cancellationToken),
+            { IsWaiting: true } => Task.FromResult(Fin.Succ<SpecifyOutcome>(new StillWaiting())),
+            _ => this.Specify(item, workingDirectory, cancellationToken),
+        };
+
+    private async Task<Fin<SpecifyOutcome>> ResolveThenSpecify(
+        WorkItem item,
+        string workingDirectory,
+        CancellationToken cancellationToken
+    )
+    {
+        Fin<Unit> resolved = await this._work.Resolve(item.Id, cancellationToken);
+        return await resolved.Then(_ => this.Specify(item, workingDirectory, cancellationToken));
     }
 
     private async Task<Fin<SpecifyOutcome>> Specify(
