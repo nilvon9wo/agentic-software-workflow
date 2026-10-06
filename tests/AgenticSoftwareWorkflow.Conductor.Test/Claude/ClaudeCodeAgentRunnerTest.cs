@@ -17,7 +17,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     private static readonly AgentRole Reviewer =
         new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles]);
 
-    private readonly IProcessRunner _processRunner = Substitute.For<IProcessRunner>();
+    private readonly IProcessCapable _processRunner = Substitute.For<IProcessCapable>();
 
     public ClaudeCodeAgentRunnerTest() =>
         this._processRunner
@@ -28,7 +28,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     public async Task RunAsync_WhenGivenATask_RunsClaudeWithThePromptOnStandardInput()
     {
         // Arrange
-        IAgentRunner runner = new ClaudeCodeAgentRunner(this._processRunner);
+        IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
         AgentTask task = new(Reviewer, Prompt, WorkingDirectory, Timeout);
 
         // Act
@@ -46,7 +46,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     public async Task RunAsync_WhenTheRoleCannotEdit_GrantsOnlyItsToolsAndAsksForNothing()
     {
         // Arrange
-        IAgentRunner runner = new ClaudeCodeAgentRunner(this._processRunner);
+        IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
         AgentTask task = new(Reviewer, Prompt, WorkingDirectory, Timeout);
 
         // Act
@@ -75,7 +75,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     {
         // Arrange
         AgentRole implementer = new(CapabilityTier.Standard, [AgentTool.EditFiles]);
-        IAgentRunner runner = new ClaudeCodeAgentRunner(this._processRunner);
+        IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
         AgentTask task = new(implementer, Prompt, WorkingDirectory, Timeout);
 
         // Act
@@ -90,7 +90,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     {
         // Arrange
         AgentRole summariser = new(CapabilityTier.Small, []);
-        IAgentRunner runner = new ClaudeCodeAgentRunner(this._processRunner);
+        IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
         AgentTask task = new(summariser, Prompt, WorkingDirectory, Timeout);
 
         // Act
@@ -104,7 +104,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     public async Task RunAsync_WhenTheTaskHasAnOutputSchema_PassesItOn()
     {
         // Arrange
-        IAgentRunner runner = new ClaudeCodeAgentRunner(this._processRunner);
+        IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
         AgentTask task = new AgentTask(Reviewer, Prompt, WorkingDirectory, Timeout)
             .WithOutputSchema("{\"type\":\"object\"}");
 
@@ -119,7 +119,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     public async Task RunAsync_WhenGivenAnExecutable_RunsThatExecutable()
     {
         // Arrange
-        IAgentRunner runner = new ClaudeCodeAgentRunner(this._processRunner, "/opt/claude/bin/claude");
+        IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner, "/opt/claude/bin/claude");
         AgentTask task = new(Reviewer, Prompt, WorkingDirectory, Timeout);
 
         // Act
@@ -133,7 +133,7 @@ public sealed class ClaudeCodeAgentRunnerTest
     public async Task RunAsync_WhenClaudeSucceeds_ReturnsItsAnswer()
     {
         // Arrange
-        IAgentRunner runner = new ClaudeCodeAgentRunner(this._processRunner);
+        IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
         AgentTask task = new(Reviewer, Prompt, WorkingDirectory, Timeout);
         Fin<AgentResult> result;
 
@@ -148,14 +148,14 @@ public sealed class ClaudeCodeAgentRunnerTest
     public async Task RunAsync_WhenUsedAsDocumented_ReturnsTheAnswerOrTheReason()
     {
         // Arrange
-        IProcessRunner processRunner = this._processRunner;
+        IProcessCapable processRunner = this._processRunner;
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         Fin<AgentResult> result;
 
         // begin-snippet: run-an-agent
         AgentRole reviewer = new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles]);
         AgentTask task = new(reviewer, "Review the change.", "/repository", TimeSpan.FromMinutes(5));
-        IAgentRunner runner = new ClaudeCodeAgentRunner(processRunner);
+        IAgentic runner = new ClaudeCodeAgentRunner(processRunner);
 
         // Act
         result = await runner.RunAsync(task, cancellationToken);

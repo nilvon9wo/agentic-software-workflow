@@ -5,14 +5,14 @@ using LanguageExt;
 namespace AgenticSoftwareWorkflow.Conductor.Claude;
 
 /// <summary>
-/// The Claude Code adapter for <see cref="IAgentRunner"/>: runs each task as a
+/// The Claude Code adapter for <see cref="IAgentic"/>: runs each task as a
 /// headless `claude -p` process, so the work draws on a Claude subscription
 /// rather than a pay-per-token API.
 /// </summary>
-public sealed class ClaudeCodeAgentRunner(IProcessRunner processRunner, string executable = "claude")
-    : IAgentRunner
+public sealed class ClaudeCodeAgentRunner(IProcessCapable processRunner, string executable = "claude")
+    : IAgentic
 {
-    private readonly IProcessRunner _processRunner = processRunner;
+    private readonly IProcessCapable _processRunner = processRunner;
     private readonly string _executable = executable;
 
     public async Task<Fin<AgentResult>> RunAsync(AgentTask task, CancellationToken cancellationToken)

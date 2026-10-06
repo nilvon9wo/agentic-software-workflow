@@ -4,7 +4,7 @@ namespace AgenticSoftwareWorkflow.Conductor.Processes;
 /// The port through which the conductor starts external processes, so that the
 /// logic deciding what to run is tested without running anything.
 /// </summary>
-public interface IProcessRunner
+public interface IProcessCapable
 {
     /// <summary>Runs the process to completion, or stops it at its timeout.</summary>
     /// <exception cref="System.ComponentModel.Win32Exception">

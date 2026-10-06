@@ -48,7 +48,10 @@ repo — human or AI. When a change is reviewed, this is the checklist.
      intentions — never a single letter or abbreviation.
   9. Always use nouns to name objects.
   10. Always use verbs to name methods.
-  11. Always use adjectives to name interfaces.
+  11. Always use adjectives to name interfaces, prefixed with `I` as C#
+      convention requires — `IDisposable`, `IAgentic`, `IProcessCapable`. An
+      interface describes what its implementers *are able to do*; nouns name
+      the classes that do it.
   12. Always name booleans like `isSomething`, `wasSomething`, `hasSomething`,
       etc.
   13. Always use the keyword `this`, except to reference static members.

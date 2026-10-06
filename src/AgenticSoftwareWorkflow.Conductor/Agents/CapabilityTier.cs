@@ -2,7 +2,7 @@ namespace AgenticSoftwareWorkflow.Conductor.Agents;
 
 /// <summary>
 /// How capable a model a role needs, independent of any vendor. Each
-/// <see cref="IAgentRunner"/> maps tiers to its own models, so a role never
+/// <see cref="IAgentic"/> maps tiers to its own models, so a role never
 /// names a model and swapping providers never touches the workflow.
 /// </summary>
 public enum CapabilityTier

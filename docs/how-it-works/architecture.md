@@ -5,7 +5,7 @@ why each piece is built (or *not* built) the way it is.
 
 > **Status.** The foundation is in place: the quality gates, their canary, CI,
 > branch protection with auto-merge, and the conductor's agent runner
-> (`IAgentRunner` with its Claude Code adapter). The pipeline stages below are
+> (`IAgentic` with its Claude Code adapter). The pipeline stages below are
 > the design being built next, tracked as GitHub issues.
 
 ## The one idea that matters most
@@ -31,7 +31,7 @@ Everything below is machinery for those two ideas.
 | **Conductor** | The small C# program that runs the workflow. It decides *what* runs next; models never do. | Yes |
 | **Role** | A job description for one model run: model, permitted tools, permission mode, settings, and skill. | Configuration |
 | **Worker** | One AI run playing one role, on one task, then exiting — today a headless Claude Code run (`claude -p`). | No |
-| **Port** | An interface the conductor depends on instead of a vendor: `IAgentRunner` (who does the AI work), `IWorkSource` (where work and answers come from). Claude Code and GitHub are adapters behind them. | Yes |
+| **Port** | An interface the conductor depends on instead of a vendor: `IAgentic` (who does the AI work), `IWorkSupplying` (where work and answers come from). Claude Code and GitHub are adapters behind them. | Yes |
 | **Skill** | Reusable *how-to* instructions (`.claude/skills/*/SKILL.md`), loaded on demand. Advice, not enforcement. | — |
 | **Hook** | A script Claude Code runs at lifecycle events (e.g. before a tool call). It can *block* actions. Enforcement, not advice. | Yes |
 | **Tool** | A capability a worker can invoke: read, edit, run a command. Built into Claude Code. | Yes |
@@ -52,8 +52,8 @@ exists:
 
 | Need | Off-the-shelf choice | Why |
 | --- | --- | --- |
-| Agent runtime, tools, sub-agents, skills, hooks | **Claude Code** (headless `claude -p`), behind `IAgentRunner` | Already does tool calling, context management, and permissions well; included in a Pro subscription |
-| Work queue, human questions, state, audit trail | **GitHub Issues, labels, PRs**, behind `IWorkSource` | Free, durable, visible, and it comes with a UI for the human |
+| Agent runtime, tools, sub-agents, skills, hooks | **Claude Code** (headless `claude -p`), behind `IAgentic` | Already does tool calling, context management, and permissions well; included in a Pro subscription |
+| Work queue, human questions, state, audit trail | **GitHub Issues, labels, PRs**, behind `IWorkSupplying` | Free, durable, visible, and it comes with a UI for the human |
 | CI | **GitHub Actions** | Free for public repositories |
 | C# style and correctness | **Roslyn analyzers + `.editorconfig`**, **`dotnet format`**, **ReSharper CLI `inspectcode`** (free) | Each catches things the others miss — see [quality gates](quality-gates.md) |
 | Coverage | **coverlet** (`coverlet.MTP`) | Enforces a threshold inside `dotnet test` |
@@ -92,12 +92,12 @@ GitHub issue (feature / bug)
 Claude and GitHub are today's choices, not assumptions baked into the
 conductor. The conductor talks to two ports:
 
-- **`IAgentRunner`** — "run this role on this task and give me its result".
+- **`IAgentic`** — "run this role on this task and give me its result".
   The Claude Code adapter composes a `ClaudeInvocation`; another adapter could
   drive a different agent CLI or a model API, from Anthropic or anyone else.
   Roles name a *capability tier* (small, standard, strongest), and each
   adapter maps tiers to its own models.
-- **`IWorkSource`** — "what work is ready, and what have humans said". GitHub
+- **`IWorkSupplying`** — "what work is ready, and what have humans said". GitHub
   Issues is the first adapter; others (a different tracker, a folder of
   Markdown files, several sources at once) can be added without touching the
   workflow.
@@ -168,7 +168,7 @@ ClaudeInvocation reviewer = ClaudeInvocation.Headless("sonnet")
 The design target is **no spend beyond a Claude Pro subscription**:
 
 - Workers run through Claude Code on the subscription — no pay-per-token API.
-  (Another provider can be plugged in behind `IAgentRunner`.)
+  (Another provider can be plugged in behind `IAgentic`.)
 - Work is **serial by default**. Parallel workers multiply usage, and Pro
   limits are tight.
 - Each role uses the cheapest model that does the job: a small model for
