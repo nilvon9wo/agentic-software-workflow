@@ -7,6 +7,10 @@
 project passes `--coverlet-threshold 100` for both through
 `TestingPlatformCommandLineArguments`, with filters in its `testconfig.json`.
 
+- Code a source generator writes (such as `[GeneratedRegex]`) is excluded
+  from coverage — by its `[GeneratedCode]` attribute and `*.g.cs` file name —
+  because nobody here authors it. `[ExcludeFromCodeCoverage]` is deliberately
+  **not** honoured: hand-written code cannot opt out of the standard.
 - Remove dead code rather than covering it — but first find out *why* it
   looks dead. Code used only from outside the repository is marked, not
   deleted; see the dead-code rule in [coding standards](coding-standards.md#design).

@@ -18,7 +18,6 @@ namespace AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
 /// </remarks>
 public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
 {
-    private const string SpecificationExtension = ".md";
     // GitHub content is the same whichever OS the conductor runs on.
     private const char LineBreak = '\n';
 
@@ -35,11 +34,7 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
     )
     {
         Fin<WorkItem> item = await this._work.Read(id, cancellationToken);
-        Fin<AgentResult> result = await item.Then(
-            read => this._agent.Run(SpecifierTask(read, workingDirectory), cancellationToken)
-        );
-        Fin<SpecifierAnswer> answer = result.Bind(ReadAnswer);
-        return await answer.Then(read => this.ActOn(id, read, workingDirectory, cancellationToken));
+        return await item.Then(read => this.Specify(read, workingDirectory, cancellationToken));
     }
 
     private static AgentTask SpecifierTask(WorkItem item, string workingDirectory) =>
@@ -69,8 +64,6 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
             ? Fin.Fail<SpecifierAnswer>(new SpecifierAnswerUnusable("the answer was the JSON literal null"))
             : Fin.Succ(answer);
 
-    private static string FileNameFor(WorkItemId id) => id.SafeKey + SpecificationExtension;
-
     private static string DescribeQuestions(IReadOnlyList<string> questions)
     {
         StringBuilder comment = new();
@@ -87,21 +80,33 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
     }
 
     private static async Task<Fin<SpecifyOutcome>> WriteSpecification(
-        WorkItemId id,
+        WorkItem item,
         string specification,
         string workingDirectory,
         CancellationToken cancellationToken
     )
     {
-        string relativePath = $"{WorkspaceLayout.SpecificationDirectory}/{FileNameFor(id)}";
-        string fullPath = Path.Combine(workingDirectory, WorkspaceLayout.SpecificationDirectory, FileNameFor(id));
+        string fileName = SpecificationFileName.For(item);
+        string relativePath = $"{WorkspaceLayout.SpecificationDirectory}/{fileName}";
+        string fullPath = Path.Combine(workingDirectory, WorkspaceLayout.SpecificationDirectory, fileName);
         _ = Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
         await File.WriteAllTextAsync(fullPath, specification, cancellationToken);
         return Fin.Succ<SpecifyOutcome>(new Specified(relativePath));
     }
 
+    private async Task<Fin<SpecifyOutcome>> Specify(
+        WorkItem item,
+        string workingDirectory,
+        CancellationToken cancellationToken
+    )
+    {
+        Fin<AgentResult> result = await this._agent.Run(SpecifierTask(item, workingDirectory), cancellationToken);
+        Fin<SpecifierAnswer> answer = result.Bind(ReadAnswer);
+        return await answer.Then(read => this.ActOn(item, read, workingDirectory, cancellationToken));
+    }
+
     private Task<Fin<SpecifyOutcome>> ActOn(
-        WorkItemId id,
+        WorkItem item,
         SpecifierAnswer answer,
         string workingDirectory,
         CancellationToken cancellationToken
@@ -109,9 +114,9 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
         answer switch
         {
             { Outcome: SpecifierAnswer.SpecifiedOutcome, Specification: { Length: > 0 } specification } =>
-                WriteSpecification(id, specification, workingDirectory, cancellationToken),
+                WriteSpecification(item, specification, workingDirectory, cancellationToken),
             { Outcome: SpecifierAnswer.QuestionsOutcome, Questions: { Count: > 0 } questions } =>
-                this.Ask(id, questions, cancellationToken),
+                this.Ask(item.Id, questions, cancellationToken),
             _ => Task.FromResult(
                 Fin.Fail<SpecifyOutcome>(
                     new SpecifierAnswerUnusable($"the outcome '{answer.Outcome}' came without its content")

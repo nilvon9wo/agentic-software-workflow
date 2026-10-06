@@ -4,7 +4,9 @@
       "include": "[AgenticSoftwareWorkflow.*]*,[aswf]*",
       "exclude": "[*.Test]*,[AgenticSoftwareWorkflow.TestProcess]*",
       "format": "cobertura",
-      "excludeAssembliesWithoutSources": "MissingAll"
+      "excludeAssembliesWithoutSources": "MissingAll",
+      "excludeByAttribute": "GeneratedCode,GeneratedCodeAttribute",
+      "excludeByFile": "**/*.g.cs"
     }
   }
 }
