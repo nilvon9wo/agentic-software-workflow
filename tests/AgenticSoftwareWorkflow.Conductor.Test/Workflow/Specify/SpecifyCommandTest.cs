@@ -28,6 +28,7 @@ public sealed class SpecifyCommandTest : IDisposable
     {
         _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item));
         _ = this._work.Ask(Seven, Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
+        _ = this._work.MarkSpecified(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
         _ = this._processes
             .Run(Arg.Any<ProcessRequest>(), Arg.Any<CancellationToken>())
             .Returns(new ProcessOutcome(0, "", "", false));
@@ -70,6 +71,37 @@ public sealed class SpecifyCommandTest : IDisposable
 
         // Assert
         Assert.Equal(["fetch", "worktree", "add", "-c", "push", "worktree", "branch"], this.GitSubcommands());
+    }
+
+    [Fact]
+    public async Task Run_WhenTheSpecificationIsProposed_MarksTheItemSpecified()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        SpecifyCommand command = this.Command();
+
+        // Act
+        _ = await command.Run(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = await this._work.Received(1).MarkSpecified(Seven, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Run_WhenMarkingTheItemSpecifiedFails_ReportsThatFailure()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        _ = this._work
+            .MarkSpecified(Seven, Arg.Any<CancellationToken>())
+            .Returns(Fin.Fail<Unit>(new CommandFailed("gh issue edit", 1, "offline")));
+        SpecifyCommand command = this.Command();
+
+        // Act
+        Fin<string> report = await command.Run(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = Assert.IsType<CommandFailed>(AssertFailure(report));
     }
 
     [Fact]

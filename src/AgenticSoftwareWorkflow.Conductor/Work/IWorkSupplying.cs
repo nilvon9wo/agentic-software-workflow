@@ -29,4 +29,10 @@ public interface IWorkSupplying
 
     /// <summary>Marks a question answered: the item no longer waits on anyone.</summary>
     Task<Fin<Unit>> Resolve(WorkItemId id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Records that the item's specification has been proposed: it is no longer
+    /// ready for specifying, so it is never specified twice.
+    /// </summary>
+    Task<Fin<Unit>> MarkSpecified(WorkItemId id, CancellationToken cancellationToken);
 }

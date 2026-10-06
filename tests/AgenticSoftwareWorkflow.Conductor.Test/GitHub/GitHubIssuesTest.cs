@@ -292,6 +292,24 @@ public sealed class GitHubIssuesTest
     }
 
     [Fact]
+    public async Task MarkSpecified_WhenCalled_ReplacesReadyWithSpecified()
+    {
+        // Arrange
+        this.Responds(Succeeded(""));
+        IWorkSupplying issues = new GitHubIssues(this._processes, Options);
+
+        // Act
+        Fin<Unit> marked = await issues.MarkSpecified(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = AssertSuccess(marked);
+        Assert.Equal(
+            "issue edit 7 --repo owner/repository --remove-label ready --add-label specified",
+            string.Join(' ', this.Requests().Single().Arguments)
+        );
+    }
+
+    [Fact]
     public async Task Resolve_WhenCalled_RemovesTheWaitingLabelAndAssignment()
     {
         // Arrange
