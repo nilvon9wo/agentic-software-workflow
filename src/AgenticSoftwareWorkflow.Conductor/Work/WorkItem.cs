@@ -14,8 +14,13 @@ public sealed record WorkItem(
     bool IsWaiting
 )
 {
-    /// <summary>The comments that count: those written by maintainers.</summary>
-    public IReadOnlyList<WorkComment> TrustedComments => [.. this.Comments.Where(comment => comment.IsTrusted)];
+    /// <summary>
+    /// The comments a worker may read: maintainers' and the workflow's own
+    /// questions, so each answer arrives with what it answers. Anyone else's
+    /// text is left out.
+    /// </summary>
+    public IReadOnlyList<WorkComment> Conversation =>
+        [.. this.Comments.Where(comment => comment.IsTrusted || comment.IsFromWorkflow)];
 
     /// <summary>
     /// Waiting, but a maintainer has replied since the workflow last spoke: the

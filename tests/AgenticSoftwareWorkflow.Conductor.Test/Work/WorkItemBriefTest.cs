@@ -20,7 +20,7 @@ public sealed class WorkItemBriefTest
     }
 
     [Fact]
-    public void Describe_WhenMaintainersReplied_IncludesTheirRepliesInOrder()
+    public void Describe_WhenAMaintainerAnsweredTheWorkflow_IncludesTheQuestionAndTheReplyInOrder()
     {
         // Arrange
         WorkComment question = new("bot", "Which zone?", false, true);
@@ -32,7 +32,8 @@ public sealed class WorkItemBriefTest
 
         // Assert
         Assert.Equal(
-            "# Add a clock\n\nShow the time.\n\n## maintainer replied\n\nUse UTC.\n",
+            "# Add a clock\n\nShow the time.\n\n## The workflow asked\n\nWhich zone?\n\n"
+            + "## maintainer replied\n\nUse UTC.\n",
             brief
         );
     }
