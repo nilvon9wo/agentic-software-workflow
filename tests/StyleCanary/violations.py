@@ -7,3 +7,12 @@ def add(first, second):  # expect: ruff:ANN001
 
 count: int = "three"  # expect: pyright:reportAssignmentType
 spaced = {  "a":1  }  # expect: ruff-format:unformatted
+chosen = 1 if count else 2  # expect: pylint:E9001
+printed = print(len(str(count)))  # expect: pylint:E9002
+
+
+def nested(groups):
+    for group in groups:
+        for item in group:
+            if item:  # expect: pylint:E9003
+                print(item)

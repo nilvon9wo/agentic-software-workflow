@@ -1,0 +1,127 @@
+# Python standards and tooling: the counterpart of .editorconfig, the C#
+# analyzers, and Directory.Build.props. Every exception below carries its
+# reason, exactly as a C# suppression must.
+
+[project]
+name = "agentic-software-workflow-scripts"
+version = "0.0.0"
+requires-python = ">=3.12"
+
+# ---------------------------------------------------------------- ruff --------
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "CPY001",   # parity with C#: .editorconfig sets file_header_template = unset
+    "COM812",   # conflicts with `ruff format` (the formatter owns trailing commas)
+    "D203",     # incompatible with D211; no blank line before a class docstring
+    "D213",     # incompatible with D212; summary goes on the first docstring line
+    "T201",     # these are command-line gates: print() IS their user interface
+    "S603",     # gate scripts exist to run fixed, repo-controlled subprocesses
+    "S607",     # ...found on PATH (dotnet, python), as CI installs them
+    "PLR1702",  # counts try/except as nesting; house_rules E9003 implements the house rule instead
+    # House style writes both branches of a two-way decision out in full
+    # (`if ...: return a` / `else: return b`) and bans conditional expressions;
+    # these rules demand the opposite.
+    "RET505", "RET506", "RET507", "RET508",
+    "SIM108",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/scripts/**" = [
+    "S101",     # pytest's assertion style is a bare assert
+    "INP001",   # pytest discovers test modules without __init__.py
+    "D102",     # a test's name is its specification (<function>_when_<condition>_<outcome>),
+    "D103",     # ...exactly as C# tests carry no XML doc comments
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 5
+
+[tool.ruff.lint.pylint]
+max-branches = 5
+max-returns = 3
+max-args = 5
+
+[tool.ruff.format]
+line-ending = "lf"
+
+# -------------------------------------------------------------- pyright -------
+[tool.pyright]
+include = ["scripts", "tests/scripts"]
+extraPaths = ["scripts", "scripts/lint"]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"
+
+# --------------------------------------------------------------- pylint -------
+# pylint hosts the house-rule checkers (scripts/lint/house_rules.py) and the
+# naming rules ruff lacks; ruff remains the primary linter.
+[tool.pylint.main]
+init-hook = "import sys; sys.path[:0] = ['scripts', 'scripts/lint']"
+load-plugins = [
+    "house_rules",
+    "pylint.extensions.bad_builtin",
+    "pylint.extensions.comparison_placement",
+    "pylint.extensions.for_any_all",
+    "pylint.extensions.no_self_use",
+    "pylint.extensions.overlapping_exceptions",
+    "pylint.extensions.redefined_loop_name",
+    "pylint.extensions.set_membership",
+]
+persistent = false
+
+[tool.pylint.basic]
+# Names must communicate intent: nothing of one or two characters.
+bad-names-rgxs = ["^.{1,2}$"]
+# Private helpers and tests need no docstring: a test's name is its specification.
+no-docstring-rgx = "^(_|test_)"
+include-naming-hint = true
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.design]
+max-args = 5
+max-positional-arguments = 5
+max-branches = 5
+max-returns = 3
+
+[tool.pylint."messages control"]
+disable = [
+    "line-too-long",         # ruff E501 owns line length; one gate per rule
+    "too-many-nested-blocks", # counts try/except; house_rules E9003 implements the house rule instead
+    "no-else-return",         # house style writes both branches of a two-way decision out in full
+    "no-else-raise",          # ...including when one branch raises
+]
+
+# --------------------------------------------------------------- pytest -------
+[tool.pytest.ini_options]
+testpaths = ["tests/scripts"]
+pythonpath = ["scripts", "scripts/lint"]
+addopts = "--strict-markers --cov --cov-report=term-missing"
+
+[tool.coverage.run]
+branch = true
+source = ["scripts"]
+omit = [
+    # The subprocess orchestration modules are exercised end to end by
+    # `gates.sh verify` in CI, not yet by unit tests; tracked in issue #9.
+    "scripts/gates.py",
+    "scripts/run_gates.py",
+    "scripts/verify_gates.py",
+]
+
+[tool.coverage.report]
+fail_under = 100
+exclude_also = [
+    # The script entry-point guard runs only when invoked from a shell; the
+    # main() it calls is tested directly.
+    'if __name__ == "__main__":',
+]
+show_missing = true

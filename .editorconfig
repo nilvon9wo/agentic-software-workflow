@@ -345,6 +345,8 @@ dotnet_diagnostic.CA1816.severity = error
 dotnet_diagnostic.CA1822.severity = error
 dotnet_diagnostic.CA1854.severity = error
 dotnet_diagnostic.CA1859.severity = error
+# Catch only the specific exception you expect; never Exception or a bare catch.
+dotnet_diagnostic.CA1031.severity = error
 
 #### Wrapping (Rider / ReSharper) ####
 #

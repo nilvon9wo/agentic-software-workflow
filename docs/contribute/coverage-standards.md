@@ -7,7 +7,14 @@
 project passes `--coverlet-threshold 100` for both through
 `TestingPlatformCommandLineArguments`, with filters in its `testconfig.json`.
 
-- Remove dead code rather than covering it.
+- Remove dead code rather than covering it — but first find out *why* it
+  looks dead. Code used only from outside the repository is marked, not
+  deleted; see the dead-code rule in [coding standards](coding-standards.md#design).
+- **Why 100%.** For a library that other projects' *tests* depend on — Xfty
+  being the example — a failure must always be traceable to production code
+  or to the tests themselves, never to the framework. Untested branches are
+  exactly where that guarantee breaks. This project holds the same bar for
+  now; any loosening later is a deliberate, documented decision, not drift.
 - Coverage proves code *ran*, not that a test would *notice* if it broke.
   Mutation testing (Stryker.NET) closes that gap and is planned as a gate.
 - Branch coverage counts both sides of every guard, `switch`, and ternary; a
