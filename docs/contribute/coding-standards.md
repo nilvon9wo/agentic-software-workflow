@@ -186,13 +186,25 @@ proven to fire by the canary. See
   unused may be used from outside the repository: the public API of a library
   (Xfty's whole surface is consumed by other projects), reflection, or a
   framework convention. Find out first. Code that is deliberately used only
-  from outside is marked, so tools and reviewers can tell it from dead code:
-  `[PublicAPI]` or `[UsedImplicitly]` from
-  [JetBrains.Annotations](https://www.nuget.org/packages/JetBrains.Annotations)
-  — which the `inspect` gate already honours — and, for a published library's
-  public surface, `PublicAPI.Shipped.txt` via
+  from outside is marked, so tools and reviewers can tell it from dead code,
+  using [JetBrains.Annotations](https://www.nuget.org/packages/JetBrains.Annotations)
+  (which the `inspect` gate honours):
+  - `[PublicAPI]` — part of a library's surface, called by *other projects*.
+  - `[UsedImplicitly]` — called by *machinery* rather than by code: reflection,
+    serialisers, dependency injection, test frameworks, naming conventions.
+
+  Both are used wherever they apply, including in code AI workers generate.
+  A published library's public surface is additionally tracked in
+  `PublicAPI.Shipped.txt` via
   [Microsoft.CodeAnalysis.PublicApiAnalyzers](https://www.nuget.org/packages/Microsoft.CodeAnalysis.PublicApiAnalyzers).
   Code that is truly dead is deleted rather than covered or worked around.
+- **No `ConfigureAwait` noise.** `ConfigureAwait(false)` only matters where a
+  `SynchronizationContext` exists (UI frameworks, legacy ASP.NET). This
+  project's code runs in console processes, where it does nothing — so it is
+  not written. A library destined for hosts that do have one states the
+  intent once, as an assembly-level attribute via
+  [ConfigureAwait.Fody](https://github.com/Fody/ConfigureAwait), rather than
+  at every `await`.
 - **No nested classes, ever.** A private helper scoped to one file (a test
   double, a small worker class) is `file sealed class Foo` at namespace scope
   in the same `.cs` file.
@@ -277,6 +289,14 @@ functions in Python, for example.
 - **Never nest expressions.** One call inside one call is the ceiling, and a
   comprehension counts as a level; name the inner result instead.
 - **Blocks nest at most two deep**, or three when one is a `try`.
+- **80 columns, hard.** At 80 the formatter itself splits boolean chains,
+  keyword arguments, and comprehension clauses onto separate lines; with
+  mandatory trailing commas (COM812) every wrapped call or signature gets one
+  item per line and its closing bracket on a line of its own — the C#
+  wrapping rule. Docstrings and comments are wrapped by hand.
+- **Split modules by intent, never with comment banners.** As with C#
+  classes, a module doing several jobs becomes several modules whose names
+  say what each does (see `scripts/gates/`).
 - Complexity at most 5, at most 5 branches and 3 returns per function, and no
   name shorter than three characters.
 

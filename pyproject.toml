@@ -9,14 +9,20 @@ requires-python = ">=3.12"
 
 # ---------------------------------------------------------------- ruff --------
 [tool.ruff]
-line-length = 120
+# Where this project's own modules live, so imports sort as first-party.
+src = ["scripts", "scripts/lint"]
+# Python's hard limit is the house rule's 80-column target, not its 120-column
+# ceiling: at 80 the formatter itself splits boolean chains, keyword arguments,
+# and comprehension clauses onto separate lines. Together with COM812's
+# trailing commas, every wrapped call or signature gets one item per line and
+# a closing bracket on a line of its own - the C# wrapping rule.
+line-length = 80
 target-version = "py312"
 
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
     "CPY001",   # parity with C#: .editorconfig sets file_header_template = unset
-    "COM812",   # conflicts with `ruff format` (the formatter owns trailing commas)
     "D203",     # incompatible with D211; no blank line before a class docstring
     "D213",     # incompatible with D212; summary goes on the first docstring line
     "T201",     # these are command-line gates: print() IS their user interface
@@ -112,7 +118,7 @@ source = ["scripts"]
 omit = [
     # The subprocess orchestration modules are exercised end to end by
     # `gates.sh verify` in CI, not yet by unit tests; tracked in issue #9.
-    "scripts/gates.py",
+    "scripts/gates/*",
     "scripts/run_gates.py",
     "scripts/verify_gates.py",
 ]

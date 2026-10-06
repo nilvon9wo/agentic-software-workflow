@@ -1,7 +1,7 @@
 # Quality gates
 
 A gate is a deterministic check with a pass/fail verdict. Gates are defined
-once, in [`scripts/gates.py`](../../scripts/gates.py), and run the same way
+once, in [`scripts/gates/`](../../scripts/gates/__init__.py), and run the same way
 everywhere — by a developer, by CI, and by every AI worker before its work is
 accepted:
 

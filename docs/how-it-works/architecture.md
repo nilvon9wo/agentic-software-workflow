@@ -114,6 +114,13 @@ question as a comment on the issue — specific, with the options it sees and
 what each would mean — and adds the `needs-human` label. The conductor moves
 on to work that does not depend on the answer.
 
+**Waiting is visible.** An issue is *waiting on a human* exactly when it
+carries `needs-human` — not merely because humans have commented on it. The
+worker also assigns the issue to the person whose answer it needs, so it
+appears in their own list (`is:open assignee:@me label:needs-human` on
+GitHub). Answering removes both the label and the assignment, so the two
+views never disagree.
+
 **Answering.** The human replies in the issue thread, as in any conversation.
 The conductor notices the new comment, and a worker reads the whole thread.
 It either asks a follow-up (a genuine two-way dialogue) or records the

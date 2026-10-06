@@ -2,8 +2,9 @@
 
 from pathlib import Path
 
-import check_line_layout
 import pytest
+
+import check_line_layout
 from check_line_layout import LayoutViolation
 
 LONG_LINE = "x" * 121
@@ -11,7 +12,11 @@ WRAPPED_CALL_CLOSED_ON_ITS_OWN_LINE = "Call(\n    first,\n    second\n);\n"
 WRAPPED_CALL_CLOSED_AFTER_AN_ARGUMENT = "Call(\n    first,\n    second);\n"
 
 
-def write_source(directory: Path, source: str, file_name: str = "Sample.cs") -> Path:
+def write_source(
+    directory: Path,
+    source: str,
+    file_name: str = "Sample.cs",
+) -> Path:
     """Write C# source to a file and return its path."""
     path = directory / file_name
     path.write_text(source, encoding="utf-8")
@@ -23,7 +28,9 @@ def rules_in(violations: list[LayoutViolation]) -> list[tuple[str, int]]:
     return [(violation.rule, violation.line_number) for violation in violations]
 
 
-def test_check_file_when_a_line_exceeds_the_maximum_reports_it(tmp_path: Path) -> None:
+def test_check_file_when_a_line_exceeds_the_maximum_reports_it(
+    tmp_path: Path,
+) -> None:
     # Arrange
     path = write_source(tmp_path, f"ok\n{LONG_LINE}\n")
     violations: list[LayoutViolation]
@@ -35,7 +42,9 @@ def test_check_file_when_a_line_exceeds_the_maximum_reports_it(tmp_path: Path) -
     assert rules_in(violations) == [("line-length", 2)]
 
 
-def test_check_file_when_a_line_is_exactly_the_maximum_reports_nothing(tmp_path: Path) -> None:
+def test_check_file_when_a_line_is_exactly_the_maximum_reports_nothing(
+    tmp_path: Path,
+) -> None:
     # Arrange
     path = write_source(tmp_path, "x" * 120)
     violations: list[LayoutViolation]
@@ -47,7 +56,9 @@ def test_check_file_when_a_line_is_exactly_the_maximum_reports_nothing(tmp_path:
     assert violations == []
 
 
-def test_check_file_when_a_wrapped_call_closes_on_its_own_line_reports_nothing(tmp_path: Path) -> None:
+def test_check_file_when_a_wrapped_call_closes_on_its_own_line_reports_nothing(
+    tmp_path: Path,
+) -> None:
     # Arrange
     path = write_source(tmp_path, WRAPPED_CALL_CLOSED_ON_ITS_OWN_LINE)
     violations: list[LayoutViolation]
@@ -59,7 +70,9 @@ def test_check_file_when_a_wrapped_call_closes_on_its_own_line_reports_nothing(t
     assert violations == []
 
 
-def test_check_file_when_a_wrapped_call_closes_after_an_argument_reports_it(tmp_path: Path) -> None:
+def test_check_file_when_a_wrapped_call_closes_after_an_argument_reports_it(
+    tmp_path: Path,
+) -> None:
     # Arrange
     path = write_source(tmp_path, WRAPPED_CALL_CLOSED_AFTER_AN_ARGUMENT)
     violations: list[LayoutViolation]
@@ -71,7 +84,9 @@ def test_check_file_when_a_wrapped_call_closes_after_an_argument_reports_it(tmp_
     assert rules_in(violations) == [("wrap-rpar", 3)]
 
 
-def test_check_file_when_a_wrapped_condition_follows_a_control_keyword_reports_nothing(tmp_path: Path) -> None:
+def test_check_file_when_a_control_keyword_condition_wraps_reports_nothing(
+    tmp_path: Path,
+) -> None:
     # Arrange
     path = write_source(tmp_path, "if (first &&\n    second)\n{\n}\n")
     violations: list[LayoutViolation]
@@ -83,7 +98,9 @@ def test_check_file_when_a_wrapped_condition_follows_a_control_keyword_reports_n
     assert violations == []
 
 
-def test_check_file_when_a_wrapped_paren_follows_no_name_reports_nothing(tmp_path: Path) -> None:
+def test_check_file_when_a_wrapped_paren_follows_no_name_reports_nothing(
+    tmp_path: Path,
+) -> None:
     # Arrange
     path = write_source(tmp_path, "int total = (first +\n    second);\n")
     violations: list[LayoutViolation]
@@ -106,7 +123,10 @@ def test_check_file_when_a_wrapped_paren_follows_no_name_reports_nothing(tmp_pat
         "')'",
     ],
 )
-def test_check_file_when_parens_are_inside_a_literal_or_comment_ignores_them(tmp_path: Path, literal: str) -> None:
+def test_check_file_when_parens_are_inside_a_literal_or_comment_ignores_them(
+    tmp_path: Path,
+    literal: str,
+) -> None:
     # Arrange
     path = write_source(tmp_path, f"string text = {literal};\n")
     violations: list[LayoutViolation]
@@ -118,7 +138,9 @@ def test_check_file_when_parens_are_inside_a_literal_or_comment_ignores_them(tmp
     assert violations == []
 
 
-def test_check_file_when_a_close_paren_has_no_opener_ignores_it(tmp_path: Path) -> None:
+def test_check_file_when_a_close_paren_has_no_opener_ignores_it(
+    tmp_path: Path,
+) -> None:
     # Arrange
     path = write_source(tmp_path, ")\n")
     violations: list[LayoutViolation]
@@ -130,7 +152,9 @@ def test_check_file_when_a_close_paren_has_no_opener_ignores_it(tmp_path: Path) 
     assert violations == []
 
 
-def test_check_paths_when_given_a_directory_skips_build_output_and_the_canary(tmp_path: Path) -> None:
+def test_check_paths_when_given_a_directory_skips_build_output_and_the_canary(
+    tmp_path: Path,
+) -> None:
     # Arrange
     for excluded in ("bin", "obj", "StyleCanary"):
         excluded_directory = tmp_path / excluded
@@ -146,7 +170,9 @@ def test_check_paths_when_given_a_directory_skips_build_output_and_the_canary(tm
     assert [violation.path for violation in violations] == [checked]
 
 
-def test_check_paths_when_given_a_file_checks_it_even_inside_the_canary(tmp_path: Path) -> None:
+def test_check_paths_when_given_a_file_checks_it_even_inside_the_canary(
+    tmp_path: Path,
+) -> None:
     # Arrange
     canary_directory = tmp_path / "StyleCanary"
     canary_directory.mkdir()
@@ -160,7 +186,9 @@ def test_check_paths_when_given_a_file_checks_it_even_inside_the_canary(tmp_path
     assert rules_in(violations) == [("line-length", 1)]
 
 
-def test_describe_when_called_formats_the_violation_for_editors_and_logs() -> None:
+def test_describe_when_called_formats_the_violation_for_editors_and_logs() -> (
+    None
+):
     # Arrange
     violation = LayoutViolation(Path("Sample.cs"), 7, "wrap-rpar", "message")
     description: str
@@ -206,7 +234,10 @@ def test_main_when_there_are_violations_prints_them_and_fails(
     exit_code = check_line_layout.main([str(path)])
 
     # Assert
-    assert (exit_code, capsys.readouterr().out) == (1, f"{path}:1: line-length: 121 characters (max 120)\n")
+    assert (exit_code, capsys.readouterr().out) == (
+        1,
+        f"{path}:1: line-length: 121 characters (max 120)\n",
+    )
 
 
 def test_main_when_there_are_no_violations_prints_ok_and_succeeds(
