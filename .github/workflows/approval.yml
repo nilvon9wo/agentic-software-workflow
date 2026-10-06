@@ -1,0 +1,37 @@
+name: Maintainer approval
+
+# A pull request that changes governance (specifications, workflows, this
+# check, or the list of maintainers) may merge only once a maintainer has
+# authored it or approved its current head commit. Every other pull request
+# passes at once. Reasons, risks, and limitations:
+# docs/how-it-works/quality-gates.md#maintainer-approval
+
+on:
+  # pull_request_target runs this workflow, and the checkout below, from the
+  # base branch: a pull request cannot change the rules it is judged by. The
+  # pull request's own code is never checked out.
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    branches: [master]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  approval:
+    name: Maintainer approval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Require a maintainer's approval for governed paths
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+        run: python scripts/maintainer_approval.py "$REPOSITORY" "$PULL_REQUEST"

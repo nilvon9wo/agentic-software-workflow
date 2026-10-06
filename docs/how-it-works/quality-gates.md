@@ -82,14 +82,74 @@ notices when the rule stops being enforced.
 ## How changes reach `master`
 
 `master` is protected by a repository ruleset: every change arrives through a
-pull request, both CI jobs must pass on a branch that is up to date with
-`master`, and force-pushes and deletion are blocked. A pull request with
-auto-merge enabled merges itself the moment the gates are green — except one
-that changes a specification: `CODEOWNERS` makes `spec/` the maintainer's, and
-the ruleset requires a code owner's approval, because a specification defines
-what everything else is held to.
+pull request, every required check must pass on a branch that is up to date
+with `master`, and force-pushes and deletion are blocked. A pull request with
+auto-merge enabled merges itself the moment its checks are green.
 
 The ruleset has **no bypass**, not even for administrators. Workers act through
-the maintainer's GitHub account; a bypass for that account would let a worker
-merge a red pull request, which is exactly what the gates exist to prevent. In
-an emergency the maintainer edits the ruleset itself — a deliberate, visible act.
+accounts with write access; a bypass would let one merge a red pull request,
+which is exactly what the gates exist to prevent. In an emergency the
+maintainer edits the ruleset itself — a deliberate, visible act.
+
+## Maintainer approval
+
+Most changes should merge without a human once the gates pass. A few should
+not: a **specification** defines what the tests and code are held to, and
+**governance** — the workflows, the approval check itself, and `aswf.json`,
+which names the maintainers — defines how the repository runs. A pull request
+that changes any of these needs a maintainer.
+
+The required check **Maintainer approval**
+([`scripts/maintainer_approval.py`](../../scripts/maintainer_approval.py)) passes
+a pull request when:
+
+- it changes no governed path (`spec/`, `.github/`,
+  `scripts/maintainer_approval.py`, `aswf.json`); or
+- a maintainer authored it; or
+- a maintainer's latest review **approves its current head commit**.
+
+### Why a custom check
+
+| Option | Why not |
+| --- | --- |
+| `CODEOWNERS` + "require review from Code Owners" | Tested: with the ruleset requiring zero approvals, GitHub enforces nothing (`reviewDecision` stays empty). `CODEOWNERS` is kept, but only to *request* the maintainer's review automatically. |
+| Require one approval on every pull request | Blocks every worker change on a human, defeating auto-merge; and GitHub forbids approving a pull request authored by your own account. |
+| Required reviewers per path in the ruleset | Assigns teams, which exist only in organisations; this repository belongs to a personal account. |
+
+### How it resists tampering
+
+- **The rules come from `master`.** The check runs on `pull_request_target`,
+  which takes the workflow and the script from the base branch, so a pull
+  request cannot weaken the check that judges it. It never checks out the pull
+  request's code, and its token is read-only.
+- **Reviews re-run it, but cannot decide it.** `pull_request_target` does not
+  fire on reviews, so `approval-on-review.yml` re-runs the trusted check when a
+  review is submitted or dismissed. A pull request could tamper with that
+  file; the worst it could do is fail to re-run the check, which leaves the
+  pull request blocked, not merged.
+- **Approval is of a commit.** Pushing new commits after an approval needs a
+  new approval; a later "changes requested" by the same maintainer overrides
+  their earlier approval.
+- **Governance governs itself.** Changing the check, the workflows, or the
+  list of maintainers is itself a governed change.
+
+### Risks and limitations
+
+- **Authored by a maintainer counts as approved.** Changes made through the
+  maintainer's own account — including those Claude makes on the
+  maintainer's behalf in an interactive session — pass without a separate
+  review. This is deliberate: GitHub cannot let anyone approve their own pull
+  request, and the maintainer directed the change. The workers' bot account
+  is never a maintainer.
+- **A compromised maintainer account defeats it**, as it would any
+  review-based control.
+- **Pull requests from forks** cannot re-run the check automatically on review
+  (their review event runs with a read-only token); a maintainer re-runs the
+  check by hand.
+- **Bootstrapping:** a pull request that *adds* this check is not judged by it
+  — `pull_request_target` uses the base branch, which does not have it yet. The
+  check becomes required only after it is on `master`.
+- **The GitHub interface does not say "review required"**; the failing check's
+  message says what is needed instead.
+- **It trusts GitHub's review record and the `gh` API.** It runs no code of its
+  own beyond reading them.
