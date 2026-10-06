@@ -25,37 +25,12 @@ jobs:
           python-version: "3.12"
 
       # The same entry point developers and AI workers run: one definition of
-      # "the gates passed". It installs the pinned Python tooling and restores
-      # the pinned .NET tools itself.
+      # "the gates passed". It provisions every pinned tool itself - Python,
+      # .NET, Markdown, link and workflow linters - so nothing is checked only
+      # here, and nothing here differs from a local run.
       - name: Prove every gate still catches its canary violations
         run: bash scripts/gates.sh verify
 
       - name: Run every gate against the repository
         run: bash scripts/gates.sh run
 
-      # Doc code blocks are generated from tests (mdsnippets); regenerating must
-      # change nothing, or a doc has drifted from the code it shows.
-      - name: Verify documentation snippets match the tested code
-        run: |
-          dotnet mdsnippets
-          git diff --exit-code -- '*.md'
-
-  docs:
-    name: Documentation and workflow lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Lint Markdown
-        uses: DavidAnson/markdownlint-cli2-action@v24
-        with:
-          globs: "**/*.md"
-
-      - name: Check links (relative links and anchors only; no network)
-        uses: lycheeverse/lychee-action@v2
-        with:
-          args: --offline --include-fragments --no-progress "**/*.md"
-          fail: true
-
-      - name: Lint GitHub workflows
-        uses: rhysd/actionlint@v1.7.12

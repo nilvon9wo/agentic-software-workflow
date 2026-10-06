@@ -1,0 +1,10 @@
+# Workflow canary: deliberately broken. Do not fix it.
+name: Canary
+
+on: push
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ github.no_such_property }}" # expect: actionlint:expression

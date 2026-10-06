@@ -32,6 +32,8 @@ class Target:
     csharp_paths: Sequence[Path]
     python_paths: Sequence[Path]
     shell_paths: Sequence[Path]
+    markdown_paths: Sequence[Path]
+    workflow_paths: Sequence[Path]
 
 
 @dataclass(frozen=True)

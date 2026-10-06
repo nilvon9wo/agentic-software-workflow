@@ -126,9 +126,14 @@ addopts = "--strict-markers --cov --cov-report=term-missing"
 branch = true
 source = ["scripts"]
 omit = [
-    # The subprocess orchestration modules are exercised end to end by
+    # These subprocess orchestration modules are exercised end to end by
     # `gates.sh verify` in CI, not yet by unit tests; tracked in issue #9.
-    "scripts/gates/*",
+    # Every other gate module is unit tested and counts towards coverage.
+    "scripts/gates/dotnet_gates.py",
+    "scripts/gates/layout_gate.py",
+    "scripts/gates/python_gates.py",
+    "scripts/gates/registry.py",
+    "scripts/gates/shell_gates.py",
     "scripts/run_gates.py",
     "scripts/verify_gates.py",
 ]

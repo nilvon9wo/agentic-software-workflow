@@ -9,7 +9,8 @@ missing.
 
 The two test gates are proven separately: a throwaway uncovered function
 is added to the real code, and the suite must then fail its 100% coverage
-threshold.
+threshold. The snippet gate is proven the same way, with a throwaway
+document whose snippet no longer matches the tested code.
 
 Usage: verify_gates.py
 """
@@ -21,7 +22,12 @@ from pathlib import Path
 
 from exit_codes import exit_code_for
 from gates.model import WHOLE_FILE, Finding, Gate, GateResult, Target
-from gates.registry import PYTHON_TEST_GATE, STATIC_GATES, TEST_GATE
+from gates.registry import (
+    PYTHON_TEST_GATE,
+    SNIPPETS_GATE,
+    STATIC_GATES,
+    TEST_GATE,
+)
 from gates.tools import REPOSITORY_ROOT
 
 CANARY_DIRECTORY = Path("tests/StyleCanary")
@@ -30,15 +36,20 @@ CANARY = Target(
     csharp_paths=[CANARY_DIRECTORY / "Violations.cs"],
     python_paths=[CANARY_DIRECTORY / "violations.py"],
     shell_paths=[CANARY_DIRECTORY / "violations.sh"],
+    markdown_paths=[CANARY_DIRECTORY / "violations.md"],
+    workflow_paths=[CANARY_DIRECTORY / "violations.yml"],
 )
 REPOSITORY = Target(
     dotnet_project=Path("AgenticSoftwareWorkflow.slnx"),
     csharp_paths=[],
     python_paths=[],
     shell_paths=[],
+    markdown_paths=[],
+    workflow_paths=[],
 )
+# `//` in C#, `#` in Python, shell and YAML, `<!--` in Markdown.
 EXPECT_MARKER = re.compile(
-    r"(?://|#) expect: (?P<gate>[\w-]+):(?P<rule>[\w-]+)",
+    r"(?://|#|<!--) expect: (?P<gate>[\w-]+):(?P<rule>[\w-]+)",
 )
 UNCOVERED_CSHARP_PATH = Path(
     "src/AgenticSoftwareWorkflow.Conductor/GateCanaryUncovered.cs",
@@ -50,6 +61,16 @@ UNCOVERED_CSHARP = (
     "{\n"
     "    public static int Answer() => 42;\n"
     "}"
+)
+STALE_SNIPPET_PATH = Path("docs/gate-canary-stale-snippet.md")
+STALE_SNIPPET = (
+    "# Stale snippet\n"
+    "\n"
+    "<!-- snippet: run-an-agent -->\n"
+    "```cs\n"
+    "// Not what the test says.\n"
+    "```\n"
+    "<!-- endSnippet -->\n"
 )
 UNCOVERED_PYTHON_PATH = Path("scripts/lint/gate_canary_uncovered.py")
 UNCOVERED_PYTHON = (
@@ -152,6 +173,8 @@ def verify_static_gates() -> bool:
         *CANARY.csharp_paths,
         *CANARY.python_paths,
         *CANARY.shell_paths,
+        *CANARY.markdown_paths,
+        *CANARY.workflow_paths,
     ]
     expectations = [
         expected
@@ -186,9 +209,27 @@ def fails_with_uncovered_code(gate: Gate, path: Path, source: str) -> bool:
     return is_caught
 
 
+def fails_with_stale_snippet() -> bool:
+    """True when the snippet gate fails on a document showing stale code.
+
+    The document is temporary, and in the real repository: one checked in
+    would be rewritten by every real run of `dotnet mdsnippets`.
+    """
+    stale_file = REPOSITORY_ROOT / STALE_SNIPPET_PATH
+    stale_file.write_text(STALE_SNIPPET, encoding="utf-8")
+    try:
+        result = SNIPPETS_GATE.run(REPOSITORY)
+    finally:
+        stale_file.unlink()
+    is_caught = not result.has_passed
+    print(f"snippets gate caught a stale snippet: {is_caught}")
+    return is_caught
+
+
 def main() -> int:
     """Verify every gate; exit 1 if any gate failed to catch its canary."""
     is_static_proven = verify_static_gates()
+    is_snippets_proven = fails_with_stale_snippet()
     is_csharp_coverage_proven = fails_with_uncovered_code(
         TEST_GATE,
         UNCOVERED_CSHARP_PATH,
@@ -201,6 +242,7 @@ def main() -> int:
     )
     is_every_gate_proven = (
         is_static_proven
+        and is_snippets_proven
         and is_csharp_coverage_proven
         and is_python_coverage_proven
     )

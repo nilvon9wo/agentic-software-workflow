@@ -10,6 +10,8 @@ from typing import Any
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 NO_OUTPUT_JSON_LIST = "[]"
 NO_OUTPUT_JSON_OBJECT = "{}"
+# What a shell reports for a command it cannot find.
+COMMAND_NOT_FOUND = 127
 
 type CompletedTool = subprocess.CompletedProcess[str]
 
@@ -27,18 +29,31 @@ def resolve_executable(name: str) -> str:
 
 
 def execute(command: Sequence[str]) -> CompletedTool:
-    """Run a tool from the repository root, capturing all it prints."""
+    """Run a tool from the repository root, capturing all it prints.
+
+    A missing tool is a failed run, not a crash, so its gate fails and says
+    which tool is missing.
+    """
     executable = resolve_executable(command[0])
     arguments = [executable, *command[1:]]
-    return subprocess.run(
-        arguments,
-        cwd=REPOSITORY_ROOT,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            arguments,
+            cwd=REPOSITORY_ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+    except FileNotFoundError:
+        missing = f"{command[0]}: command not found\n"
+        return subprocess.CompletedProcess(
+            arguments,
+            COMMAND_NOT_FOUND,
+            stdout="",
+            stderr=missing,
+        )
 
 
 def combined_output(completed: CompletedTool) -> str:
@@ -56,4 +71,17 @@ def parse_json(text: str, empty_document: str) -> Any:  # noqa: ANN401 - JSON is
     if text.strip():
         return json.loads(text)
     else:
+        return json.loads(empty_document)
+
+
+def parse_json_report(text: str, empty_document: str) -> Any:  # noqa: ANN401 - JSON is untyped until a gate reads it
+    """A tool's JSON report, or an empty one if it printed something else.
+
+    A tool that crashes prints an error instead of its report. Reading that
+    as "nothing reported" is safe because the crash also sets the exit code,
+    which fails the gate on its own.
+    """
+    try:
+        return parse_json(text, empty_document)
+    except json.JSONDecodeError:
         return json.loads(empty_document)
