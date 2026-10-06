@@ -1,0 +1,50 @@
+name: Answered questions
+
+# When a maintainer comments on an issue waiting on them (`needs-human`), the
+# wait is over: remove the label and the maintainers' assignment at once, so
+# the issue no longer shows as waiting - even while the conductor is not
+# running. The conductor makes the same check itself (WorkItem.IsAnswered)
+# when it next reads the issue, so this is a convenience, not the only route.
+#
+# issue_comment always runs this file as it is on the default branch, never a
+# pull request's copy, and no comment text is read - only who wrote it.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  clear:
+    name: Clear needs-human on a maintainer's reply
+    if: >-
+      github.event.issue.pull_request == null
+      && contains(github.event.issue.labels.*.name, 'needs-human')
+    runs-on: ubuntu-latest
+    steps:
+      # Only aswf.json, which names the maintainers.
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: aswf.json
+          sparse-checkout-cone-mode: false
+
+      - name: Remove the label and assignment if a maintainer replied
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+        run: |
+          if ! jq --exit-status --arg login "${COMMENTER}" \
+            '.maintainers | map(ascii_downcase) | index($login | ascii_downcase)' \
+            aswf.json >/dev/null; then
+            echo "${COMMENTER} is not a maintainer; the issue keeps waiting."
+            exit 0
+          fi
+          maintainers="$(jq --raw-output '.maintainers | join(",")' aswf.json)"
+          gh issue edit "${ISSUE}" --repo "${REPOSITORY}" \
+            --remove-label needs-human \
+            --remove-assignee "${maintainers}"
