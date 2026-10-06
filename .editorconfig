@@ -361,5 +361,15 @@ resharper_wrap_before_declaration_rpar = true
 # Tests: the house AAA rule declares the Act's result in Arrange and assigns it
 # in Act, so a test can always point at the single Act line. ReSharper's
 # "join declaration and initializer" suggestion would erase that boundary.
+# House style captures primary-constructor parameters into explicit
+# `private readonly _camelCase` fields (coding-standards.md, Naming); ReSharper
+# suggests the opposite.
+[*.cs]
+resharper_replace_with_primary_constructor_parameter_highlighting = none
+
 [tests/**.cs]
+# CA1859 (prefer concrete types) is a performance rule. Tests deliberately
+# hold the code under test by the interface the rest of the system sees -
+# testing through the port is the point - and test performance is irrelevant.
+dotnet_diagnostic.CA1859.severity = none
 resharper_join_declaration_and_initializer_highlighting = none

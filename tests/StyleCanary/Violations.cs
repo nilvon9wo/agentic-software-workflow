@@ -5,6 +5,7 @@ namespace StyleCanary;
 public sealed class Violations
 {
     private int count; // expect: build:IDE1006
+    private readonly int _unset = 0; // expect: format:CA1805
 
     public int Next(int amount)
     {

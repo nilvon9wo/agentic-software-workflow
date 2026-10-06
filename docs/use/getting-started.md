@@ -16,22 +16,35 @@ See [quality gates](../how-it-works/quality-gates.md) for what each gate checks
 and [local development](../contribute/local-development.md) for setup —
 including why, on Windows, the gates run in WSL.
 
-## Today: composing a worker's command line
+## Today: running an AI worker
 
-The conductor's first component describes one headless Claude Code run. A role
-is a model plus exactly the tools and permissions its job needs; a reviewer,
-for example, can read but never edit:
+The conductor asks for AI work through one port, `IAgentRunner`. A role says
+how capable a model it needs and which capabilities it is granted — never a
+vendor's model or tool names — and a task gives it a prompt, a working
+directory, and a time limit:
 
-<!-- snippet: compose-reviewer-invocation -->
+<!-- snippet: run-an-agent -->
 ```cs
-ClaudeInvocation reviewer = ClaudeInvocation.Headless("sonnet")
-    .WithTools(["Read", "Grep", "Glob"])
-    .WithPermissionMode(ClaudePermissionMode.DontAsk)
-    .WithSettingsFile(".claude/roles/code-reviewer.json");
+AgentRole reviewer = new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles]);
+AgentTask task = new(reviewer, "Review the change.", "/repository", TimeSpan.FromMinutes(5));
+IAgentRunner runner = new ClaudeCodeAgentRunner(processRunner);
+
+// Act
+result = await runner.RunAsync(task, cancellationToken);
+
+// Assert
+string outcome = result.Match(
+    Succ: answer => answer.Text,
+    Fail: error => $"failed ({error.Code}): {error.Message}"
+);
 ```
 <!-- endSnippet -->
 
-`Arguments` is the exact argument list passed to the `claude` executable.
+Expected failures — a timeout, a crash, an unreadable answer, an error the
+agent reports — come back as a failed `Fin`, each with a stable code from
+`AgentErrors`, so the workflow decides what happens next. The
+`ClaudeCodeAgentRunner` carries the task out as a headless `claude -p` run;
+in production it is given a `SystemProcessRunner`.
 
 ## Next: the workflow
 

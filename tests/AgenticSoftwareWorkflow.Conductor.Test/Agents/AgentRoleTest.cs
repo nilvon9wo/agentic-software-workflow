@@ -1,0 +1,34 @@
+using AgenticSoftwareWorkflow.Conductor.Agents;
+
+namespace AgenticSoftwareWorkflow.Conductor.Test.Agents;
+
+public sealed class AgentRoleTest
+{
+    [Fact]
+    public void CanEdit_WhenGrantedEditFiles_IsTrue()
+    {
+        // Arrange
+        AgentRole implementer = new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.EditFiles]);
+        bool canEdit;
+
+        // Act
+        canEdit = implementer.CanEdit;
+
+        // Assert
+        Assert.True(canEdit);
+    }
+
+    [Fact]
+    public void CanEdit_WhenNotGrantedEditFiles_IsFalse()
+    {
+        // Arrange
+        AgentRole reviewer = new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles]);
+        bool canEdit;
+
+        // Act
+        canEdit = reviewer.CanEdit;
+
+        // Assert
+        Assert.False(canEdit);
+    }
+}

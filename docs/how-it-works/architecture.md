@@ -4,9 +4,9 @@ How this project turns the [vision](../vision.md) into a working system — and
 why each piece is built (or *not* built) the way it is.
 
 > **Status.** The foundation is in place: the quality gates, their canary, CI,
-> and the first conductor component. The pipeline stages below are the design
-> being built next, tracked as GitHub issues. Each section says which parts
-> exist today.
+> branch protection with auto-merge, and the conductor's agent runner
+> (`IAgentRunner` with its Claude Code adapter). The pipeline stages below are
+> the design being built next, tracked as GitHub issues.
 
 ## The one idea that matters most
 
@@ -177,6 +177,13 @@ The design target is **no spend beyond a Claude Pro subscription**:
   so context stays small.
 - Every deterministic check costs zero tokens. The more gates catch, the fewer
   model calls are spent on review and repair.
+- **Every worker run carries a fixed overhead.** Claude Code's own system
+  prompt is about 10,000 tokens, sent with every `claude -p` run even with no
+  tools (most of it is served from cache). Many small runs cost more than a
+  few well-scoped ones.
+- Each run reports `ListPriceUsd`: what it would cost at pay-per-token prices.
+  On a subscription it is drawn from the plan's allowance instead, which makes
+  it the honest measure of how much of that allowance a role uses.
 
 A local model through Ollama remains an option for embeddings and trivial
 classification, but on modest hardware it is not good for much more.
@@ -191,3 +198,10 @@ classification, but on modest hardware it is not good for much more.
 - **Enforce with permissions and hooks; advise with skills.**
 - **Artifacts, not conversations.** Workers communicate through files and
   issues, which keeps context small and leaves an audit trail.
+- **Check what happened, not what the model says happened.** In testing, a
+  small model asked to run a command printed a convincing *imitation* of a
+  tool call as plain text — and the run still reported success. Outcomes are
+  verified from artifacts and gates, never from the worker's own account.
+- **The strongest restriction is absence.** In `dontAsk` mode a tool a role
+  is not allowed does not get refused — it is simply not there ("No such tool
+  available"). Nothing to talk the model past.

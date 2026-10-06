@@ -49,6 +49,7 @@ contradict what this project's predecessor assumed:
 | `inspectcode` builds first by default; if the build fails it **writes no report**, which looks exactly like "no findings" | The gate passes `--no-build`; the `build` gate owns compilation. |
 | ruff 0.16 changed `format --check` output, which silently broke parsing of its text | The gate reads ruff's JSON output, and tool versions are pinned exactly. |
 | coverlet instruments *every* loaded assembly unless told otherwise, so xunit's own DLLs drag the "minimum" coverage to 0% | Filters in the test project's `testconfig.json`. |
+| `dotnet format --severity info` fails on `info`-level diagnostics, but the gate's parser only read `error` and `warning` lines | A failure with no finding to explain it — which looked intermittent. The parser reads `info`; a canary-only rule at suggestion level keeps it proven. |
 
 The last three were caught by the canary below before reaching real code.
 
@@ -77,3 +78,15 @@ notices when the rule stops being enforced.
 - Several house rules (nesting depth, one expression per line, method length)
   are reviewed rather than enforced. Analyzers for them are planned.
 - Mutation testing (Stryker.NET) is installed but not yet a gate.
+
+## How changes reach `master`
+
+`master` is protected by a repository ruleset: every change arrives through a
+pull request, both CI jobs must pass on a branch that is up to date with
+`master`, and force-pushes and deletion are blocked. A pull request with
+auto-merge enabled merges itself the moment the gates are green.
+
+The ruleset has **no bypass**, not even for administrators. Workers act through
+the maintainer's GitHub account; a bypass for that account would let a worker
+merge a red pull request, which is exactly what the gates exist to prevent. In
+an emergency the maintainer edits the ruleset itself — a deliberate, visible act.
