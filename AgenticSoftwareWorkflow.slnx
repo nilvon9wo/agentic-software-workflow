@@ -4,5 +4,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/AgenticSoftwareWorkflow.Conductor.Test/AgenticSoftwareWorkflow.Conductor.Test.csproj" />
+    <Project Path="tests/AgenticSoftwareWorkflow.TestProcess/AgenticSoftwareWorkflow.TestProcess.csproj" />
   </Folder>
 </Solution>

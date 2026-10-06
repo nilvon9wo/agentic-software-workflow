@@ -1,0 +1,6 @@
+# Canary-only: a rule at "suggestion" (reported as `info`) proves the gates
+# still read info-level diagnostics. `dotnet format --severity info` fails on
+# them, and a parser that skipped them once reported a failure with no finding
+# to explain it. The real code keeps every rule at `error`.
+[*.cs]
+dotnet_diagnostic.CA1805.severity = suggestion

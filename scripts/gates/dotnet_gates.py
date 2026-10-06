@@ -11,7 +11,7 @@ from gates.tools import combined_output, execute
 
 MSBUILD_DIAGNOSTIC = re.compile(
     r"(?P<path>[^\s(:]+\.cs)\((?P<line>\d+),\d+\): "
-    r"(?:error|warning) (?P<rule>[A-Z]+\d*)",
+    r"(?:error|warning|info) (?P<rule>[A-Za-z]+\d*)",
 )
 
 
@@ -30,7 +30,9 @@ def finding_order(finding: Finding) -> tuple[str, int, str]:
 def msbuild_findings(gate: str, output: str) -> list[Finding]:
     """Findings in file order, de-duplicated.
 
-    MSBuild repeats each diagnostic once per target that reports it.
+    MSBuild repeats each diagnostic once per target that reports it. `info`
+    counts too: `dotnet format --severity info` fails on it, so a parser that
+    skipped it would report a failure with no findings to explain it.
     """
     matches = MSBUILD_DIAGNOSTIC.finditer(output)
     unique_findings = {msbuild_finding(gate, match) for match in matches}

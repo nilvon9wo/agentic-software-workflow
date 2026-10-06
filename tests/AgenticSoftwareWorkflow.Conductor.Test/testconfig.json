@@ -2,7 +2,7 @@
   "platformOptions": {
     "Coverlet": {
       "include": "[AgenticSoftwareWorkflow.*]*",
-      "exclude": "[*.Test]*",
+      "exclude": "[*.Test]*,[AgenticSoftwareWorkflow.TestProcess]*",
       "format": "cobertura",
       "excludeAssembliesWithoutSources": "MissingAll"
     }
