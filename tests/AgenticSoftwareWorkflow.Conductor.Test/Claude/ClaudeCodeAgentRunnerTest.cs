@@ -179,10 +179,9 @@ public sealed class ClaudeCodeAgentRunnerTest
         // Arrange
         IAgentic runner = new ClaudeCodeAgentRunner(this._processRunner);
         AgentTask task = new(Reviewer, Prompt, WorkingDirectory, Timeout);
-        Fin<AgentResult> result;
 
         // Act
-        result = await runner.Run(task, TestContext.Current.CancellationToken);
+        Fin<AgentResult> result = await runner.Run(task, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Looks good.", AssertSuccess(result).Text);
@@ -194,7 +193,6 @@ public sealed class ClaudeCodeAgentRunnerTest
         // Arrange
         IProcessCapable processRunner = this._processRunner;
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
-        Fin<AgentResult> result;
 
         // begin-snippet: run-an-agent
         AgentRole reviewer = new(
@@ -206,7 +204,7 @@ public sealed class ClaudeCodeAgentRunnerTest
         IAgentic runner = new ClaudeCodeAgentRunner(processRunner);
 
         // Act
-        result = await runner.Run(task, cancellationToken);
+        Fin<AgentResult> result = await runner.Run(task, cancellationToken);
 
         // Assert
         string outcome = result.Match(

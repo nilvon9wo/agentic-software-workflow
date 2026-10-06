@@ -23,10 +23,13 @@ public sealed class GitRepositoryTest
     {
         // Arrange
         GitRepository repository = new(this._processes, Root, Bot);
-        Fin<Workspace> created;
 
         // Act
-        created = await repository.CreateWorkspace("aswf/specify-7", "master", TestContext.Current.CancellationToken);
+        Fin<Workspace> created = await repository.CreateWorkspace(
+            "aswf/specify-7",
+            "master",
+            TestContext.Current.CancellationToken
+        );
 
         // Assert
         Assert.Equal(Workspace, AssertSuccess(created));
@@ -45,10 +48,13 @@ public sealed class GitRepositoryTest
         // Arrange
         this.Responds(Failed());
         GitRepository repository = new(this._processes, Root, Bot);
-        Fin<Workspace> created;
 
         // Act
-        created = await repository.CreateWorkspace("aswf/specify-7", "master", TestContext.Current.CancellationToken);
+        Fin<Workspace> created = await repository.CreateWorkspace(
+            "aswf/specify-7",
+            "master",
+            TestContext.Current.CancellationToken
+        );
 
         // Assert
         _ = Assert.IsType<CommandFailed>(AssertFailure(created));
@@ -60,10 +66,9 @@ public sealed class GitRepositoryTest
     {
         // Arrange
         GitRepository repository = new(this._processes, Root, Bot);
-        Fin<Unit> committed;
 
         // Act
-        committed = await repository.Commit(
+        Fin<Unit> committed = await repository.Commit(
             Workspace,
             ["spec/7.md"],
             "Specify 7",
@@ -89,10 +94,9 @@ public sealed class GitRepositoryTest
     {
         // Arrange
         GitRepository repository = new(this._processes, Root, Bot);
-        Fin<Unit> pushed;
 
         // Act
-        pushed = await repository.Push(Workspace, TestContext.Current.CancellationToken);
+        Fin<Unit> pushed = await repository.Push(Workspace, TestContext.Current.CancellationToken);
 
         // Assert
         _ = AssertSuccess(pushed);
@@ -104,10 +108,9 @@ public sealed class GitRepositoryTest
     {
         // Arrange
         GitRepository repository = new(this._processes, Root, Bot);
-        Fin<Unit> removed;
 
         // Act
-        removed = await repository.RemoveWorkspace(Workspace, TestContext.Current.CancellationToken);
+        Fin<Unit> removed = await repository.RemoveWorkspace(Workspace, TestContext.Current.CancellationToken);
 
         // Assert
         _ = AssertSuccess(removed);

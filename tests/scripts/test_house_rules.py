@@ -19,10 +19,9 @@ class TestNoConditionalExpressionChecker(HouseRuleTestCase):
     ) -> None:
         # Arrange
         source = "value = 1 if flag else 2"
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == [("no-conditional-expression", 1)]
@@ -37,10 +36,9 @@ class TestNoConditionalExpressionChecker(HouseRuleTestCase):
             else:
                 value = 2
             """
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == []
@@ -56,10 +54,9 @@ class TestNestedCallChecker(HouseRuleTestCase):
     ) -> None:
         # Arrange
         source = "outer(inner(value))"
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == []
@@ -69,10 +66,9 @@ class TestNestedCallChecker(HouseRuleTestCase):
     ) -> None:
         # Arrange
         source = "outer(middle(inner(value)))"
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == [("too-deeply-nested-call", 1)]
@@ -82,10 +78,9 @@ class TestNestedCallChecker(HouseRuleTestCase):
     ) -> None:
         # Arrange
         source = "total = sum(weight(item) for item in items)"
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == [("too-deeply-nested-call", 1)]
@@ -95,10 +90,9 @@ class TestNestedCallChecker(HouseRuleTestCase):
     ) -> None:
         # Arrange
         source = "result = builder.first(one).second(two).third(three)"
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == []
@@ -119,10 +113,9 @@ class TestNestedBlockChecker(HouseRuleTestCase):
                     if item:
                         use(item)
             """
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == []
@@ -138,10 +131,9 @@ class TestNestedBlockChecker(HouseRuleTestCase):
                         if item:
                             use(item)
             """
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == [("too-deeply-nested-block", 5)]
@@ -159,10 +151,9 @@ class TestNestedBlockChecker(HouseRuleTestCase):
                         except ValueError:
                             skip(item)
             """
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == []
@@ -181,10 +172,9 @@ class TestNestedBlockChecker(HouseRuleTestCase):
                 except ValueError:
                     pass
             """
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == [("too-deeply-nested-block", 6)]
@@ -203,10 +193,9 @@ class TestNestedBlockChecker(HouseRuleTestCase):
                     elif part == 3:
                         use(part)
             """
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == []
@@ -223,10 +212,9 @@ class TestNestedBlockChecker(HouseRuleTestCase):
                     for part in parts:
                         use(part)
             """
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == []
@@ -245,10 +233,9 @@ class TestNestedBlockChecker(HouseRuleTestCase):
                             use(part)
                         skip(part)
             """
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == [("too-deeply-nested-block", 7)]
@@ -266,10 +253,9 @@ class TestNestedBlockChecker(HouseRuleTestCase):
                                 use(part)
                     inner(item)
             """
-        reported: list[tuple[str, int | None]]
 
         # Act
-        reported = self.lint(source)
+        reported: list[tuple[str, int | None]] = self.lint(source)
 
         # Assert
         assert reported == []
@@ -278,13 +264,12 @@ class TestNestedBlockChecker(HouseRuleTestCase):
 def test_register_when_called_registers_every_house_rule_checker() -> None:
     # Arrange
     linter = PyLinter()
-    registered: set[str]
 
     # Act
     house_rules.register(linter)
 
     # Assert
-    registered = {checker.name for checker in linter.get_checkers()}
+    registered: set[str] = {checker.name for checker in linter.get_checkers()}
     assert {
         "boolean-chain-layout",
         "wrapped-items-layout",

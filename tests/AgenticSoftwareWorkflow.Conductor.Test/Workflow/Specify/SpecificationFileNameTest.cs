@@ -12,10 +12,9 @@ public sealed class SpecificationFileNameTest
     {
         // Arrange
         WorkItem item = Item("Extend the gates to Markdown and workflow files locally");
-        string fileName;
 
         // Act
-        fileName = SpecificationFileName.For(item);
+        string fileName = SpecificationFileName.For(item);
 
         // Assert
         Assert.Equal("8-extend-the-gates-to-markdown-and-workflow-files-locally.md", fileName);
@@ -26,10 +25,9 @@ public sealed class SpecificationFileNameTest
     {
         // Arrange
         WorkItem item = Item("  Fix: crash (on start-up)!  ");
-        string fileName;
 
         // Act
-        fileName = SpecificationFileName.For(item);
+        string fileName = SpecificationFileName.For(item);
 
         // Assert
         Assert.Equal("8-fix-crash-on-start-up.md", fileName);
@@ -42,10 +40,9 @@ public sealed class SpecificationFileNameTest
         WorkItem item = Item(
             "The specifier's output must pass the documentation gates before it is proposed for review"
         );
-        string fileName;
 
         // Act
-        fileName = SpecificationFileName.For(item);
+        string fileName = SpecificationFileName.For(item);
 
         // Assert
         Assert.Equal("8-the-specifier-s-output-must-pass-the-documentation-gates.md", fileName);
@@ -56,10 +53,9 @@ public sealed class SpecificationFileNameTest
     {
         // Arrange
         WorkItem item = Item(new string('a', 70));
-        string fileName;
 
         // Act
-        fileName = SpecificationFileName.For(item);
+        string fileName = SpecificationFileName.For(item);
 
         // Assert
         Assert.Equal($"8-{new string('a', 60)}.md", fileName);
@@ -70,10 +66,9 @@ public sealed class SpecificationFileNameTest
     {
         // Arrange
         WorkItem item = Item("?!");
-        string fileName;
 
         // Act
-        fileName = SpecificationFileName.For(item);
+        string fileName = SpecificationFileName.For(item);
 
         // Assert
         Assert.Equal("8.md", fileName);

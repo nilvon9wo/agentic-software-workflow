@@ -25,10 +25,9 @@ def pull_request(
 def test_judge_when_no_governed_path_changes_passes() -> None:
     # Arrange
     change = pull_request(["src/Program.cs", "docs/README.md"])
-    verdict: Verdict
 
     # Act
-    verdict = maintainer_approval.judge(change, MAINTAINERS)
+    verdict: Verdict = maintainer_approval.judge(change, MAINTAINERS)
 
     # Assert
     assert verdict == Verdict(
@@ -52,10 +51,9 @@ def test_judge_when_a_governed_path_changes_unapproved_fails(
 ) -> None:
     # Arrange
     change = pull_request([path])
-    verdict: Verdict
 
     # Act
-    verdict = maintainer_approval.judge(change, MAINTAINERS)
+    verdict: Verdict = maintainer_approval.judge(change, MAINTAINERS)
 
     # Assert
     assert verdict == Verdict(
@@ -70,10 +68,9 @@ def test_judge_when_a_governed_path_changes_unapproved_fails(
 def test_judge_when_a_maintainer_authored_it_passes() -> None:
     # Arrange
     change = pull_request(["spec/8.md"], author="maintainer")
-    verdict: Verdict
 
     # Act
-    verdict = maintainer_approval.judge(change, MAINTAINERS)
+    verdict: Verdict = maintainer_approval.judge(change, MAINTAINERS)
 
     # Assert
     assert verdict == Verdict(
@@ -86,10 +83,9 @@ def test_judge_when_a_maintainer_approved_the_head_commit_passes() -> None:
     # Arrange
     approval = Review(author="maintainer", state="APPROVED", commit=HEAD)
     change = pull_request(["spec/8.md"], [approval])
-    verdict: Verdict
 
     # Act
-    verdict = maintainer_approval.judge(change, MAINTAINERS)
+    verdict: Verdict = maintainer_approval.judge(change, MAINTAINERS)
 
     # Assert
     assert verdict == Verdict(
@@ -102,10 +98,9 @@ def test_judge_when_the_approval_is_of_an_older_commit_fails() -> None:
     # Arrange
     stale = Review(author="maintainer", state="APPROVED", commit="older")
     change = pull_request(["spec/8.md"], [stale])
-    verdict: Verdict
 
     # Act
-    verdict = maintainer_approval.judge(change, MAINTAINERS)
+    verdict: Verdict = maintainer_approval.judge(change, MAINTAINERS)
 
     # Assert
     assert not verdict.has_passed
@@ -120,10 +115,9 @@ def test_judge_when_a_later_review_requests_changes_fails() -> None:
         commit=HEAD,
     )
     change = pull_request(["spec/8.md"], [approval, second_thoughts])
-    verdict: Verdict
 
     # Act
-    verdict = maintainer_approval.judge(change, MAINTAINERS)
+    verdict: Verdict = maintainer_approval.judge(change, MAINTAINERS)
 
     # Assert
     assert not verdict.has_passed
@@ -133,10 +127,9 @@ def test_judge_when_only_a_non_maintainer_approved_fails() -> None:
     # Arrange
     approval = Review(author="stranger", state="APPROVED", commit=HEAD)
     change = pull_request(["spec/8.md"], [approval])
-    verdict: Verdict
 
     # Act
-    verdict = maintainer_approval.judge(change, MAINTAINERS)
+    verdict: Verdict = maintainer_approval.judge(change, MAINTAINERS)
 
     # Assert
     assert not verdict.has_passed
@@ -175,10 +168,9 @@ def test_main_when_a_governed_change_is_approved_passes(
     # Arrange
     github = fake_github(f"maintainer\tAPPROVED\t{HEAD}\n", [])
     settings = write_settings(tmp_path)
-    exit_code: int
 
     # Act
-    exit_code = maintainer_approval.main(
+    exit_code: int = maintainer_approval.main(
         ["owner/repository", "18"],
         run=github,
         settings_file=settings,
@@ -195,10 +187,9 @@ def test_main_when_a_governed_change_is_unreviewed_fails(
     # Arrange
     github = fake_github("", [])
     settings = write_settings(tmp_path)
-    exit_code: int
 
     # Act
-    exit_code = maintainer_approval.main(
+    exit_code: int = maintainer_approval.main(
         ["owner/repository", "18"],
         run=github,
         settings_file=settings,
@@ -233,11 +224,8 @@ def test_main_when_called_reads_the_pull_request_its_files_and_reviews(
 
 
 def test_read_maintainers_when_called_reads_the_repository_settings() -> None:
-    # Arrange
-    maintainers: list[str]
-
     # Act
-    maintainers = maintainer_approval.read_maintainers(
+    maintainers: list[str] = maintainer_approval.read_maintainers(
         maintainer_approval.SETTINGS_FILE,
     )
 
@@ -256,10 +244,9 @@ def test_run_gh_when_called_returns_what_gh_printed(
         return subprocess.CompletedProcess(command, 0, stdout="output")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    output: str
 
     # Act
-    output = maintainer_approval.run_gh(["api", "user"])
+    output: str = maintainer_approval.run_gh(["api", "user"])
 
     # Assert
     assert output == "output"

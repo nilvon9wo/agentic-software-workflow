@@ -19,10 +19,9 @@ public sealed class ExpectedFailureDataTest
     {
         // Arrange
         AgentTimedOut failure = new(TimeSpan.FromSeconds(30));
-        TimeSpan timeout;
 
         // Act
-        timeout = failure.Timeout;
+        TimeSpan timeout = failure.Timeout;
 
         // Assert
         Assert.Equal(TimeSpan.FromSeconds(30), timeout);
@@ -33,10 +32,9 @@ public sealed class ExpectedFailureDataTest
     {
         // Arrange
         AgentProcessFailed failure = new(2, "not logged in");
-        (int ExitCode, string StandardError) data;
 
         // Act
-        data = (failure.ExitCode, failure.StandardError);
+        (int ExitCode, string StandardError) data = (failure.ExitCode, failure.StandardError);
 
         // Assert
         Assert.Equal((2, "not logged in"), data);
@@ -47,10 +45,9 @@ public sealed class ExpectedFailureDataTest
     {
         // Arrange
         AgentOutputMalformed failure = new("unexpected token");
-        string detail;
 
         // Act
-        detail = failure.Detail;
+        string detail = failure.Detail;
 
         // Assert
         Assert.Equal("unexpected token", detail);
@@ -61,10 +58,9 @@ public sealed class ExpectedFailureDataTest
     {
         // Arrange
         AgentReportedError failure = new("error_max_turns", "ran out of turns");
-        (string Kind, string Detail) data;
 
         // Act
-        data = (failure.Kind, failure.Detail);
+        (string Kind, string Detail) data = (failure.Kind, failure.Detail);
 
         // Assert
         Assert.Equal(("error_max_turns", "ran out of turns"), data);
@@ -75,10 +71,13 @@ public sealed class ExpectedFailureDataTest
     {
         // Arrange
         CommandFailed failure = new("gh issue list", 4, "not authenticated");
-        (string Command, int ExitCode, string StandardError) data;
 
         // Act
-        data = (failure.Command, failure.ExitCode, failure.StandardError);
+        (string Command, int ExitCode, string StandardError) data = (
+            failure.Command,
+            failure.ExitCode,
+            failure.StandardError
+        );
 
         // Assert
         Assert.Equal(("gh issue list", 4, "not authenticated"), data);
@@ -89,10 +88,9 @@ public sealed class ExpectedFailureDataTest
     {
         // Arrange
         WorkResponseMalformed failure = new("unexpected token");
-        string detail;
 
         // Act
-        detail = failure.Detail;
+        string detail = failure.Detail;
 
         // Assert
         Assert.Equal("unexpected token", detail);
@@ -103,10 +101,9 @@ public sealed class ExpectedFailureDataTest
     {
         // Arrange
         ForeignWorkItem failure = new(Twelve, "github:owner/repository");
-        (WorkItemId Id, string Source) data;
 
         // Act
-        data = (failure.Id, failure.Source);
+        (WorkItemId Id, string Source) data = (failure.Id, failure.Source);
 
         // Assert
         Assert.Equal((Twelve, "github:owner/repository"), data);
@@ -117,10 +114,9 @@ public sealed class ExpectedFailureDataTest
     {
         // Arrange
         SpecifierAnswerUnusable failure = new("no output");
-        string detail;
 
         // Act
-        detail = failure.Detail;
+        string detail = failure.Detail;
 
         // Assert
         Assert.Equal("no output", detail);
@@ -131,10 +127,9 @@ public sealed class ExpectedFailureDataTest
     {
         // Arrange
         SettingsUnreadable failure = new("/repository/aswf.json", "missing");
-        (string Path, string Reason) data;
 
         // Act
-        data = (failure.Path, failure.Reason);
+        (string Path, string Reason) data = (failure.Path, failure.Reason);
 
         // Assert
         Assert.Equal(("/repository/aswf.json", "missing"), data);

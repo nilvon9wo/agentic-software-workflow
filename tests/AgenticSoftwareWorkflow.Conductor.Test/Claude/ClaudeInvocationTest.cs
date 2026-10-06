@@ -22,10 +22,9 @@ public sealed class ClaudeInvocationTest
                 "--model",
                 Model,
             ];
-        ClaudeInvocation invocation;
 
         // Act
-        invocation = ClaudeInvocation.Headless(Model);
+        ClaudeInvocation invocation = ClaudeInvocation.Headless(Model);
 
         // Assert
         Assert.Equal(expectedArguments, invocation.Arguments);
@@ -49,10 +48,9 @@ public sealed class ClaudeInvocationTest
     {
         // Arrange
         ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
-        ClaudeInvocation invocation;
 
         // Act
-        invocation = baseInvocation.WithTools(["Read", "Grep"]);
+        ClaudeInvocation invocation = baseInvocation.WithTools(["Read", "Grep"]);
 
         // Assert
         Assert.Equal(["--tools", "Read,Grep"], invocation.Arguments.TakeLast(2));
@@ -77,10 +75,9 @@ public sealed class ClaudeInvocationTest
     {
         // Arrange
         ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
-        ClaudeInvocation invocation;
 
         // Act
-        invocation = baseInvocation.WithoutTools();
+        ClaudeInvocation invocation = baseInvocation.WithoutTools();
 
         // Assert
         Assert.Equal(["--tools", ""], invocation.Arguments.TakeLast(2));
@@ -97,10 +94,9 @@ public sealed class ClaudeInvocationTest
     {
         // Arrange
         ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
-        ClaudeInvocation invocation;
 
         // Act
-        invocation = baseInvocation.WithPermissionMode(permissionMode);
+        ClaudeInvocation invocation = baseInvocation.WithPermissionMode(permissionMode);
 
         // Assert
         Assert.Equal(["--permission-mode", expectedArgument], invocation.Arguments.TakeLast(2));
@@ -126,10 +122,9 @@ public sealed class ClaudeInvocationTest
     {
         // Arrange
         ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
-        ClaudeInvocation invocation;
 
         // Act
-        invocation = baseInvocation.WithSettings("roles/reviewer.json");
+        ClaudeInvocation invocation = baseInvocation.WithSettings("roles/reviewer.json");
 
         // Assert
         Assert.Equal(["--settings", "roles/reviewer.json"], invocation.Arguments.TakeLast(2));
@@ -154,10 +149,9 @@ public sealed class ClaudeInvocationTest
     {
         // Arrange
         ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
-        ClaudeInvocation invocation;
 
         // Act
-        invocation = baseInvocation.WithAppendedSystemPrompt("Review carefully.");
+        ClaudeInvocation invocation = baseInvocation.WithAppendedSystemPrompt("Review carefully.");
 
         // Assert
         Assert.Equal(["--append-system-prompt", "Review carefully."], invocation.Arguments.TakeLast(2));
@@ -182,10 +176,9 @@ public sealed class ClaudeInvocationTest
     {
         // Arrange
         ClaudeInvocation baseInvocation = ClaudeInvocation.Headless(Model);
-        ClaudeInvocation invocation;
 
         // Act
-        invocation = baseInvocation.WithJsonSchema("{\"type\":\"object\"}");
+        ClaudeInvocation invocation = baseInvocation.WithJsonSchema("{\"type\":\"object\"}");
 
         // Assert
         Assert.Equal(["--json-schema", "{\"type\":\"object\"}"], invocation.Arguments.TakeLast(2));

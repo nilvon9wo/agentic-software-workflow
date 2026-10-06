@@ -46,10 +46,9 @@ def test_repository_files_when_a_listed_file_is_deleted_skips_it(
     monkeypatch.setattr(listing, "execute", tool)
     monkeypatch.setattr(listing, "REPOSITORY_ROOT", tmp_path)
     (tmp_path / README).unlink()
-    files: list[Path]
 
     # Act
-    files = listing.repository_files("*.md")
+    files: list[Path] = listing.repository_files("*.md")
 
     # Assert
     assert files == []
@@ -63,10 +62,9 @@ def test_documents_when_called_leaves_out_the_canary(
     tool = git_listing(tmp_path, [README, CANARY])
     monkeypatch.setattr(listing, "execute", tool)
     monkeypatch.setattr(listing, "REPOSITORY_ROOT", tmp_path)
-    documents: list[Path]
 
     # Act
-    documents = listing.documents()
+    documents: list[Path] = listing.documents()
 
     # Assert
     assert documents == [README]
@@ -80,10 +78,9 @@ def test_workflows_when_called_returns_the_listed_workflows(
     tool = git_listing(tmp_path, [CI])
     monkeypatch.setattr(listing, "execute", tool)
     monkeypatch.setattr(listing, "REPOSITORY_ROOT", tmp_path)
-    workflows: list[Path]
 
     # Act
-    workflows = listing.workflows()
+    workflows: list[Path] = listing.workflows()
 
     # Assert
     assert workflows == [CI]

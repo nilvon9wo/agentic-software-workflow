@@ -256,8 +256,10 @@ proven to fire by the canary. See
   behaviours — two methods. Every assertion must be about the single value
   captured in the Act; an assertion that re-invokes the code under test (with
   other inputs) is a second Act in disguise.
-- **The Act is exactly one statement.** Declare the result variable in Arrange,
-  assign it in Act, read it in Assert. Nothing acts in Assert.
+- **The Act is exactly one statement**, and it declares the result it captures
+  (`TimeSpan timeout = failure.Timeout;`); the Assert reads it. Nothing acts in
+  Assert. A declaration is not arranging anything, so it never sits in Arrange;
+  when nothing is arranged, there is no `// Arrange`.
 - **AAA comments, verbatim**: `// Arrange`, `// Act`, `// Assert`, and
   `// Sanity Check` (a pre-Act assertion that the arranged state is what the
   test assumes). Expecting a throw, the Act captures the exception

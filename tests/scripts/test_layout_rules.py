@@ -23,10 +23,9 @@ class TestBooleanChainChecker(HouseRuleTestCase):
     ) -> None:
         # Arrange
         source = "is_ready = is_built and is_tested"
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -36,10 +35,9 @@ class TestBooleanChainChecker(HouseRuleTestCase):
     ) -> None:
         # Arrange
         source = "is_ready = is_built and is_tested and is_reviewed"
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("boolean-chain-layout", 1)]
@@ -55,10 +53,9 @@ class TestBooleanChainChecker(HouseRuleTestCase):
                 and not is_blocked
             )
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -74,10 +71,9 @@ class TestBooleanChainChecker(HouseRuleTestCase):
                 is_reviewed
             )
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("boolean-chain-layout", 3)]
@@ -91,10 +87,9 @@ class TestBooleanChainChecker(HouseRuleTestCase):
                 and is_tested
                 and is_reviewed)
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("boolean-chain-layout", 2)]
@@ -110,10 +105,9 @@ class TestBooleanChainChecker(HouseRuleTestCase):
                 and (is_reviewed or is_trivial)
             )
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -127,10 +121,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
     def test_visit_call_when_not_wrapped_reports_nothing(self) -> None:
         # Arrange
         source = "run_gate(gate, command, target=target)"
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -146,10 +139,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
                 target=target,
             )
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -163,10 +155,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
                 gate, target=target, strict=True,
             )
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-items-layout", 2)]
@@ -180,10 +171,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
                 gate,
                 target)
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-items-layout", 2)]
@@ -191,10 +181,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
     def test_visit_list_when_on_one_line_reports_nothing(self) -> None:
         # Arrange
         source = 'gates = ["build", "test"]'
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -209,10 +198,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
                 "test",
             ]
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -224,10 +212,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
                 "if", "for",
             }
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-items-layout", 2)]
@@ -239,10 +226,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
                 "first", "second",
             )
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-items-layout", 2)]
@@ -254,10 +240,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
                 "low": 1, "high": 2,
             }
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-items-layout", 2)]
@@ -275,10 +260,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
             ) -> None:
                 pass
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -295,10 +279,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
             ) -> None:
                 pass
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -314,10 +297,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
             ) -> None:
                 pass
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-items-layout", 2)]
@@ -332,10 +314,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
             ) -> None:
                 pass
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-items-layout", 2)]
@@ -350,10 +331,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
                 target: str) -> None:
                 pass
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-items-layout", 2)]
@@ -367,10 +347,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
             def name(self) -> str:
                 return self.value
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -383,10 +362,9 @@ class TestWrappedItemsChecker(HouseRuleTestCase):
             def run():
                 pass
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -402,10 +380,9 @@ class TestWrappedComprehensionChecker(HouseRuleTestCase):
     ) -> None:
         # Arrange
         source = "names = [gate.name for gate in gates if gate.is_static]"
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -421,10 +398,9 @@ class TestWrappedComprehensionChecker(HouseRuleTestCase):
                 if gate.is_static
             }
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == []
@@ -438,10 +414,9 @@ class TestWrappedComprehensionChecker(HouseRuleTestCase):
                 gate.name for gate in gates if gate.is_static
             ]
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-comprehension-layout", 2)]
@@ -456,10 +431,9 @@ class TestWrappedComprehensionChecker(HouseRuleTestCase):
                 for gate in gates if gate.is_static
             )
             """
-        reported: Reports
 
         # Act
-        reported = self.lint(source)
+        reported: Reports = self.lint(source)
 
         # Assert
         assert reported == [("wrapped-comprehension-layout", 2)]
@@ -468,10 +442,9 @@ class TestWrappedComprehensionChecker(HouseRuleTestCase):
 def test_module_lines_when_the_module_has_no_source_returns_no_lines() -> None:
     # Arrange
     module = astroid.nodes.Module("built_without_source")
-    lines: list[str]
 
     # Act
-    lines = module_lines(module)
+    lines: list[str] = module_lines(module)
 
     # Assert
     assert lines == []
@@ -487,10 +460,9 @@ def test_def_line_when_the_node_has_no_position_uses_its_start_line() -> None:
         end_lineno=None,
         end_col_offset=None,
     )
-    line_number: int
 
     # Act
-    line_number = def_line(function)
+    line_number: int = def_line(function)
 
     # Assert
     assert line_number == START_LINE
