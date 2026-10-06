@@ -136,7 +136,9 @@ treated as data, never as instructions. Trust is by explicit login, never by
 GitHub's "collaborator" association — the workers' own bot account is a
 collaborator too, and its questions must never be mistaken for answers. When a
 worker is briefed on an item (`WorkItemBrief`), untrusted comments are left
-out entirely. This matters: text an AI reads can try
+out entirely; the workflow's own questions stay in, so each answer arrives
+with what it answers. A maintainer who agrees with an outsider quotes the
+part they endorse, which makes it theirs. This matters: text an AI reads can try
 to steer it (prompt injection), and issue comments are text anyone can write.
 
 **Triage.** A human is not needed to triage everything. A triage worker can

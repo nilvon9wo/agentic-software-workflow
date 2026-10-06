@@ -64,8 +64,9 @@ dotnet run --project src/AgenticSoftwareWorkflow.Cli -- specify 8
 For issue 8, the conductor:
 
 1. creates a fresh git worktree from the latest `master`;
-2. briefs the specifier role with the issue and its maintainers' replies —
-   no one else's;
+2. briefs the specifier role with the issue, its own earlier questions, and
+   its maintainers' replies — no one else's (to endorse someone else's
+   comment, quote the part you agree with in your own reply);
 3. either writes `spec/8.md` and opens a pull request for it, or posts its
    questions on the issue, labels it `needs-human`, and assigns it to you.
 
