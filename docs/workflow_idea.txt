@@ -1,0 +1,42 @@
+How might we implement something like this using a combination of workflows, skills, plugins, etc:
+
+
+1. I give one or more documents to an AI to specify a desired application or feature.
+	- Less expensive AI facilitate the injestion of long documents.
+	- The AI clarifies missing or ambiguous requirements with a human.
+2. An AI creates a collection of tests to ensure the application/feature is built to specification.
+	- Tests include unit, integration, e2e, ui, performance, load, mutation, etc.
+	- Some tests will be intentionally shared with the AI which will build the solution; some will be withheld.
+	- Linters check tests for qualities a linter can check for.
+	- Another AI checks for qualities a linter can't check for
+		* Do we have a proper test pyramid?
+		* Have we covered all/all-important branching conditions?
+		* Are tests well organized?
+		* Do all tests clearly communicate their intentions?
+		* Are all tests testing exactly one thing?
+		* Are all tests testing something useful?
+		* Are all assertions asserting something useful?
+		* Etc.
+3. Specifications and visible tests are handed off to a second AI.
+	- Second AI builds solution to meet the specifications and tests it is aware of.
+	(Not necessarily in this order:)
+	- Linters are executed.
+	- Visible tests are executed.
+	- Invisible tests are executed.
+	- Another AI checks for qualities a linter can't check:
+		* Do all classes, methods, variables, etc. name their intentions.
+		* Are all comments answering "why" instead of restating (or worse, contradicting) the code?
+		* Is high cyclomatic complexity avoided/mitigated.
+		* Are there long classes, long methods, long lines?
+		* Are there deeply nested blocks or expressions?		
+		* Does the code follow SOLID, YAGNI, DRY, etc.
+		* Are linter suppressions justified?
+		* Etc.
+	- If any of the above checks fail once, solution goes back to AI for fixes.
+	- If any of the above checks fail repeately, other AI is consulted to determine whether the specification, tests, and solution are in agreement, or if not which needs to be fixed, and whether/how it can move forward safely without human intervention.
+	- A human is asked clarifying questions.
+	- If there is other work to do which can be safely developed without waiting for the human to answer, AI will continue working in the background on other tasks.
+4. AI will create documentation regarding use, extension, contribution, etc., including how to get started and a script for manual testers.
+	- AI & tooling will ensure all examples work exactly as described in the documentation.
+5. A human will perform manual testing, both according to prepared script and exploratory testing.
+	- Errors are given back to the AI for further development, ideally by creating issues on the github repo that an AI can monitor.

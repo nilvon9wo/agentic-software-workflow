@@ -1,0 +1,15 @@
+Exit code: 0
+
+STDOUT:
+  Determining projects to restore...
+  Restored E:\projects\CSharp\AgenticSoftwareWorkflow-v0\src\workspace\product\WordCounter.csproj (in 36 ms).
+  WordCounter -> E:\projects\CSharp\AgenticSoftwareWorkflow-v0\src\workspace\product\bin\Debug\net10.0\WordCounter.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.34
+
+
+STDERR:

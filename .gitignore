@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+workspace/product/
+workspace/visible-tests/
+workspace/hidden-tests/
+workspace/generated/
+workspace/quality/
+.env
+/.vs

@@ -1,0 +1,15 @@
+Exit code: 0
+
+STDOUT:
+  Determining projects to restore...
+  Restored E:\projects\CSharp\AgenticSoftwareWorkflow-v0\src\workspace\visible-tests\WordCounter.VisibleTests.csproj (in 275 ms).
+  1 of 2 projects are up-to-date for restore.
+  WordCounter -> E:\projects\CSharp\AgenticSoftwareWorkflow-v0\src\workspace\product\bin\Debug\net10.0\WordCounter.dll
+  WordCounter.VisibleTests -> E:\projects\CSharp\AgenticSoftwareWorkflow-v0\src\workspace\visible-tests\bin\Debug\net10.0\WordCounter.VisibleTests.dll
+Test run for E:\projects\CSharp\AgenticSoftwareWorkflow-v0\src\workspace\visible-tests\bin\Debug\net10.0\WordCounter.VisibleTests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 419 ms - WordCounter.VisibleTests.dll (net10.0)
+
+
+STDERR:

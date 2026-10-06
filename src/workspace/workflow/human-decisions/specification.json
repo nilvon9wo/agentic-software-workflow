@@ -1,0 +1,7 @@
+{
+  "DecisionId": "specification-review-001",
+  "Review": "specification-review",
+  "Finding": "The meaning of letters and digits must be Unicode-aware.",
+  "Decision": "Use Unicode-aware classification equivalent to char.IsLetterOrDigit.",
+  "Rationale": "Letters and digits should include Unicode characters rather than being restricted to ASCII."
+}

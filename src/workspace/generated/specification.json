@@ -1,0 +1,41 @@
+{
+  "Summary": "Create a .NET 10 class library named WordCounter that exposes a public static class WordCounter.WordCounter with a public static method CountWords(string input) returning the count of words in the input, where a word is defined as a maximal contiguous run of Unicode letters or digits (per char.IsLetterOrDigit semantics), per human decision specification-001.",
+  "Requirements": [
+    "The solution must be a .NET 10 class library project.",
+    "The assembly/project must be named WordCounter.",
+    "The library must expose a public static class named WordCounter in the WordCounter namespace, fully qualified as WordCounter.WordCounter.",
+    "The class must expose a public static method with signature: public static int CountWords(string input).",
+    "A word is defined as a maximal contiguous sequence of one or more characters that are letters or digits, using Unicode-aware classification (equivalent to char.IsLetterOrDigit) rather than an ASCII-only [a-zA-Z0-9] definition. This includes accented letters, non-Latin scripts (e.g., Cyrillic, CJK), and non-ASCII decimal digits as valid word characters.",
+    "Any character that is not a letter or digit under the Unicode-aware classification (including whitespace and punctuation) acts as a separator and is not counted as part of a word.",
+    "Consecutive separator characters between words are treated as a single boundary (do not produce empty words).",
+    "If input is null, CountWords must throw ArgumentNullException.",
+    "If input is an empty string (\u0022\u0022), CountWords must return 0.",
+    "If input consists entirely of whitespace, CountWords must return 0.",
+    "If input consists entirely of separators (non-alphanumeric characters under Unicode-aware classification, including whitespace/punctuation) with no letters or digits, CountWords must return 0."
+  ],
+  "AcceptanceCriteria": [
+    "CountWords(null) throws ArgumentNullException.",
+    "CountWords(\u0022\u0022) returns 0.",
+    "CountWords(\u0022   \u0022) returns 0.",
+    "CountWords(\u0022!!!\u0022) returns 0.",
+    "CountWords(\u0022hello\u0022) returns 1.",
+    "CountWords(\u0022hello world\u0022) returns 2.",
+    "CountWords(\u0022hello, world!\u0022) returns 2.",
+    "CountWords(\u0022abc123\u0022) returns 1 (letters and digits together form a single word).",
+    "CountWords(\u0022abc-123\u0022) returns 2 (hyphen is a separator, splitting into two words).",
+    "CountWords(\u0022  leading and trailing  \u0022) returns 3 (three maximal letter runs, \u0022leading\u0022, \u0022and\u0022, and \u0022trailing\u0022, separated by whitespace).",
+    "CountWords(\u0022word1\\nword2\\tword3\u0022) returns 3 (newline/tab characters act as separators).",
+    "CountWords(\u0022a\u0022) returns 1.",
+    "CountWords(\u0022123\u0022) returns 1.",
+    "CountWords(\u0022caf\u00E9\u0022) returns 1 (the accented Unicode letter \u0027\u00E9\u0027 is classified as a letter, per Unicode-aware classification decision specification-001, so \u0027caf\u00E9\u0027 is a single maximal letter run).",
+    "CountWords(\u0022na\u00EFve???42\u0022) returns 2 (the accented letter \u0027\u00EF\u0027 is part of the Unicode letter run \u0022na\u00EFve\u0022; the three \u0027?\u0027 characters are punctuation and act as separators, splitting \u0022na\u00EFve\u0022 from the digit run \u002242\u0022 into two distinct words).",
+    "The WordCounter.WordCounter class and CountWords method are accessible as public static members from outside the assembly."
+  ],
+  "OpenQuestions": [
+    "Should apostrophes within words (e.g., \u0022don\u0027t\u0022) be treated as separators (yielding two words) or is there any special-casing needed? Assumption: apostrophe is not a letter/digit, so it acts as a separator (\u0022don\u0027t\u0022 -\u003E 2 words), per the stated definition with no exceptions.",
+    "Is there a target/minimum .NET language version, nullable reference type annotation requirement, or coding style (e.g., file-scoped namespaces) expected for the library, beyond targeting .NET 10?",
+    "Should the project include a corresponding test project, and if so, what test framework (xUnit, NUnit, MSTest) is preferred?",
+    "Is there a maximum input length or performance requirement (e.g., handling very large strings efficiently) that should be specified?",
+    "Should CountWords have any handling for surrogate pairs / astral-plane Unicode characters (e.g., characters requiring UTF-16 surrogate pairs), or is basic char-by-char iteration via char.IsLetterOrDigit sufficient given the Unicode-aware classification decision?"
+  ]
+}
