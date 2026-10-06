@@ -44,6 +44,9 @@ exactly. The rules most often missed:
   `tests/StyleCanary` so `scripts/gates.sh verify` proves it fires.
 - Code in documentation comes from tests via `mdsnippets` — never type C#
   into Markdown by hand.
+- Roles and their access rules live in `WorkflowRoles`. After changing one,
+  run `scripts/live-checks.sh` (spends subscription usage; needs `claude` in
+  WSL) — a rule never seen to block anything is not proven.
 - Report problems found in Xfty (the test data factory) rather than working
   around them.
 - The maintainer is on a Claude Pro plan: work serially, spawn sub-agents only

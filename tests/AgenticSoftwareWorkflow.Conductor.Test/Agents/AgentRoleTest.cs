@@ -8,7 +8,11 @@ public sealed class AgentRoleTest
     public void CanEdit_WhenGrantedEditFiles_IsTrue()
     {
         // Arrange
-        AgentRole implementer = new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.EditFiles]);
+        AgentRole implementer = new(
+            CapabilityTier.Standard,
+            [AgentTool.ReadFiles, AgentTool.EditFiles],
+            AgentAccess.ToolsOnly
+        );
         bool canEdit;
 
         // Act
@@ -22,7 +26,11 @@ public sealed class AgentRoleTest
     public void CanEdit_WhenNotGrantedEditFiles_IsFalse()
     {
         // Arrange
-        AgentRole reviewer = new(CapabilityTier.Standard, [AgentTool.ReadFiles, AgentTool.SearchFiles]);
+        AgentRole reviewer = new(
+            CapabilityTier.Standard,
+            [AgentTool.ReadFiles, AgentTool.SearchFiles],
+            AgentAccess.ToolsOnly
+        );
         bool canEdit;
 
         // Act

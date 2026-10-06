@@ -67,3 +67,27 @@ and the Markdown names it on a line of its own — the word `snippet`, a colon,
 and the snippet's name (an example cannot be shown here, because `mdsnippets`
 would expand it). `dotnet mdsnippets` copies the code in. CI regenerates the snippets and fails
 if anything changes, so documentation cannot drift from the tested code.
+
+## Live checks
+
+Separation of authority is proven against a real Claude Code run, not just
+unit-tested. These checks spend subscription usage, so they never run in CI or
+in `scripts/gates.sh`. Run them on purpose — after changing a role's access
+rules, and after upgrading Claude Code:
+
+```bash
+scripts/live-checks.sh
+```
+
+They need `claude` installed and signed in **inside WSL** (or Linux): on
+Windows, headless Claude Code offers PowerShell rather than Bash, so the
+command allow-lists would not be tested. To install there:
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+claude   # sign in once
+```
+
+Each check asserts both that nothing leaked or changed *and* that a refusal was
+recorded — a run in which the model never tried would otherwise pass while
+proving nothing.

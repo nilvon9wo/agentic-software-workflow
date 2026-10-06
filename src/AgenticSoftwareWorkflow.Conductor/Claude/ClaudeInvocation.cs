@@ -12,6 +12,9 @@ public sealed class ClaudeInvocation
     private const string OutputFormatFlag = "--output-format";
     private const string JsonOutputFormat = "json";
     private const string NoSessionPersistenceFlag = "--no-session-persistence";
+    private const string StrictMcpConfigFlag = "--strict-mcp-config";
+    private const string SettingSourcesFlag = "--setting-sources";
+    private const string ProjectSettingsOnly = "project";
     private const string ModelFlag = "--model";
     private const string ToolsFlag = "--tools";
     private const string NoTools = "";
@@ -26,9 +29,15 @@ public sealed class ClaudeInvocation
     public IReadOnlyList<string> Arguments { get; }
 
     /// <summary>
-    /// A non-interactive, non-persisted run whose result is a single JSON
-    /// document, so the conductor parses a contract rather than scraping prose.
+    /// A non-interactive, non-persisted, isolated run whose result is a single
+    /// JSON document, so the conductor parses a contract rather than scraping prose.
     /// </summary>
+    /// <remarks>
+    /// Isolated means the run sees only what its role grants: no MCP servers
+    /// beyond those passed explicitly (otherwise it inherits every connector the
+    /// user has configured), and no user or local settings files (otherwise a
+    /// broad "allow" rule in the user's own settings would widen every role).
+    /// </remarks>
     public static ClaudeInvocation Headless(string model)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(model);
@@ -38,6 +47,9 @@ public sealed class ClaudeInvocation
                 OutputFormatFlag,
                 JsonOutputFormat,
                 NoSessionPersistenceFlag,
+                StrictMcpConfigFlag,
+                SettingSourcesFlag,
+                ProjectSettingsOnly,
                 ModelFlag,
                 model,
             ]
@@ -65,13 +77,14 @@ public sealed class ClaudeInvocation
     }
 
     /// <summary>
-    /// Layers a role's settings file (permission allow/deny rules, hooks) on top
-    /// of the project's. This is where separation of authority is enforced.
+    /// Layers a role's settings (permission allow/deny rules, hooks) on top of
+    /// the project's — either a settings file's path or the settings JSON itself.
+    /// This is where separation of authority is enforced.
     /// </summary>
-    public ClaudeInvocation WithSettingsFile(string settingsPath)
+    public ClaudeInvocation WithSettings(string settingsFileOrJson)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(settingsPath);
-        return this.Append(SettingsFlag, settingsPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(settingsFileOrJson);
+        return this.Append(SettingsFlag, settingsFileOrJson);
     }
 
     /// <summary>Constrains the final answer to a JSON Schema the conductor can deserialize.</summary>

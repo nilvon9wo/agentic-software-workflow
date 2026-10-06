@@ -21,10 +21,14 @@ internal static class ClaudeTaskTranslator
         ClaudePermissionMode permissionMode = task.Role.CanEdit
             ? ClaudePermissionMode.AcceptEdits
             : ClaudePermissionMode.DontAsk;
-        ClaudeInvocation withPermissions = withTools.WithPermissionMode(permissionMode);
+        ClaudeInvocation withPermissionMode = withTools.WithPermissionMode(permissionMode);
+        ClaudeInvocation withAccess = ClaudePermissionSettings.For(task.Role.Access).Match(
+            Some: withPermissionMode.WithSettings,
+            None: () => withPermissionMode
+        );
         return task.OutputSchema.Match(
-            Some: withPermissions.WithJsonSchema,
-            None: () => withPermissions
+            Some: withAccess.WithJsonSchema,
+            None: () => withAccess
         );
     }
 
