@@ -39,14 +39,16 @@ result = await runner.Run(task, cancellationToken);
 // Assert
 string outcome = result.Match(
     Succ: answer => answer.Text,
-    Fail: error => $"failed ({error.Code}): {error.Message}"
+    Fail: error => $"failed: {error.Message}"
 );
 ```
 <!-- endSnippet -->
 
 Expected failures — a timeout, a crash, an unreadable answer, an error the
-agent reports — come back as a failed `Fin`, each with a stable code from
-`AgentErrors`, so the workflow decides what happens next. The
+agent reports — come back as a failed `Fin`, each its own type
+(`AgentTimedOut`, `AgentProcessFailed`, …) carrying its own data, so the
+workflow responds to each kind polymorphically rather than by decoding a
+number. The
 `ClaudeCodeAgentRunner` carries the task out as a headless `claude -p` run;
 in production it is given a `SystemProcessRunner`.
 

@@ -1,6 +1,5 @@
 using AgenticSoftwareWorkflow.Conductor.Processes;
 using LanguageExt;
-using LanguageExt.Common;
 using NSubstitute;
 using static AgenticSoftwareWorkflow.Conductor.Test.Support.FinAssertions;
 
@@ -55,10 +54,9 @@ public sealed class CommandLineToolTest
         result = await git.Run(["worktree", "add", "-b", "branch"], TestContext.Current.CancellationToken);
 
         // Assert
-        Error error = AssertFailure(result);
         Assert.Equal(
-            (CommandErrors.FailedCode, "'git worktree add' exited with code 128: fatal: not a git repository"),
-            (error.Code, error.Message)
+            new CommandFailed("git worktree add", 128, " fatal: not a git repository\n"),
+            AssertFailure(result)
         );
     }
 

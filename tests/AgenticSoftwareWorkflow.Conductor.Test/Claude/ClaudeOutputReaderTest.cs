@@ -2,7 +2,6 @@ using AgenticSoftwareWorkflow.Conductor.Agents;
 using AgenticSoftwareWorkflow.Conductor.Claude;
 using AgenticSoftwareWorkflow.Conductor.Processes;
 using LanguageExt;
-using LanguageExt.Common;
 using static AgenticSoftwareWorkflow.Conductor.Test.Support.FinAssertions;
 
 namespace AgenticSoftwareWorkflow.Conductor.Test.Claude;
@@ -40,7 +39,7 @@ public sealed class ClaudeOutputReaderTest
         result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
-        Assert.Equal(AgentErrors.TimedOutCode, AssertFailure(result).Code);
+        _ = Assert.IsType<AgentTimedOut>(AssertFailure(result));
     }
 
     [Fact]
@@ -156,11 +155,7 @@ public sealed class ClaudeOutputReaderTest
         result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
-        Error error = AssertFailure(result);
-        Assert.Equal(
-            (AgentErrors.AgentReportedErrorCode, "The agent reported an error (error_max_turns): out of turns"),
-            (error.Code, error.Message)
-        );
+        Assert.Equal(new AgentReportedError("error_max_turns", "out of turns"), AssertFailure(result));
     }
 
     [Fact]
@@ -188,7 +183,7 @@ public sealed class ClaudeOutputReaderTest
         result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
-        Assert.Equal(AgentErrors.MalformedOutputCode, AssertFailure(result).Code);
+        _ = Assert.IsType<AgentOutputMalformed>(AssertFailure(result));
     }
 
     [Fact]
@@ -219,11 +214,7 @@ public sealed class ClaudeOutputReaderTest
         result = ClaudeOutputReader.Read(outcome, Timeout);
 
         // Assert
-        Error error = AssertFailure(result);
-        Assert.Equal(
-            (AgentErrors.ProcessFailedCode, "The agent process exited with code 1: Not logged in"),
-            (error.Code, error.Message)
-        );
+        Assert.Equal(new AgentProcessFailed(1, "Not logged in"), AssertFailure(result));
     }
 
     private static ProcessOutcome Finished(int exitCode, string standardOutput) =>

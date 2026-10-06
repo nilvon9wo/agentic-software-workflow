@@ -105,7 +105,8 @@ public sealed class SpecifyCommandTest : IDisposable
         report = await command.Run(Seven, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal((CommandErrors.FailedCode, 0), (AssertFailure(report).Code, this._agent.ReceivedCalls().Count()));
+        _ = Assert.IsType<CommandFailed>(AssertFailure(report));
+        Assert.Empty(this._agent.ReceivedCalls());
     }
 
     [Fact]
@@ -114,7 +115,7 @@ public sealed class SpecifyCommandTest : IDisposable
         // Arrange
         _ = this._agent
             .Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>())
-            .Returns(Fin.Fail<AgentResult>(AgentErrors.TimedOut(TimeSpan.FromMinutes(15))));
+            .Returns(Fin.Fail<AgentResult>(new AgentTimedOut(TimeSpan.FromMinutes(15))));
         SpecifyCommand command = this.Command();
         Fin<string> report;
 
@@ -122,7 +123,7 @@ public sealed class SpecifyCommandTest : IDisposable
         report = await command.Run(Seven, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(AgentErrors.TimedOutCode, AssertFailure(report).Code);
+        _ = Assert.IsType<AgentTimedOut>(AssertFailure(report));
         Assert.Equal(["fetch", "worktree", "worktree", "branch"], this.GitSubcommands());
     }
 

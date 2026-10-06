@@ -239,6 +239,11 @@ proven to fire by the canary. See
   Exceptions remain for the genuinely exceptional — bugs and
   misconfiguration. (Projects this workflow builds may choose differently;
   this is a per-project decision, recorded in that project's standards.)
+- **Failures are types, not codes.** Each kind of expected failure is its
+  own type (deriving from `ExpectedFailure`) carrying its own data —
+  `AgentTimedOut(Timeout)`, `CommandFailed(Command, ExitCode, StandardError)`.
+  A numeric error code exists only to be switched on, which is branching
+  logic in disguise; responses to failures are chosen polymorphically.
 - **Errors are loud.** A misconfiguration fails at the call site with an
   exception naming the problem and the fix — never a silent `null` or an
   opaque downstream exception.

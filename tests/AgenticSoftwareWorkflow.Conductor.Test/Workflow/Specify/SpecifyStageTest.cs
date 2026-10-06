@@ -98,7 +98,7 @@ public sealed class SpecifyStageTest : IDisposable
     public async Task Run_WhenTheItemCannotBeRead_FailsWithoutRunningTheSpecifier()
     {
         // Arrange
-        Error unreadable = Error.New(42, "unreadable");
+        Error unreadable = new WorkResponseMalformed("unreadable");
         _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Fail<WorkItem>(unreadable));
         SpecifyStage stage = new(this._work, this._agent);
         Fin<SpecifyOutcome> outcome;
@@ -107,7 +107,7 @@ public sealed class SpecifyStageTest : IDisposable
         outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal((42, 0), (AssertFailure(outcome).Code, this._agent.ReceivedCalls().Count()));
+        Assert.Equal((unreadable, 0), (AssertFailure(outcome), this._agent.ReceivedCalls().Count()));
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class SpecifyStageTest : IDisposable
         // Arrange
         _ = this._agent
             .Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>())
-            .Returns(Fin.Fail<AgentResult>(AgentErrors.TimedOut(TimeSpan.FromMinutes(15))));
+            .Returns(Fin.Fail<AgentResult>(new AgentTimedOut(TimeSpan.FromMinutes(15))));
         SpecifyStage stage = new(this._work, this._agent);
         Fin<SpecifyOutcome> outcome;
 
@@ -124,7 +124,7 @@ public sealed class SpecifyStageTest : IDisposable
         outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(AgentErrors.TimedOutCode, AssertFailure(outcome).Code);
+        _ = Assert.IsType<AgentTimedOut>(AssertFailure(outcome));
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public sealed class SpecifyStageTest : IDisposable
         outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(SpecifyErrors.UnusableAnswerCode, AssertFailure(outcome).Code);
+        _ = Assert.IsType<SpecifierAnswerUnusable>(AssertFailure(outcome));
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public sealed class SpecifyStageTest : IDisposable
         this.SpecifierAnswers("""{"outcome":"questions","questions":["Which zone?"]}""");
         _ = this._work
             .Ask(Seven, Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Fin.Fail<Unit>(CommandErrors.Failed("gh issue comment", 1, "rate limited")));
+            .Returns(Fin.Fail<Unit>(new CommandFailed("gh issue comment", 1, "rate limited")));
         SpecifyStage stage = new(this._work, this._agent);
         Fin<SpecifyOutcome> outcome;
 
@@ -182,7 +182,7 @@ public sealed class SpecifyStageTest : IDisposable
         outcome = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(CommandErrors.FailedCode, AssertFailure(outcome).Code);
+        _ = Assert.IsType<CommandFailed>(AssertFailure(outcome));
     }
 
     [Fact]

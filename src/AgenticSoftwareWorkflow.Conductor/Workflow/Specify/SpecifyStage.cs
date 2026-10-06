@@ -50,7 +50,7 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
     private static Fin<SpecifierAnswer> ReadAnswer(AgentResult result) =>
         result.StructuredOutputJson.Match(
             Some: Parse,
-            None: () => Fin.Fail<SpecifierAnswer>(SpecifyErrors.UnusableAnswer("there was no structured output"))
+            None: () => Fin.Fail<SpecifierAnswer>(new SpecifierAnswerUnusable("there was no structured output"))
         );
 
     private static Fin<SpecifierAnswer> Parse(string json)
@@ -60,13 +60,13 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
         );
         return deserialize
             .ToFin()
-            .MapFail(error => SpecifyErrors.UnusableAnswer(error.Message))
+            .MapFail(error => new SpecifierAnswerUnusable(error.Message))
             .Bind(RequirePresent);
     }
 
     private static Fin<SpecifierAnswer> RequirePresent(SpecifierAnswer? answer) =>
         answer is null
-            ? Fin.Fail<SpecifierAnswer>(SpecifyErrors.UnusableAnswer("the answer was the JSON literal null"))
+            ? Fin.Fail<SpecifierAnswer>(new SpecifierAnswerUnusable("the answer was the JSON literal null"))
             : Fin.Succ(answer);
 
     private static string FileNameFor(WorkItemId id) => id.SafeKey + SpecificationExtension;
@@ -114,7 +114,7 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent)
                 this.Ask(id, questions, cancellationToken),
             _ => Task.FromResult(
                 Fin.Fail<SpecifyOutcome>(
-                    SpecifyErrors.UnusableAnswer($"the outcome '{answer.Outcome}' came without its content")
+                    new SpecifierAnswerUnusable($"the outcome '{answer.Outcome}' came without its content")
                 )
             ),
         };

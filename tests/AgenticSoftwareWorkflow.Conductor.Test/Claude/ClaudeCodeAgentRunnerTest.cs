@@ -211,7 +211,7 @@ public sealed class ClaudeCodeAgentRunnerTest
         // Assert
         string outcome = result.Match(
             Succ: answer => answer.Text,
-            Fail: error => $"failed ({error.Code}): {error.Message}"
+            Fail: error => $"failed: {error.Message}"
         );
         // end-snippet
         Assert.Equal("Looks good.", outcome);

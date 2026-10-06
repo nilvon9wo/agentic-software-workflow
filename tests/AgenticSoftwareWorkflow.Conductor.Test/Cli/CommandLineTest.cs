@@ -82,7 +82,7 @@ public sealed class CommandLineTest : IDisposable
         // Assert
         Assert.Equal(CommandLine.Failed, exitCode);
         Assert.StartsWith(
-            $"Failed (5001): The conductor's settings at {path} cannot be read:",
+            $"Failed (SettingsUnreadable): The conductor's settings at {path} cannot be read:",
             this._output.ToString(),
             StringComparison.Ordinal
         );
@@ -147,7 +147,7 @@ public sealed class CommandLineTest : IDisposable
 
         // Assert
         Assert.Equal(
-            (CommandLine.Failed, "Failed (4001): 'git fetch origin' exited with code 128: fatal\n"),
+            (CommandLine.Failed, "Failed (CommandFailed): 'git fetch origin' exited with code 128: fatal\n"),
             (exitCode, this._output.ToString().ReplaceLineEndings("\n"))
         );
     }
