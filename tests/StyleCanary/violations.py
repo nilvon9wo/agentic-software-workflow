@@ -9,6 +9,7 @@ count: int = "three"  # expect: pyright:reportAssignmentType
 spaced = {  "a":1  }  # expect: ruff-format:unformatted
 chosen = 1 if count else 2  # expect: pylint:E9001
 printed = print(len(str(count)))  # expect: pylint:E9002
+chained = count and spaced and chosen  # expect: pylint:E9004
 
 
 def nested(groups):

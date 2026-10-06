@@ -26,7 +26,8 @@ exactly. The rules most often missed:
   specific exception types.
 - Python, shell, and Markdown are held to equivalent standards. In Python:
   no conditional expressions (write `if`/`else` with both branches), no call
-  nested inside a call inside a call, 100% coverage.
+  nested inside a call inside a call, at most one `and`/`or` per boolean
+  expression, 100% coverage.
 - Do not delete code just because it looks unused — find out why first; mark
   code used from outside with `[PublicAPI]` (other projects) or
   `[UsedImplicitly]` (reflection, frameworks, conventions).

@@ -100,7 +100,8 @@ def matches_expectation(found: Finding, expected: Finding) -> bool:
     is_same_file = found.file_name == expected.file_name
     accepted_lines = {expected.line_number, WHOLE_FILE}
     is_same_line = found.line_number in accepted_lines
-    return is_same_rule and is_same_file and is_same_line
+    is_same_place = is_same_file and is_same_line
+    return is_same_rule and is_same_place
 
 
 def is_reported(expected: Finding, findings: Iterable[Finding]) -> bool:
@@ -191,11 +192,10 @@ def main() -> int:
         UNCOVERED_PYTHON_PATH,
         UNCOVERED_PYTHON,
     )
-    is_every_gate_proven = (
-        is_static_proven
-        and is_csharp_coverage_proven
-        and is_python_coverage_proven
+    are_coverage_gates_proven = (
+        is_csharp_coverage_proven and is_python_coverage_proven
     )
+    is_every_gate_proven = is_static_proven and are_coverage_gates_proven
     return exit_code_for(is_every_gate_proven)
 
 

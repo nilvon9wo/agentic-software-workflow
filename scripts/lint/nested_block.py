@@ -26,8 +26,11 @@ def is_elif(node: nodes.NodeNG) -> bool:
     """True for the `if` astroid uses to represent an `elif`."""
     parent = node.parent
     is_if = isinstance(node, nodes.If)
-    is_inside_if = isinstance(parent, nodes.If)
-    return is_if and is_inside_if and parent.orelse == [node]
+    if isinstance(parent, nodes.If):
+        is_sole_else_statement = parent.orelse == [node]
+        return is_if and is_sole_else_statement
+    else:
+        return False
 
 
 def enclosing_blocks(node: nodes.NodeNG) -> list[nodes.NodeNG]:

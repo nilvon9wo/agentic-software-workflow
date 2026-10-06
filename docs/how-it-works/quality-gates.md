@@ -25,7 +25,7 @@ purpose with a reason recorded beside it.
 | `layout` | [`check_line_layout.py`](../../scripts/check_line_layout.py) | Lines over 120 characters; wrapped calls not closing with `)` on its own line |
 | `test` | `dotnet test` + coverlet | Test failures, and line **or** branch coverage below 100% |
 | `ruff-format`, `ruff` | ruff | Python formatting; lint with every rule enabled (naming, complexity ≤ 5, docstrings, …) |
-| `pylint` | pylint + [house-rule checkers](../../scripts/lint/house_rules.py) | No conditional expressions, no nested calls, try-aware block nesting, short names, duplicated code |
+| `pylint` | pylint + [house-rule checkers](../../scripts/lint/house_rules.py) | No conditional expressions, no nested calls, try-aware block nesting, boolean chains of more than two, short names, duplicated code |
 | `pyright` | pyright, strict mode | Python type errors |
 | `pytest` | pytest + coverage | Python test failures, and line or branch coverage below 100% |
 | `shellcheck` | shellcheck | Shell quoting and portability bugs |

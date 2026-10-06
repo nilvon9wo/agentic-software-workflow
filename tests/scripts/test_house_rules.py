@@ -7,6 +7,7 @@ from pylint.lint import PyLinter
 from pylint.testutils import CheckerTestCase, MessageTest
 
 import house_rules
+from boolean_chain import BooleanChainChecker
 from nested_block import NestedBlockChecker
 from nested_call import NestedCallChecker
 from no_conditional_expression import NoConditionalExpressionChecker
@@ -289,6 +290,103 @@ class TestNestedBlockChecker(HouseRuleTestCase):
         assert reported == []
 
 
+class TestBooleanChainChecker(HouseRuleTestCase):
+    """E9004: at most one and/or operator per boolean expression."""
+
+    CHECKER_CLASS = BooleanChainChecker
+
+    def test_visit_boolop_when_two_booleans_are_joined_reports_nothing(
+        self,
+    ) -> None:
+        # Arrange
+        source = "is_ready = is_built and is_tested"
+        reported: list[tuple[str, int | None]]
+
+        # Act
+        reported = self.lint(source)
+
+        # Assert
+        assert reported == []
+
+    def test_visit_boolop_when_three_booleans_are_joined_reports_it(
+        self,
+    ) -> None:
+        # Arrange
+        source = "is_ready = is_built and is_tested and is_reviewed"
+        reported: list[tuple[str, int | None]]
+
+        # Act
+        reported = self.lint(source)
+
+        # Assert
+        assert reported == [("too-long-boolean-chain", 1)]
+
+    def test_visit_boolop_when_operators_are_mixed_reports_it_once(
+        self,
+    ) -> None:
+        # Arrange
+        source = "is_ready = is_built and (is_tested or is_exempt)"
+        reported: list[tuple[str, int | None]]
+
+        # Act
+        reported = self.lint(source)
+
+        # Assert
+        assert reported == [("too-long-boolean-chain", 1)]
+
+    def test_visit_boolop_when_a_long_chain_is_negated_reports_it(
+        self,
+    ) -> None:
+        # Arrange
+        source = "is_blocked = not (is_built and is_tested and is_reviewed)"
+        reported: list[tuple[str, int | None]]
+
+        # Act
+        reported = self.lint(source)
+
+        # Assert
+        assert reported == [("too-long-boolean-chain", 1)]
+
+    def test_visit_boolop_when_one_operand_is_negated_reports_nothing(
+        self,
+    ) -> None:
+        # Arrange
+        source = "is_ready = is_built and not is_blocked"
+        reported: list[tuple[str, int | None]]
+
+        # Act
+        reported = self.lint(source)
+
+        # Assert
+        assert reported == []
+
+    def test_visit_boolop_when_a_negated_pair_is_joined_counts_both_parts(
+        self,
+    ) -> None:
+        # Arrange
+        source = "is_ready = is_built and not (is_blocked or is_stale)"
+        reported: list[tuple[str, int | None]]
+
+        # Act
+        reported = self.lint(source)
+
+        # Assert
+        assert reported == [("too-long-boolean-chain", 1)]
+
+    def test_visit_boolop_when_a_chain_is_a_call_argument_counts_it_apart(
+        self,
+    ) -> None:
+        # Arrange
+        source = "is_ready = check(is_built and is_tested) and is_reviewed"
+        reported: list[tuple[str, int | None]]
+
+        # Act
+        reported = self.lint(source)
+
+        # Assert
+        assert reported == []
+
+
 def test_register_when_called_registers_every_house_rule_checker() -> None:
     # Arrange
     linter = PyLinter()
@@ -300,6 +398,7 @@ def test_register_when_called_registers_every_house_rule_checker() -> None:
     # Assert
     registered = {checker.name for checker in linter.get_checkers()}
     assert {
+        "too-long-boolean-chain",
         "no-conditional-expression",
         "too-deeply-nested-call",
         "too-deeply-nested-block",

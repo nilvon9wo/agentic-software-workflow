@@ -34,6 +34,8 @@ repo — human or AI. When a change is reviewed, this is the checklist.
   6. Never nest expressions. The accepted ceiling is one simple call inside
      one call; anything deeper gets a named intermediate.
   7. Use variables or methods to name the results of all complex expressions.
+     A boolean expression joins at most two booleans with a single `&&`/`||`
+     (`and`/`or`); anything longer names its parts first.
   8. All classes, methods, and variables must be named to communicate
      intentions — never a single letter or abbreviation.
   9. Always use nouns to name objects.
@@ -289,6 +291,9 @@ functions in Python, for example.
 - **Never nest expressions.** One call inside one call is the ceiling, and a
   comprehension counts as a level; name the inner result instead.
 - **Blocks nest at most two deep**, or three when one is a `try`.
+- **A boolean expression joins at most two booleans** (one `and`/`or`);
+  name the parts of anything longer. Short chains also mean the formatter
+  never folds a long chain back onto one line.
 - **80 columns, hard.** At 80 the formatter itself splits boolean chains,
   keyword arguments, and comprehension clauses onto separate lines; with
   mandatory trailing commas (COM812) every wrapped call or signature gets one
@@ -301,6 +306,6 @@ functions in Python, for example.
   name shorter than three characters.
 
 ruff and pyright cover most of this. The rest — conditional expressions,
-nested calls, and the try-aware nesting rule — is enforced by custom pylint
+nested calls, the try-aware nesting rule, and boolean chains — is enforced by custom pylint
 checkers in [`scripts/lint/house_rules.py`](../../scripts/lint/house_rules.py),
 each with tests and a canary.

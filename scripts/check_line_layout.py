@@ -79,7 +79,8 @@ def is_dangling(pair: ParenPair) -> bool:
     is_governed = is_call_or_declaration(pair.opening.text_before)
     is_multi_line = pair.opening.line_number != pair.closing.line_number
     is_first_on_line = pair.closing.text_before.strip() == ""
-    return is_governed and is_multi_line and not is_first_on_line
+    is_closed_after_content = is_multi_line and not is_first_on_line
+    return is_governed and is_closed_after_content
 
 
 def long_line_violation(

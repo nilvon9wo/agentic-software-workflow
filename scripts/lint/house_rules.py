@@ -7,6 +7,7 @@ docs/contribute/coding-standards.md. Loaded by pyproject.toml's
 
 from pylint.lint import PyLinter
 
+from boolean_chain import BooleanChainChecker
 from nested_block import NestedBlockChecker
 from nested_call import NestedCallChecker
 from no_conditional_expression import NoConditionalExpressionChecker
@@ -17,3 +18,4 @@ def register(linter: PyLinter) -> None:
     linter.register_checker(NoConditionalExpressionChecker(linter))
     linter.register_checker(NestedCallChecker(linter))
     linter.register_checker(NestedBlockChecker(linter))
+    linter.register_checker(BooleanChainChecker(linter))
