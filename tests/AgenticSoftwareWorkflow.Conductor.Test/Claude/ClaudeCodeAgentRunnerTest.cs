@@ -11,7 +11,7 @@ public sealed class ClaudeCodeAgentRunnerTest
 {
     private const string Prompt = "Review the change.";
     private const string WorkingDirectory = "/repository";
-    private const string SuccessEnvelope = """{ "is_error": false, "result": "Looks good." }""";
+    private const string SuccessEnvelope = """{ "type": "result", "is_error": false, "result": "Looks good." }""";
 
     private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(5);
     private static readonly AgentRole Reviewer =
@@ -57,7 +57,8 @@ public sealed class ClaudeCodeAgentRunnerTest
             [
                 "--print",
                 "--output-format",
-                "json",
+                "stream-json",
+                "--verbose",
                 "--no-session-persistence",
                 "--strict-mcp-config",
                 "--setting-sources",

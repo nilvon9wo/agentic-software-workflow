@@ -14,7 +14,8 @@ public sealed class ClaudeInvocationTest
             [
                 "--print",
                 "--output-format",
-                "json",
+                "stream-json",
+                "--verbose",
                 "--no-session-persistence",
                 "--strict-mcp-config",
                 "--setting-sources",
@@ -223,7 +224,8 @@ public sealed class ClaudeInvocationTest
             [
                 "--print",
                 "--output-format",
-                "json",
+                "stream-json",
+                "--verbose",
                 "--no-session-persistence",
                 "--strict-mcp-config",
                 "--setting-sources",
