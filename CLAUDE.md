@@ -22,8 +22,12 @@ exactly. The rules most often missed:
 - 100% line **and** branch coverage — every `dotnet test` enforces it.
 - Wrapped calls close with `)` on its own line; no line over 120 characters.
 - Every suppression carries a comment explaining why.
-- Python, shell, and Markdown are held to equivalent standards (ruff, pyright
-  strict, shellcheck, markdownlint).
+- Blocks nest at most two deep (a `try` may be a third layer); `catch` only
+  specific exception types.
+- Python, shell, and Markdown are held to equivalent standards. In Python:
+  no conditional expressions (write `if`/`else` with both branches), no call
+  nested inside a call inside a call, 100% coverage.
+- Do not delete code just because it looks unused — find out why first.
 
 ## Working rules
 

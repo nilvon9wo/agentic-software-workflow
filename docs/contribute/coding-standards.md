@@ -25,7 +25,12 @@ repo — human or AI. When a change is reviewed, this is the checklist.
   3. Keep methods short — a method past ~10 lines is usually doing two things.
      This is a smell to investigate, not a hard limit to contort code around.
   4. Never more than one expression per line.
-  5. Blocks must not be nested more than two deep.
+  5. Blocks must not be nested more than two deep — except that a
+     `try`/`catch` may be a third layer. A `try` wraps only the code expected
+     to throw, and every `catch` names a specific exception type (CA1031 in
+     C#; ruff's BLE001/E722 in Python). Where the project allows it, prefer a
+     monadic result over `try`/`catch` altogether — see
+     [Errors as values](#errors-as-values).
   6. Never nest expressions. The accepted ceiling is one simple call inside
      one call; anything deeper gets a named intermediate.
   7. Use variables or methods to name the results of all complex expressions.
@@ -177,7 +182,17 @@ proven to fire by the canary. See
   things at once, a fluent builder is acceptable.
 - **Immutability.** Derive a new object rather than mutating — as
   `ClaudeInvocation`'s `With*` methods do.
-- Remove dead code rather than working around it.
+- **Dead code is removed — once you know why it is dead.** Code that looks
+  unused may be used from outside the repository: the public API of a library
+  (Xfty's whole surface is consumed by other projects), reflection, or a
+  framework convention. Find out first. Code that is deliberately used only
+  from outside is marked, so tools and reviewers can tell it from dead code:
+  `[PublicAPI]` or `[UsedImplicitly]` from
+  [JetBrains.Annotations](https://www.nuget.org/packages/JetBrains.Annotations)
+  — which the `inspect` gate already honours — and, for a published library's
+  public surface, `PublicAPI.Shipped.txt` via
+  [Microsoft.CodeAnalysis.PublicApiAnalyzers](https://www.nuget.org/packages/Microsoft.CodeAnalysis.PublicApiAnalyzers).
+  Code that is truly dead is deleted rather than covered or worked around.
 - **No nested classes, ever.** A private helper scoped to one file (a test
   double, a small worker class) is `file sealed class Foo` at namespace scope
   in the same `.cs` file.
@@ -188,6 +203,13 @@ proven to fire by the canary. See
 
 - **100% line and branch coverage**, enforced by every `dotnet test` — see
   [coverage standards](coverage-standards.md).
+- **Errors as values.** <a id="errors-as-values"></a>In this project, expected
+  failures are values, not exceptions: a monadic `Try`/`Fin`/`Either` from
+  [LanguageExt](https://github.com/louthy/language-ext) makes the failure
+  path part of the type and composes without nested `try`/`catch`.
+  Exceptions remain for the genuinely exceptional — bugs and
+  misconfiguration. (Projects this workflow builds may choose differently;
+  this is a per-project decision, recorded in that project's standards.)
 - **Errors are loud.** A misconfiguration fails at the call site with an
   exception naming the problem and the fix — never a silent `null` or an
   opaque downstream exception.
@@ -235,13 +257,30 @@ has one, and a canary proving each gate fires.
 
 | Language | Formatter | Linter / types | Configuration |
 | --- | --- | --- | --- |
-| Python | `ruff format` | `ruff` (every rule enabled), `pyright` strict | `ruff.toml`, `pyrightconfig.json` |
+| Python | `ruff format` | `ruff` (every rule enabled), `pylint` + house-rule checkers, `pyright` strict; `pytest` at 100% coverage | `pyproject.toml` |
 | Shell | — | `shellcheck` | — |
 | Markdown | — | `markdownlint`, `lychee` (links) | `.markdownlint-cli2.jsonc` |
 | GitHub workflows | — | `actionlint` | — |
 
 The house rules above carry over where they make sense in another language:
-intention-revealing names, short single-purpose functions (ruff caps
-complexity at 5 and nesting at 2), no magic values, explicit over implicit,
-and every suppression justified in a comment beside it. Naming follows each
-language's convention — `snake_case` functions in Python, for example.
+intention-revealing names, short single-purpose functions, no magic values,
+explicit over implicit, one expression per line, and every suppression
+justified beside it. Naming follows each language's convention — `snake_case`
+functions in Python, for example.
+
+### Python specifics
+
+- **No conditional expressions** (`a if condition else b`). Python's version
+  reads condition-in-the-middle and hides a branch inside an expression. Write
+  an `if`/`else` statement, with **both branches written out**, even when the
+  first returns — the rules that demand dropping the `else` are disabled.
+- **Never nest expressions.** One call inside one call is the ceiling, and a
+  comprehension counts as a level; name the inner result instead.
+- **Blocks nest at most two deep**, or three when one is a `try`.
+- Complexity at most 5, at most 5 branches and 3 returns per function, and no
+  name shorter than three characters.
+
+ruff and pyright cover most of this. The rest — conditional expressions,
+nested calls, and the try-aware nesting rule — is enforced by custom pylint
+checkers in [`scripts/lint/house_rules.py`](../../scripts/lint/house_rules.py),
+each with tests and a canary.

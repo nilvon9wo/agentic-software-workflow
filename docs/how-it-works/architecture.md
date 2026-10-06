@@ -30,7 +30,8 @@ Everything below is machinery for those two ideas.
 | **Workflow** | The outer loop: stage order, retries, escalation, waiting on humans. Owned by the conductor. | Yes |
 | **Conductor** | The small C# program that runs the workflow. It decides *what* runs next; models never do. | Yes |
 | **Role** | A job description for one model run: model, permitted tools, permission mode, settings, and skill. | Configuration |
-| **Worker** | One headless Claude Code run (`claude -p`) playing one role, on one task, then exiting. | No |
+| **Worker** | One AI run playing one role, on one task, then exiting — today a headless Claude Code run (`claude -p`). | No |
+| **Port** | An interface the conductor depends on instead of a vendor: `IAgentRunner` (who does the AI work), `IWorkSource` (where work and answers come from). Claude Code and GitHub are adapters behind them. | Yes |
 | **Skill** | Reusable *how-to* instructions (`.claude/skills/*/SKILL.md`), loaded on demand. Advice, not enforcement. | — |
 | **Hook** | A script Claude Code runs at lifecycle events (e.g. before a tool call). It can *block* actions. Enforcement, not advice. | Yes |
 | **Tool** | A capability a worker can invoke: read, edit, run a command. Built into Claude Code. | Yes |
@@ -51,8 +52,8 @@ exists:
 
 | Need | Off-the-shelf choice | Why |
 | --- | --- | --- |
-| Agent runtime, tools, sub-agents, skills, hooks | **Claude Code** (headless `claude -p`) | Already does tool calling, context management, and permissions well; included in a Pro subscription |
-| Work queue, human questions, state, audit trail | **GitHub Issues, labels, PRs** | Free, durable, visible, and it comes with a UI for the human |
+| Agent runtime, tools, sub-agents, skills, hooks | **Claude Code** (headless `claude -p`), behind `IAgentRunner` | Already does tool calling, context management, and permissions well; included in a Pro subscription |
+| Work queue, human questions, state, audit trail | **GitHub Issues, labels, PRs**, behind `IWorkSource` | Free, durable, visible, and it comes with a UI for the human |
 | CI | **GitHub Actions** | Free for public repositories |
 | C# style and correctness | **Roslyn analyzers + `.editorconfig`**, **`dotnet format`**, **ReSharper CLI `inspectcode`** (free) | Each catches things the others miss — see [quality gates](quality-gates.md) |
 | Coverage | **coverlet** (`coverlet.MTP`) | Enforces a threshold inside `dotnet test` |
@@ -86,12 +87,53 @@ GitHub issue (feature / bug)
    └─10. Pull request   ── auto-merge once every gate is green
 ```
 
+### No vendor lock-in
+
+Claude and GitHub are today's choices, not assumptions baked into the
+conductor. The conductor talks to two ports:
+
+- **`IAgentRunner`** — "run this role on this task and give me its result".
+  The Claude Code adapter composes a `ClaudeInvocation`; another adapter could
+  drive a different agent CLI or a model API, from Anthropic or anyone else.
+  Roles name a *capability tier* (small, standard, strongest), and each
+  adapter maps tiers to its own models.
+- **`IWorkSource`** — "what work is ready, and what have humans said". GitHub
+  Issues is the first adapter; others (a different tracker, a folder of
+  Markdown files, several sources at once) can be added without touching the
+  workflow.
+
+Separation of authority must survive the swap: an adapter that cannot enforce
+a role's tool and path restrictions cannot run that role.
+
 ### Where the human comes in
 
-Humans answer questions, not supervise steps. A worker that hits genuine
-ambiguity does not guess: it files an issue labelled `needs-human` and the
-conductor moves on to work that does not depend on the answer. Manual and
-exploratory testing feed back the same way, as issues.
+Humans answer questions, not supervise steps.
+
+**Asking.** A worker that hits genuine ambiguity does not guess. It posts its
+question as a comment on the issue — specific, with the options it sees and
+what each would mean — and adds the `needs-human` label. The conductor moves
+on to work that does not depend on the answer.
+
+**Answering.** The human replies in the issue thread, as in any conversation.
+The conductor notices the new comment, and a worker reads the whole thread.
+It either asks a follow-up (a genuine two-way dialogue) or records the
+decision — in the specification, with a link back to the thread — and
+removes the label. The thread is the audit trail of why the software behaves
+as it does.
+
+**Trust.** The repository is public, so anyone can comment. Only comments from
+the maintainers count as answers; everything else is untrusted input, and
+treated as data, never as instructions. This matters: text an AI reads can try
+to steer it (prompt injection), and issue comments are text anyone can write.
+
+**Triage.** A human is not needed to triage everything. A triage worker can
+label, de-duplicate, link related issues, and judge whether an issue meets the
+definition of ready (clear goal, acceptance criteria, no open questions) —
+promoting it to `ready` or asking what is missing. A human decides priority
+and scope when issues compete, and can override any triage decision.
+
+**Feedback.** Manual and exploratory testing feed back the same way, as
+issues.
 
 ### Separation of authority, mechanically
 
@@ -119,6 +161,7 @@ ClaudeInvocation reviewer = ClaudeInvocation.Headless("sonnet")
 The design target is **no spend beyond a Claude Pro subscription**:
 
 - Workers run through Claude Code on the subscription — no pay-per-token API.
+  (Another provider can be plugged in behind `IAgentRunner`.)
 - Work is **serial by default**. Parallel workers multiply usage, and Pro
   limits are tight.
 - Each role uses the cheapest model that does the job: a small model for

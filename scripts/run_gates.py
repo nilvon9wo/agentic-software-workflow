@@ -8,44 +8,63 @@ Usage: run_gates.py [gate ...]   (default: all; names as printed in the summary)
 """
 
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
-from gates import REPOSITORY_ROOT, STATIC_GATES, TEST_GATE, Gate, GateResult, Target
+from exit_codes import exit_code_for
+from gates import PYTHON_TEST_GATE, REPOSITORY_ROOT, STATIC_GATES, TEST_GATE, Gate, GateResult, Target
 
+SCRIPTS = Path("scripts")
+SHELL_SCRIPTS = sorted(SCRIPTS.glob("*.sh"))
 REPOSITORY = Target(
     dotnet_project=Path("AgenticSoftwareWorkflow.slnx"),
     csharp_paths=[Path("src"), Path("tests")],
-    python_paths=[Path("scripts")],
-    shell_paths=sorted(Path("scripts").glob("*.sh")),
+    python_paths=[SCRIPTS, Path("tests/scripts")],
+    shell_paths=SHELL_SCRIPTS,
 )
-ALL_GATES = (*STATIC_GATES, TEST_GATE)
+ALL_GATES = (*STATIC_GATES, TEST_GATE, PYTHON_TEST_GATE)
 
 
-def run_and_report(gate: Gate) -> GateResult:
-    """Run one gate and print its one-line verdict, plus the tool output whenever it failed."""
-    result = gate.run(REPOSITORY)
-    verdict = "PASS" if result.has_passed else "FAIL"
+def describe_verdict(result: GateResult) -> str:
+    """PASS or FAIL."""
+    if result.has_passed:
+        return "PASS"
+    else:
+        return "FAIL"
+
+
+def report(result: GateResult) -> None:
+    """Print a one-line verdict, plus the tool output whenever the gate failed."""
+    verdict = describe_verdict(result)
     print(f"[{verdict}] {result.gate}", flush=True)
     if not result.has_passed:
         print(result.output.strip(), flush=True)
-    return result
 
 
-def select(names: list[str]) -> list[Gate]:
+def select(names: Sequence[str]) -> list[Gate]:
     """The gates named on the command line, or all of them; unknown names are an error."""
     known = {gate.name: gate for gate in ALL_GATES}
     unknown = sorted(set(names) - known.keys())
     if unknown:
         message = f"unknown gate(s): {', '.join(unknown)}; known: {', '.join(known)}"
         raise SystemExit(message)
-    return [known[name] for name in names] if names else list(ALL_GATES)
+    elif names:
+        return [known[name] for name in names]
+    else:
+        return list(ALL_GATES)
 
 
-def main(arguments: list[str]) -> int:
+def main(arguments: Sequence[str]) -> int:
     """Run the selected gates in order, reporting each; never stop early, so one run shows everything."""
     print(f"Running gates in {REPOSITORY_ROOT}", flush=True)
-    results = [run_and_report(gate) for gate in select(arguments)]
-    return 0 if all(result.has_passed for result in results) else 1
+    results: list[GateResult] = []
+    for gate in select(arguments):
+        result = gate.run(REPOSITORY)
+        report(result)
+        results.append(result)
+    failures = [result for result in results if not result.has_passed]
+    has_all_passed = not failures
+    return exit_code_for(has_all_passed)
 
 
 if __name__ == "__main__":

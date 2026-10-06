@@ -25,7 +25,9 @@ purpose with a reason recorded beside it.
 | `layout` | [`check_line_layout.py`](../../scripts/check_line_layout.py) | Lines over 120 characters; wrapped calls not closing with `)` on its own line |
 | `test` | `dotnet test` + coverlet | Test failures, and line **or** branch coverage below 100% |
 | `ruff-format`, `ruff` | ruff | Python formatting; lint with every rule enabled (naming, complexity ≤ 5, docstrings, …) |
+| `pylint` | pylint + [house-rule checkers](../../scripts/lint/house_rules.py) | No conditional expressions, no nested calls, try-aware block nesting, short names, duplicated code |
 | `pyright` | pyright, strict mode | Python type errors |
+| `pytest` | pytest + coverage | Python test failures, and line or branch coverage below 100% |
 | `shellcheck` | shellcheck | Shell quoting and portability bugs |
 
 CI also runs `mdsnippets` (every documentation snippet matches the tested code
@@ -61,9 +63,9 @@ var doubled = amount * 2; // expect: build:IDE0008
 ```
 
 `scripts/gates.sh verify` runs every gate against the canary and fails if any
-tagged violation goes unreported, or if any gate has no canary at all. The
-coverage gate is proven separately: a throwaway uncovered class is added to the
-library, and the test gate must then fail.
+tagged violation goes unreported, or if any gate has no canary at all. The two
+coverage gates are proven separately: a throwaway uncovered class (C#) or
+function (Python) is added to the real code, and the test gate must then fail.
 
 **When you add a rule, add a canary violation for it.** Otherwise nothing
 notices when the rule stops being enforced.

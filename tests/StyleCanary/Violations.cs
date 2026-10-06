@@ -23,4 +23,16 @@ public sealed class Violations
         int second) => first + second; // expect: layout:wrap-rpar
 
     public int Spaced() => this.count  +  1; // expect: format:WHITESPACE
+
+    public int Guarded()
+    {
+        try
+        {
+            return this.count;
+        }
+        catch (Exception) // expect: build:CA1031
+        {
+            return 0;
+        }
+    }
 }

@@ -37,6 +37,8 @@ warrants.
   - Does every test clearly communicate its intent?
   - Does every test test exactly one thing, and something useful?
   - Does every assertion assert something useful?
+  - When an assertion fails, does its message give enough information to
+    diagnose and fix the problem?
 
 ## 3. Implementation
 
@@ -52,8 +54,11 @@ which builds the solution. Then, not necessarily in this order:
   - Is high cyclomatic complexity avoided or mitigated?
   - Are there long classes, methods, or lines?
   - Are there deeply nested blocks or expressions?
-  - Does the code follow SOLID, YAGNI, DRY, and similar principles?
-  - Is every linter suppression justified?
+  - Does the code follow SOLID, YAGNI, DRY, KISS, command-query
+    separation, and the principles of *Clean Code*?
+  - Is every linter suppression justified? Justified means three things: the
+    suppression itself or a comment beside it states the reason; the reason
+    is true; and it is a genuinely good reason, not merely a convenient one.
 
 When a check fails once, the work goes back to the implementing AI to fix. When
 checks fail **repeatedly**, a different AI determines whether the
