@@ -11,6 +11,8 @@ from boolean_chain import BooleanChainChecker
 from nested_block import NestedBlockChecker
 from nested_call import NestedCallChecker
 from no_conditional_expression import NoConditionalExpressionChecker
+from wrapped_comprehension import WrappedComprehensionChecker
+from wrapped_items import WrappedItemsChecker
 
 
 def register(linter: PyLinter) -> None:
@@ -19,3 +21,5 @@ def register(linter: PyLinter) -> None:
     linter.register_checker(NestedCallChecker(linter))
     linter.register_checker(NestedBlockChecker(linter))
     linter.register_checker(BooleanChainChecker(linter))
+    linter.register_checker(WrappedItemsChecker(linter))
+    linter.register_checker(WrappedComprehensionChecker(linter))

@@ -1,71 +1,66 @@
-"""E9004: a boolean expression joins at most two booleans.
+"""E9004: a chain of three or more booleans puts one operand per line.
 
-`a and b` is fine. `a and b and c`, or `a and (b or c)`, names its parts
-first - house rule 7, "name the results of complex expressions". Keeping
-chains this short also means the formatter never has a long chain to fold
-back onto one line.
+`return foo and bar` is fine on one line. A longer chain is laid out with
+each operand on a line of its own, the operator leading:
 
-`not (...)` continues the expression it negates; a boolean expression
-inside a call's arguments is a separate expression and counts on its own.
+    return (
+        foo
+        and bar
+        and bat
+    )
+
+Breaking the line, not inventing names, is the fix: a name must say what
+something means, never exist just to shorten a line.
 """
 
 # pyright: reportMissingTypeStubs=false
 # astroid ships no type stubs; strict mode still checks its inferred types.
-from typing import TypeGuard
-
 from astroid import nodes
 from pylint.checkers import BaseChecker
 
-MAXIMUM_OPERATORS = 1
-NOT_OPERATOR = "not"
+from source_text import starts_line, text_before
+
+MAXIMUM_INLINE_OPERANDS = 2
 
 
-def is_negation(node: nodes.NodeNG | None) -> TypeGuard[nodes.UnaryOp]:
-    """True for `not <operand>`."""
-    is_unary = isinstance(node, nodes.UnaryOp)
-    return is_unary and node.op == NOT_OPERATOR
+def is_led_by(operand: nodes.NodeNG, operator: str) -> bool:
+    """True when `operand` starts its line, preceded only by `operator`."""
+    return text_before(operand) == operator
 
 
-def operator_count(node: nodes.NodeNG) -> int:
-    """The `and`/`or` operators in a boolean expression, nested ones too."""
-    if isinstance(node, nodes.BoolOp):
-        own_operators = len(node.values) - 1
-        nested_operators = [operator_count(value) for value in node.values]
-        return own_operators + sum(nested_operators)
-    elif is_negation(node):
-        return operator_count(node.operand)
-    else:
-        return 0
-
-
-def is_outermost(node: nodes.BoolOp) -> bool:
-    """True unless `node` is part of a larger boolean expression."""
-    ancestor = node.parent
-    while is_negation(ancestor):
-        ancestor = ancestor.parent
-    return not isinstance(ancestor, nodes.BoolOp)
+def is_one_operand_per_line(node: nodes.BoolOp) -> bool:
+    """True when every operand has its own line, operators leading."""
+    first_operand, *other_operands = node.values
+    misplaced_operands = [
+        operand
+        for operand in other_operands
+        if not is_led_by(operand, node.op)
+    ]
+    return starts_line(first_operand) and not misplaced_operands
 
 
 class BooleanChainChecker(BaseChecker):
-    """Rejects a boolean expression with more than one `and`/`or`."""
+    """Rejects a long boolean chain that is not one operand per line."""
 
-    name = "too-long-boolean-chain"
+    name = "boolean-chain-layout"
     msgs = {  # noqa: RUF012 - pylint reads this class attribute by name
         "E9004": (
-            "Boolean chain has %d and/or operators (max %d); name its parts",
-            "too-long-boolean-chain",
-            "Name the results of complex expressions (house rule 7).",
+            (
+                "Chain of %d booleans: put each operand on its own line, "
+                "operator first"
+            ),
+            "boolean-chain-layout",
+            "Two booleans may share a line; longer chains may not.",
         ),
     }
 
     def visit_boolop(self, node: nodes.BoolOp) -> None:
-        """Report the whole expression once, at its outermost operator."""
-        if is_outermost(node):
-            count = operator_count(node)
-            if count > MAXIMUM_OPERATORS:
-                counts = (count, MAXIMUM_OPERATORS)
-                self.add_message(
-                    "too-long-boolean-chain",
-                    node=node,
-                    args=counts,
-                )
+        """Report a chain longer than two that shares lines."""
+        operand_count = len(node.values)
+        is_long_chain = operand_count > MAXIMUM_INLINE_OPERANDS
+        if is_long_chain and not is_one_operand_per_line(node):
+            self.add_message(
+                "boolean-chain-layout",
+                node=node,
+                args=(operand_count,),
+            )

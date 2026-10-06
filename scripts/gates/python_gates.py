@@ -1,4 +1,10 @@
-"""The Python gates: ruff, pylint, pyright, and pytest."""
+"""The Python gates: ruff, pylint, pyright, and pytest.
+
+There is deliberately no formatter gate: layout is enforced by lint rules
+(pycodestyle whitespace via ruff, and the house-rule checkers), because a
+formatter would impose its own layout over the house rules - it folds a
+split boolean chain back onto one line, for example.
+"""
 
 from collections.abc import Sequence
 from pathlib import Path
@@ -26,7 +32,7 @@ def run_ruff_gate(
     ruff_command: Sequence[str],
     target: Target,
 ) -> GateResult:
-    """Run a ruff subcommand; `format` and `check` share a JSON shape."""
+    """Run a ruff subcommand that reports JSON."""
     paths = as_arguments(target.python_paths)
     command = [
         "python",
@@ -45,11 +51,6 @@ def run_ruff_gate(
     findings = [ruff_finding(gate, result) for result in results]
     output = combined_output(completed)
     return GateResult(gate, completed.returncode, findings, output)
-
-
-def run_ruff_format(target: Target) -> GateResult:
-    """Python formatting: the counterpart of `dotnet format`."""
-    return run_ruff_gate("ruff-format", ["format", "--check"], target)
 
 
 def run_ruff(target: Target) -> GateResult:

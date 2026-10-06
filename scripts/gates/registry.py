@@ -13,7 +13,6 @@ from gates.python_gates import (
     run_pyright,
     run_python_tests,
     run_ruff,
-    run_ruff_format,
 )
 from gates.shell_gates import run_shellcheck
 
@@ -22,7 +21,6 @@ STATIC_GATES = (
     Gate("format", run_format),
     Gate("inspect", run_inspect),
     Gate("layout", run_layout),
-    Gate("ruff-format", run_ruff_format),
     Gate("ruff", run_ruff),
     Gate("pylint", run_pylint),
     Gate("pyright", run_pyright),
