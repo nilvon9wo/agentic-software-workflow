@@ -124,11 +124,12 @@ GitHub). Answering removes both the label and the assignment, so the two
 views never disagree.
 
 **Answering.** The human replies in the issue thread, as in any conversation.
-The conductor notices the new comment, and a worker reads the whole thread.
-It either asks a follow-up (a genuine two-way dialogue) or records the
-decision — in the specification, with a link back to the thread — and
-removes the label. The thread is the audit trail of why the software behaves
-as it does.
+A GitHub Action removes the label as soon as a maintainer replies, and the
+conductor makes the same check when it next reads the item; a worker then
+reads the whole thread. It either asks a follow-up (a genuine two-way
+dialogue) or records the decision — in the specification, with a link back to
+the thread. The thread is the audit trail of why the software behaves as it
+does.
 
 **Trust.** The repository is public, so anyone can comment. Only comments from
 the maintainers count as answers; everything else is untrusted input, and
