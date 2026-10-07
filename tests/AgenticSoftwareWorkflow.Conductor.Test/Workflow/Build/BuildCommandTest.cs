@@ -42,6 +42,9 @@ public sealed class BuildCommandTest : IDisposable
             .Returns(call => AgentAnswer((AgentTask)call[0]));
         _ = this._gate.Check(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
         _ = this._changes.Propose(Arg.Any<ChangeProposal>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Address));
+        _ = this._changes
+            .ListOpenSpecifications(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
         string specificationPath = Path.Combine(this.WorkspacePath, "spec", "7-add-a-clock.md");
         _ = Directory.CreateDirectory(Path.GetDirectoryName(specificationPath)!);
         File.WriteAllText(specificationPath, "# Show the time in UTC\n\n- **AC-1** …\n");
@@ -75,6 +78,25 @@ public sealed class BuildCommandTest : IDisposable
         _ = this._work
             .Read(Seven, Arg.Any<CancellationToken>())
             .Returns(Fin.Fail<WorkItem>(new WorkResponseMalformed("unreadable")));
+        BuildCommand command = this.Command();
+
+        // Act
+        Fin<IReadOnlyList<WorkItemId>> buildable = await command.ListBuildable(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(AssertSuccess(buildable));
+    }
+
+    [Fact]
+    public async Task ListBuildable_WhenAnItemsSpecificationIsBeingRevised_LeavesItOut()
+    {
+        // Arrange
+        _ = this._work
+            .ListSpecified(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([Seven]));
+        _ = this._changes
+            .ListOpenSpecifications(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([Seven]));
         BuildCommand command = this.Command();
 
         // Act
