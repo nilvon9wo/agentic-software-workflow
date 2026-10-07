@@ -41,4 +41,15 @@ public sealed class Violations
     {
         System.Threading.Tasks.Task.Delay(1); // expect: build:VSTHRD110
     }
+
+    public int Accumulate(IEnumerable<int> values)
+    {
+        int total = this.count;
+        foreach (int value in values.ToList()) // expect: build:HLQ012
+        {
+            total += value;
+        }
+
+        return total;
+    }
 }

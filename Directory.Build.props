@@ -24,6 +24,7 @@
   -->
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />
+    <PackageReference Include="NetFabric.Hyperlinq.Analyzer" PrivateAssets="all" />
   </ItemGroup>
 
   <!--
