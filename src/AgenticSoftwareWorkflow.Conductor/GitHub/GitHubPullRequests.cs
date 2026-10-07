@@ -115,7 +115,7 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
     // One proposal failing to update (a conflict, say) must not stop the others,
     // so each outcome is reported rather than the first failure returned.
     private async Task<Fin<IReadOnlyList<string>>> UpdateEach(
-        List<GitHubPullRequest> behind,
+        IReadOnlyList<GitHubPullRequest> behind,
         CancellationToken cancellationToken
     )
     {
