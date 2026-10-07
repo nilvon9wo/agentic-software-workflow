@@ -47,48 +47,64 @@ public sealed class RunLoop(
         Reply here once it is fixed (or with guidance), and it will try again.
         """;
 
+    // Revisions come first: a maintainer is waiting on them, and they may
+    // change what later items depend on.
     private async Task Pass(CancellationToken cancellationToken)
     {
+        Fin<IReadOnlyList<WorkItemId>> awaitingRevision = await this._processing.ListAwaitingRevision(
+            cancellationToken
+        );
+        await awaitingRevision.Match(
+            Succ: ids => this.ProcessEach([.. ids.Select(this.RevisionOf)], cancellationToken),
+            Fail: failure => this.Log($"Could not list the proposals awaiting revision: {failure.Message}")
+        );
         Fin<IReadOnlyList<WorkItemId>> ready = await this._work.ListReady(cancellationToken);
         await ready.Match(
-            Succ: ids => this.ProcessEach(ids, cancellationToken),
+            Succ: ids => this.ProcessReady(ids, cancellationToken),
             Fail: failure => this.Log($"Could not list the ready items: {failure.Message}")
         );
     }
 
-    private async Task ProcessEach(IReadOnlyList<WorkItemId> ids, CancellationToken cancellationToken)
+    private Job RevisionOf(WorkItemId id) => new(id, this._processing.Revise);
+
+    private async Task ProcessReady(IReadOnlyList<WorkItemId> ids, CancellationToken cancellationToken)
     {
         await this.Log($"{ids.Count} item(s) ready.");
-        foreach (WorkItemId id in ids)
+        await this.ProcessEach([.. ids.Select(id => new Job(id, this._processing.Run))], cancellationToken);
+    }
+
+    private async Task ProcessEach(IReadOnlyList<Job> jobs, CancellationToken cancellationToken)
+    {
+        foreach (Job job in jobs)
         {
-            await this.Process(id, cancellationToken);
+            await this.Process(job, cancellationToken);
         }
     }
 
-    private async Task Process(WorkItemId id, CancellationToken cancellationToken)
+    private async Task Process(Job job, CancellationToken cancellationToken)
     {
-        Fin<string> report = await this._processing.Run(id, cancellationToken);
+        Fin<string> report = await job.Step(job.Item, cancellationToken);
         await report.Match(
             Succ: this.Log,
-            Fail: failure => this.Handle(id, failure, cancellationToken)
+            Fail: failure => this.Handle(job, failure, cancellationToken)
         );
     }
 
-    private Task Handle(WorkItemId id, Error failure, CancellationToken cancellationToken) =>
+    private Task Handle(Job job, Error failure, CancellationToken cancellationToken) =>
         failure is UsageLimitReached reached
-            ? this.WaitOutThenRetry(id, reached, cancellationToken)
-            : this.Escalate(id, failure, cancellationToken);
+            ? this.WaitOutThenRetry(job, reached, cancellationToken)
+            : this.Escalate(job.Item, failure, cancellationToken);
 
-    private async Task WaitOutThenRetry(WorkItemId id, UsageLimitReached reached, CancellationToken cancellationToken)
+    private async Task WaitOutThenRetry(Job job, UsageLimitReached reached, CancellationToken cancellationToken)
     {
         DateTimeOffset now = this._time.GetUtcNow();
         DateTimeOffset resumeAt = reached.ResetsAt.Match(
             Some: reset => reset + this._options.ResetMargin,
             None: () => now + this._options.UnknownResetWait
         );
-        await this.Log($"{reached.Message} Waiting until {resumeAt:u}, then retrying {id}.");
+        await this.Log($"{reached.Message} Waiting until {resumeAt:u}, then retrying {job.Item}.");
         await this.Pause(resumeAt - now, cancellationToken);
-        await this.Process(id, cancellationToken);
+        await this.Process(job, cancellationToken);
     }
 
     private async Task Escalate(WorkItemId id, Error failure, CancellationToken cancellationToken)
@@ -105,4 +121,7 @@ public sealed class RunLoop(
         Task.Delay(duration < TimeSpan.Zero ? TimeSpan.Zero : duration, this._time, cancellationToken);
 
     private Task Log(string message) => this._log.WriteLineAsync($"[{this._time.GetUtcNow():u}] {message}");
+
+    /// <summary>One step of the pipeline for one item: specifying it, or revising its proposal.</summary>
+    private sealed record Job(WorkItemId Item, Func<WorkItemId, CancellationToken, Task<Fin<string>>> Step);
 }

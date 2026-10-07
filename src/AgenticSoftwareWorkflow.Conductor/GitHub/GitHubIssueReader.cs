@@ -4,7 +4,7 @@ using LanguageExt;
 
 namespace AgenticSoftwareWorkflow.Conductor.GitHub;
 
-/// <summary>Reads <c>gh</c>'s JSON output into issues, or explains why it cannot.</summary>
+/// <summary>Reads <c>gh</c>'s JSON output into issues and pull requests, or explains why it cannot.</summary>
 internal static class GitHubIssueReader
 {
     private const string EmptyDocument = "the response was the JSON literal null";
@@ -14,6 +14,10 @@ internal static class GitHubIssueReader
     public static Fin<GitHubIssue> ReadIssue(string json) => Read<GitHubIssue>(json);
 
     public static Fin<List<GitHubIssue>> ReadIssues(string json) => Read<List<GitHubIssue>>(json);
+
+    public static Fin<List<GitHubPullRequest>> ReadPullRequests(string json) => Read<List<GitHubPullRequest>>(json);
+
+    public static Fin<List<GitHubLineComment>> ReadLineComments(string json) => Read<List<GitHubLineComment>>(json);
 
     private static Fin<T> Read<T>(string json)
         where T : class

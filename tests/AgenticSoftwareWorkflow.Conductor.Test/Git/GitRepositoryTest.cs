@@ -43,6 +43,26 @@ public sealed class GitRepositoryTest
     }
 
     [Fact]
+    public async Task OpenWorkspace_WhenCalled_ChecksOutTheExistingRemoteBranch()
+    {
+        // Arrange
+        GitRepository repository = new(this._processes, Root, Bot);
+
+        // Act
+        Fin<Workspace> opened = await repository.OpenWorkspace("aswf/specify-7", TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(Workspace, AssertSuccess(opened));
+        Assert.Equal(
+            [
+                (Root, "fetch origin aswf/specify-7"),
+                (Root, $"worktree add -b aswf/specify-7 {WorkspacePath} origin/aswf/specify-7"),
+            ],
+            this.Commands()
+        );
+    }
+
+    [Fact]
     public async Task CreateWorkspace_WhenFetchingFails_CreatesNoWorktree()
     {
         // Arrange

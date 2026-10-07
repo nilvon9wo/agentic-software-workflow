@@ -12,4 +12,16 @@ public interface IChangeProposing
 {
     /// <summary>Proposes the change; the result is where a human can review it.</summary>
     Task<Fin<string>> Propose(ChangeProposal proposal, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The work items whose open proposals a maintainer has commented on since
+    /// they last changed, and has not approved: each needs a revision.
+    /// </summary>
+    Task<Fin<IReadOnlyList<WorkItemId>>> ListAwaitingRevision(CancellationToken cancellationToken);
+
+    /// <summary>The open proposal for the item, and the feedback since it last changed.</summary>
+    Task<Fin<ProposalReview>> ReadReview(WorkItemId id, CancellationToken cancellationToken);
+
+    /// <summary>Answers on the proposal itself, where its reviewers will see it.</summary>
+    Task<Fin<Unit>> Reply(ProposalReview review, string message, CancellationToken cancellationToken);
 }

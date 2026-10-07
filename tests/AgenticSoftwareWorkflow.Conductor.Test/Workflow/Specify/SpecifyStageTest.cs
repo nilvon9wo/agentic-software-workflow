@@ -19,6 +19,13 @@ public sealed class SpecifyStageTest : IDisposable
     private static readonly WorkItem Item = new(Seven, "Add a clock", "Show the time.", ["ready"], [], false);
     private static readonly AgentUsage NoUsage = new(0, 0, 0m, 0, []);
 
+    private static readonly ProposalReview UnderReview = new(
+        Seven,
+        "https://github.com/owner/repository/pull/9",
+        "aswf/specify-7",
+        [new WorkComment("maintainer", "Make it general.", true, false)]
+    );
+
     private static readonly WorkItem Answered = Item with
     {
         Comments =
@@ -376,6 +383,108 @@ public sealed class SpecifyStageTest : IDisposable
 
         // Assert
         Assert.Empty(this._gate.ReceivedCalls());
+    }
+
+    [Fact]
+    public async Task Revise_WhenGivenAReview_BriefsTheSpecifierWithItsSpecificationAndTheFeedback()
+    {
+        // Arrange
+        string specDirectory = Path.Combine(this._workspace.FullName, "spec");
+        _ = Directory.CreateDirectory(specDirectory);
+        await File.WriteAllTextAsync(
+            Path.Combine(specDirectory, "7-add-a-clock.md"),
+            "# Show the time\n\nThe first draft.\n",
+            TestContext.Current.CancellationToken
+        );
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
+
+        // Act
+        _ = await stage.Revise(UnderReview, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = await this._agent.Received(1).Run(
+            Arg.Is<AgentTask>(
+                task => task.Prompt.Contains("The first draft.")
+                    && task.Prompt.Contains("### maintainer reviewed\n\nMake it general.")
+            ),
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheSpecificationFileIsMissing_SaysSoInTheBrief()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
+
+        // Act
+        _ = await stage.Revise(UnderReview, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = await this._agent.Received(1).Run(
+            Arg.Is<AgentTask>(task => task.Prompt.Contains("The specification file was not found")),
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheRevisionPassesTheChecks_RewritesTheSpecification()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Revised."}""");
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
+
+        // Act
+        Fin<SpecifyOutcome> outcome = await stage.Revise(
+            UnderReview,
+            this._workspace.FullName,
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(new Specified("spec/7-add-a-clock.md"), AssertSuccess(outcome));
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheItemIsStillWaitingOnAnAnswer_WaitsWithoutRunningTheSpecifier()
+    {
+        // Arrange
+        _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item with { IsWaiting = true }));
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
+
+        // Act
+        Fin<SpecifyOutcome> outcome = await stage.Revise(
+            UnderReview,
+            this._workspace.FullName,
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal((new StillWaiting(), 0), (AssertSuccess(outcome), this._agent.ReceivedCalls().Count()));
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheItemsQuestionHasBeenAnswered_ResolvesItBeforeRevising()
+    {
+        // Arrange
+        _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Answered));
+        _ = this._work.Resolve(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Revised."}""");
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
+
+        // Act
+        _ = await stage.Revise(UnderReview, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        Received.InOrder(
+            () =>
+            {
+                _ = this._work.Resolve(Seven, Arg.Any<CancellationToken>());
+                _ = this._agent.Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>());
+            }
+        );
     }
 
     public void Dispose() => this._workspace.Delete(recursive: true);

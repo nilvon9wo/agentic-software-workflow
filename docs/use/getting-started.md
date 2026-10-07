@@ -94,6 +94,11 @@ again. An issue whose specification has been proposed moves from `ready` to
 `specified`, so it is never specified twice. Issues waiting on you are
 skipped until you reply.
 
+- **Reviewing a specification**: review its pull request the usual way.
+  Approve it, and it merges. Comment, request changes, or comment on lines,
+  and the next pass revises the specification on the same pull request — the
+  specifier gets the issue, the current specification and your review — then
+  replies there. Only maintainers' reviews count.
 - **Usage limit reached**: the conductor reads when the limit resets
   (Claude Code reports it), waits until a minute after, and retries the same
   issue. Nothing is lost and nothing needs you.

@@ -27,22 +27,19 @@ public sealed class GitRepository(IProcessCapable processes, string repositoryRo
     /// A new workspace on a new branch, starting from the remote's latest
     /// <paramref name="baseBranch"/> — never from whatever happens to be checked out.
     /// </summary>
-    public async Task<Fin<Workspace>> CreateWorkspace(
+    public Task<Fin<Workspace>> CreateWorkspace(
         string branch,
         string baseBranch,
         CancellationToken cancellationToken
-    )
-    {
-        string path = this.WorkspacePathFor(branch);
-        Fin<string> fetched = await this._git.Run(["fetch", Remote, baseBranch], cancellationToken);
-        Fin<string> added = await fetched.Then(
-            _ => this._git.Run(
-                ["worktree", "add", "-b", branch, path, $"{Remote}/{baseBranch}"],
-                cancellationToken
-            )
-        );
-        return added.Map(_ => new Workspace(path, branch));
-    }
+    ) =>
+        this.AddWorkspace(branch, baseBranch, cancellationToken);
+
+    /// <summary>
+    /// A fresh working copy of a branch that already exists on the remote — a
+    /// proposal under review — so a revision is added to it as a new commit.
+    /// </summary>
+    public Task<Fin<Workspace>> OpenWorkspace(string branch, CancellationToken cancellationToken) =>
+        this.AddWorkspace(branch, branch, cancellationToken);
 
     /// <summary>Commits exactly the named paths, as the workers' identity.</summary>
     public async Task<Fin<Unit>> Commit(
@@ -91,6 +88,23 @@ public sealed class GitRepository(IProcessCapable processes, string repositoryRo
             _ => this._git.Run(["branch", "--delete", "--force", workspace.Branch], cancellationToken)
         );
         return deleted.Map(_ => Unit.Default);
+    }
+
+    private async Task<Fin<Workspace>> AddWorkspace(
+        string branch,
+        string startingFrom,
+        CancellationToken cancellationToken
+    )
+    {
+        string path = this.WorkspacePathFor(branch);
+        Fin<string> fetched = await this._git.Run(["fetch", Remote, startingFrom], cancellationToken);
+        Fin<string> added = await fetched.Then(
+            _ => this._git.Run(
+                ["worktree", "add", "-b", branch, path, $"{Remote}/{startingFrom}"],
+                cancellationToken
+            )
+        );
+        return added.Map(_ => new Workspace(path, branch));
     }
 
     private string WorkspacePathFor(string branch)

@@ -246,6 +246,9 @@ public sealed class CommandLineTest : IDisposable
             test._settingsUsed.Add(settings);
             GitRepository git = new(test._processes, repositoryRoot, settings.CommitAuthor);
             IChangeProposing changes = Substitute.For<IChangeProposing>();
+            _ = changes
+                .ListAwaitingRevision(Arg.Any<CancellationToken>())
+                .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
             IGateKeeping gate = Substitute.For<IGateKeeping>();
             _ = gate.Check(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
             SpecifyStage stage = new(test._work, test._agent, gate);

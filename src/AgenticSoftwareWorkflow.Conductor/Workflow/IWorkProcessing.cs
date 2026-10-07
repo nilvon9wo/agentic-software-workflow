@@ -11,4 +11,10 @@ public interface IWorkProcessing
 {
     /// <summary>What happened, in a sentence fit for a person to read.</summary>
     Task<Fin<string>> Run(WorkItemId id, CancellationToken cancellationToken);
+
+    /// <summary>The items whose proposals a maintainer has reviewed since they last changed.</summary>
+    Task<Fin<IReadOnlyList<WorkItemId>>> ListAwaitingRevision(CancellationToken cancellationToken);
+
+    /// <summary>Revises the item's proposal in response to its review; what happened, for a person.</summary>
+    Task<Fin<string>> Revise(WorkItemId id, CancellationToken cancellationToken);
 }
