@@ -28,6 +28,9 @@ public sealed class PipelineTest
             .Run(Arg.Any<ProcessRequest>(), Arg.Any<CancellationToken>())
             .Returns(new ProcessOutcome(0, "", "", false));
         _ = this._work.ListSpecified(Arg.Any<CancellationToken>()).Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
+        _ = this._changes
+            .ListOpenSpecifications(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
     }
 
     [Fact]

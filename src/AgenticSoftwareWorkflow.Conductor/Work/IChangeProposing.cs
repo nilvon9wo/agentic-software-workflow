@@ -19,6 +19,12 @@ public interface IChangeProposing
     /// </summary>
     Task<Fin<IReadOnlyList<WorkItemId>>> ListAwaitingRevision(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The work items with a specification proposal still open: their
+    /// specification is being written or revised, so nothing may be built yet.
+    /// </summary>
+    Task<Fin<IReadOnlyList<WorkItemId>>> ListOpenSpecifications(CancellationToken cancellationToken);
+
     /// <summary>The open proposal for the item, and the feedback since it last changed.</summary>
     Task<Fin<ProposalReview>> ReadReview(WorkItemId id, CancellationToken cancellationToken);
 

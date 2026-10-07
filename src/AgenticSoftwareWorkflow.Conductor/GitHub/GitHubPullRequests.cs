@@ -60,6 +60,12 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
         return open.Map(this.AwaitingRevision);
     }
 
+    public async Task<Fin<IReadOnlyList<WorkItemId>>> ListOpenSpecifications(CancellationToken cancellationToken)
+    {
+        Fin<List<GitHubPullRequest>> open = await this.OpenProposals(cancellationToken);
+        return open.Map(IReadOnlyList<WorkItemId> (pullRequests) => [.. pullRequests.SelectMany(ItemsOf)]);
+    }
+
     public async Task<Fin<ProposalReview>> ReadReview(WorkItemId id, CancellationToken cancellationToken)
     {
         Fin<List<GitHubPullRequest>> open = await this.OpenProposals(cancellationToken);
