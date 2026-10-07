@@ -6,5 +6,6 @@
     "name": "nilvon9wo-bot",
     "email": "338699558+nilvon9wo-bot@users.noreply.github.com"
   },
-  "documentGate": ["bash", "scripts/gates.sh", "run", "markdownlint", "lychee"]
+  "documentGate": ["bash", "scripts/gates.sh", "run", "markdownlint", "lychee"],
+  "codeGate": ["bash", "-c", "bash scripts/gates.sh verify && bash scripts/gates.sh run"]
 }
