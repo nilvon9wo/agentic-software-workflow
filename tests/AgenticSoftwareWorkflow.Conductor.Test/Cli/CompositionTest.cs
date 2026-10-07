@@ -11,7 +11,8 @@ public sealed class CompositionTest
         "owner/repository",
         "master",
         ["maintainer"],
-        new GitIdentity("repository-bot", "bot@example.com")
+        new GitIdentity("repository-bot", "bot@example.com"),
+        ["true"]
     );
 
     [Fact]

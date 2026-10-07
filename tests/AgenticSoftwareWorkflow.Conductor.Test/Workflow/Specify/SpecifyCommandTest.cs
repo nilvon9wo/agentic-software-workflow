@@ -1,4 +1,5 @@
 using AgenticSoftwareWorkflow.Conductor.Agents;
+using AgenticSoftwareWorkflow.Conductor.Gates;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.Processes;
 using AgenticSoftwareWorkflow.Conductor.Work;
@@ -194,7 +195,10 @@ public sealed class SpecifyCommandTest : IDisposable
     private SpecifyCommand Command()
     {
         GitRepository git = new(this._processes, this._root.FullName, Bot);
-        return new SpecifyCommand(this._work, this._agent, git, this._changes, "master");
+        IGateKeeping gate = Substitute.For<IGateKeeping>();
+        _ = gate.Check(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
+        SpecifyStage stage = new(this._work, this._agent, gate);
+        return new SpecifyCommand(stage, this._work, git, this._changes, "master");
     }
 
     private void SpecifierAnswers(string structuredOutput) =>
