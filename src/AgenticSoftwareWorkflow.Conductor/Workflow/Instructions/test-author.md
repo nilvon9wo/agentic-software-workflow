@@ -23,6 +23,9 @@ copy: read it to learn its conventions before you write anything.
   add it yourself.
 - You may build and run the tests to check what you can. Tests that fail
   because the behaviour is not implemented yet are the point.
+- Format your files with the project's formatter (`dotnet format`) before you
+  finish. No one else may edit the tests, so a formatting error you leave
+  fails the project's checks with no one able to fix it.
 - Some criteria are proven by the project's own checks rather than by a new
   test: that a lint rule or analyzer is active, say, is proven by a canary
   violation (in this repository, under `tests/StyleCanary`) that
