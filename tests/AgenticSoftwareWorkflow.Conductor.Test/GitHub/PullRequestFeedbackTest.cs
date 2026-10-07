@@ -123,7 +123,7 @@ public sealed class PullRequestFeedbackTest
     public void AwaitsRevision_WhenThereAreNoCommitsReviewsOrComments_IsFalse()
     {
         // Arrange
-        GitHubPullRequest pullRequest = new(9, null, null, null, null, null, null, null);
+        GitHubPullRequest pullRequest = new(9, null, null, null, null, null, null, null, null);
 
         // Act
         bool awaits = PullRequestFeedback.AwaitsRevision(pullRequest, Maintainers);
@@ -255,7 +255,7 @@ public sealed class PullRequestFeedbackTest
         // Arrange
         GitHubPullRequest pullRequest = PullRequest() with
         {
-            Commits = [new GitHubCommit(null, null)],
+            Commits = [new GitHubCommit(null, null, null)],
             Comments = [Comment(Maintainer, "Why?") with { CreatedAt = Committed.AddYears(-1) }],
         };
 
@@ -302,10 +302,36 @@ public sealed class PullRequestFeedbackTest
     public void AwaitsRevision_WhenAMaintainerOnlyUpdatedTheBranchSinceReviewing_IsStillTrue()
     {
         // Arrange
-        GitHubCommit updateBranch = new(Committed.AddMinutes(5), [Maintainer]);
+        GitHubCommit updateBranch = new(Committed.AddMinutes(5), [Maintainer], "Edit the clock");
         GitHubPullRequest pullRequest = PullRequest() with
         {
-            Commits = [new GitHubCommit(Committed, [new GitHubAuthor("workers-bot")]), updateBranch],
+            Commits =
+            [
+                new GitHubCommit(Committed, [new GitHubAuthor("workers-bot")], "Specify: a clock (#7)"),
+                updateBranch,
+            ],
+            Reviews = [Review(Maintainer, "CHANGES_REQUESTED", "Use GlobalSuppressions.cs.")],
+        };
+
+        // Act
+        bool awaits = PullRequestFeedback.AwaitsRevision(pullRequest, Maintainers);
+
+        // Assert
+        Assert.True(awaits);
+    }
+
+    [Fact]
+    public void AwaitsRevision_WhenTheBaseWasMergedInSinceTheReview_IsStillTrue()
+    {
+        // Arrange
+        GitHubCommit baseMerged = new(
+            Committed.AddMinutes(5),
+            [new GitHubAuthor("workers-bot")],
+            "Merge branch 'master' into aswf/specify-7"
+        );
+        GitHubPullRequest pullRequest = PullRequest() with
+        {
+            Commits = [new GitHubCommit(Committed, [new GitHubAuthor("workers-bot")], "Specify"), baseMerged],
             Reviews = [Review(Maintainer, "CHANGES_REQUESTED", "Use GlobalSuppressions.cs.")],
         };
 
@@ -323,9 +349,10 @@ public sealed class PullRequestFeedbackTest
             null,
             "aswf/specify-7",
             "REVIEW_REQUIRED",
+            "CLEAN",
             [],
             [],
-            [new GitHubCommit(Committed, [new GitHubAuthor("workers-bot")])]
+            [new GitHubCommit(Committed, [new GitHubAuthor("workers-bot")], "Specify: a clock (#7)")]
         );
 
     /// <summary>A review a minute after the commit; <c>with</c> moves it.</summary>

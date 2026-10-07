@@ -33,6 +33,9 @@ public sealed class RunLoopTest : IDisposable
             .ListAwaitingRevision(Arg.Any<CancellationToken>())
             .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
         _ = this._processing
+            .UpdateBehindProposals(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<string>>([]));
+        _ = this._processing
             .Revise(Arg.Any<WorkItemId>(), Arg.Any<CancellationToken>())
             .Returns(call => Fin.Succ($"Revised {call.Arg<WorkItemId>()}."));
         _ = this._work
@@ -272,6 +275,45 @@ public sealed class RunLoopTest : IDisposable
         Assert.Equal(
             (
                 "[2026-10-07 12:00:00Z] Could not list the proposals awaiting revision: "
+                + "'gh pr list' exited with code 1: offline",
+                1
+            ),
+            (this.LogLines()[0], this.RunCalls())
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenProposalsWereBroughtUpToDate_LogsEachOneFirst()
+    {
+        // Arrange
+        _ = this._processing
+            .UpdateBehindProposals(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<string>>(["Brought PR 9 up to date with master."]));
+        RunLoop loop = this.Loop(RunLoopOptions.Once);
+
+        // Act
+        await loop.Run(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal("[2026-10-07 12:00:00Z] Brought PR 9 up to date with master.", this.LogLines()[0]);
+    }
+
+    [Fact]
+    public async Task Run_WhenTheProposalsCannotBeCheckedForUpdates_LogsWhyAndCarriesOn()
+    {
+        // Arrange
+        _ = this._processing
+            .UpdateBehindProposals(Arg.Any<CancellationToken>())
+            .Returns(Fin.Fail<IReadOnlyList<string>>(new CommandFailed("gh pr list", 1, "offline")));
+        RunLoop loop = this.Loop(RunLoopOptions.Once);
+
+        // Act
+        await loop.Run(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            (
+                "[2026-10-07 12:00:00Z] Could not check the proposals are up to date: "
                 + "'gh pr list' exited with code 1: offline",
                 1
             ),

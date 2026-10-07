@@ -13,6 +13,7 @@ internal sealed record GitHubPullRequest(
     string? Body,
     string? HeadRefName,
     string? ReviewDecision,
+    string? MergeStateStatus,
     List<GitHubReview>? Reviews,
     List<GitHubComment>? Comments,
     List<GitHubCommit>? Commits

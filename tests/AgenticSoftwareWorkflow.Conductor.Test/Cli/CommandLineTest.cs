@@ -249,6 +249,7 @@ public sealed class CommandLineTest : IDisposable
             _ = changes
                 .ListAwaitingRevision(Arg.Any<CancellationToken>())
                 .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
+            _ = changes.UpdateBehind(Arg.Any<CancellationToken>()).Returns(Fin.Succ<IReadOnlyList<string>>([]));
             IGateKeeping gate = Substitute.For<IGateKeeping>();
             _ = gate.Check(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
             SpecifyStage stage = new(test._work, test._agent, gate);

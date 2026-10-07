@@ -11,8 +11,8 @@ namespace AgenticSoftwareWorkflow.Conductor.GitHub;
 /// <remarks>
 /// Only maintainers count, by login, exactly as on issues. Feedback older than
 /// the latest commit has been answered already: a revision is a new commit.
-/// A maintainer's own commits do not count as answers — GitHub's "Update
-/// branch", which merges the base in, is one.
+/// Neither does merging the base branch in ("Update branch", by anyone), nor
+/// any other commit a maintainer made themselves.
 /// </remarks>
 internal static class PullRequestFeedback
 {
@@ -20,6 +20,7 @@ internal static class PullRequestFeedback
     private const string MarkerEnd = " -->";
     private const string Approved = "APPROVED";
     private const string ChangesRequested = "CHANGES_REQUESTED";
+    private const string MergeHeadline = "Merge ";
 
     /// <summary>The hidden line that ties a pull request to its work item.</summary>
     public static string Marker(WorkItemId id) => $"{MarkerStart}{id}{MarkerEnd}";
@@ -80,9 +81,13 @@ internal static class PullRequestFeedback
     private static DateTimeOffset LastChanged(GitHubPullRequest pullRequest, IReadOnlyList<string> maintainers) =>
         (pullRequest.Commits ?? [])
             .Where(commit => !(commit.Authors ?? []).Any(author => IsMaintainers(author, maintainers)))
+            .Where(commit => !IsBaseMerge(commit))
             .Select(commit => commit.CommittedDate ?? DateTimeOffset.MinValue)
             .DefaultIfEmpty(DateTimeOffset.MinValue)
             .Max();
+
+    private static bool IsBaseMerge(GitHubCommit commit) =>
+        (commit.MessageHeadline ?? string.Empty).StartsWith(MergeHeadline, StringComparison.Ordinal);
 
     private static bool IsMaintainers(GitHubAuthor? author, IReadOnlyList<string> maintainers) =>
         author is not null && maintainers.Contains(author.Login, StringComparer.OrdinalIgnoreCase);

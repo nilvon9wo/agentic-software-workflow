@@ -16,7 +16,9 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
 {
     private const string ReadFromStandardInput = "-";
     private const string OwnPullRequests = "@me";
-    private const string ListFields = "number,url,body,headRefName,reviewDecision,reviews,comments,commits";
+    private const string ListFields =
+        "number,url,body,headRefName,reviewDecision,mergeStateStatus,reviews,comments,commits";
+    private const string Behind = "BEHIND";
     // GitHub caps how many records one query may touch, and each pull request
     // brings its commits and their authors: 30 open proposals stays well within.
     private const string ListLimit = "30";
@@ -76,6 +78,17 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
         return commented.Map(_ => Unit.Default);
     }
 
+    public async Task<Fin<IReadOnlyList<string>>> UpdateBehind(CancellationToken cancellationToken)
+    {
+        Fin<List<GitHubPullRequest>> open = await this.OpenProposals(cancellationToken);
+        return await open.Then(
+            pullRequests => this.UpdateEach(
+                [.. pullRequests.Where(pullRequest => pullRequest.MergeStateStatus == Behind)],
+                cancellationToken
+            )
+        );
+    }
+
     private static Fin<GitHubPullRequest> FindFor(List<GitHubPullRequest> pullRequests, WorkItemId id) =>
         pullRequests.Find(pullRequest => PullRequestFeedback.ItemOf(pullRequest) == id) is { } found
             ? Fin.Succ(found)
@@ -98,6 +111,31 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
             pullRequest.HeadRefName ?? string.Empty,
             PullRequestFeedback.Since(pullRequest, comments, this._options.Maintainers)
         );
+
+    // One proposal failing to update (a conflict, say) must not stop the others,
+    // so each outcome is reported rather than the first failure returned.
+    private async Task<Fin<IReadOnlyList<string>>> UpdateEach(
+        List<GitHubPullRequest> behind,
+        CancellationToken cancellationToken
+    )
+    {
+        List<string> reports = [];
+        foreach (GitHubPullRequest pullRequest in behind)
+        {
+            Fin<string> updated = await this._gh.Run(
+                ["pr", "update-branch", $"{pullRequest.Number}", "--repo", this._options.Repository],
+                cancellationToken
+            );
+            reports.Add(
+                updated.Match(
+                    Succ: _ => $"Brought {pullRequest.Url} up to date with {this._baseBranch}.",
+                    Fail: failure => $"Could not bring {pullRequest.Url} up to date: {failure.Message}"
+                )
+            );
+        }
+
+        return Fin.Succ<IReadOnlyList<string>>(reports);
+    }
 
     private async Task<Fin<List<GitHubPullRequest>>> OpenProposals(CancellationToken cancellationToken)
     {
