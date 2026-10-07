@@ -22,6 +22,12 @@ public interface IChangeProposing
     /// <summary>The open proposal for the item, and the feedback since it last changed.</summary>
     Task<Fin<ProposalReview>> ReadReview(WorkItemId id, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Brings every open proposal that has fallen behind the base branch up to
+    /// date, so none waits on a human to do it; what happened to each.
+    /// </summary>
+    Task<Fin<IReadOnlyList<string>>> UpdateBehind(CancellationToken cancellationToken);
+
     /// <summary>Answers on the proposal itself, where its reviewers will see it.</summary>
     Task<Fin<Unit>> Reply(ProposalReview review, string message, CancellationToken cancellationToken);
 }

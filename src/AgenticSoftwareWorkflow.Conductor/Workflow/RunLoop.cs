@@ -47,10 +47,15 @@ public sealed class RunLoop(
         Reply here once it is fixed (or with guidance), and it will try again.
         """;
 
-    // Revisions come first: a maintainer is waiting on them, and they may
-    // change what later items depend on.
+    // Proposals are kept mergeable first, so nothing waits on a human to click
+    // "Update branch". Revisions come next: a maintainer is waiting on them.
     private async Task Pass(CancellationToken cancellationToken)
     {
+        Fin<IReadOnlyList<string>> updated = await this._processing.UpdateBehindProposals(cancellationToken);
+        await updated.Match(
+            Succ: this.LogEach,
+            Fail: failure => this.Log($"Could not check the proposals are up to date: {failure.Message}")
+        );
         Fin<IReadOnlyList<WorkItemId>> awaitingRevision = await this._processing.ListAwaitingRevision(
             cancellationToken
         );
@@ -119,6 +124,14 @@ public sealed class RunLoop(
 
     private Task Pause(TimeSpan duration, CancellationToken cancellationToken) =>
         Task.Delay(duration < TimeSpan.Zero ? TimeSpan.Zero : duration, this._time, cancellationToken);
+
+    private async Task LogEach(IReadOnlyList<string> messages)
+    {
+        foreach (string message in messages)
+        {
+            await this.Log(message);
+        }
+    }
 
     private Task Log(string message) => this._log.WriteLineAsync($"[{this._time.GetUtcNow():u}] {message}");
 

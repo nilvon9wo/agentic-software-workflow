@@ -48,6 +48,9 @@ public sealed class SpecifyCommand(
     private static string DescribeStillWaiting(WorkItemId id) =>
         $"{id} is still waiting on a maintainer's answer; nothing was run.";
 
+    public Task<Fin<IReadOnlyList<string>>> UpdateBehindProposals(CancellationToken cancellationToken) =>
+        this._changes.UpdateBehind(cancellationToken);
+
     public Task<Fin<IReadOnlyList<WorkItemId>>> ListAwaitingRevision(CancellationToken cancellationToken) =>
         this._changes.ListAwaitingRevision(cancellationToken);
 

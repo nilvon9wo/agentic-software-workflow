@@ -12,6 +12,9 @@ public interface IWorkProcessing
     /// <summary>What happened, in a sentence fit for a person to read.</summary>
     Task<Fin<string>> Run(WorkItemId id, CancellationToken cancellationToken);
 
+    /// <summary>Keeps open proposals mergeable by bringing any that are behind up to date.</summary>
+    Task<Fin<IReadOnlyList<string>>> UpdateBehindProposals(CancellationToken cancellationToken);
+
     /// <summary>The items whose proposals a maintainer has reviewed since they last changed.</summary>
     Task<Fin<IReadOnlyList<WorkItemId>>> ListAwaitingRevision(CancellationToken cancellationToken);
 

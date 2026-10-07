@@ -326,6 +326,24 @@ public sealed class SpecifyCommandTest : IDisposable
         );
     }
 
+    [Fact]
+    public async Task UpdateBehindProposals_WhenCalled_AsksWhereProposalsLiveToUpdateThem()
+    {
+        // Arrange
+        _ = this._changes
+            .UpdateBehind(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<string>>(["Brought PR 9 up to date with master."]));
+        SpecifyCommand command = this.Command();
+
+        // Act
+        Fin<IReadOnlyList<string>> reports = await command.UpdateBehindProposals(
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(["Brought PR 9 up to date with master."], AssertSuccess(reports));
+    }
+
     public void Dispose() => this._root.Delete(recursive: true);
 
     private SpecifyCommand Command()

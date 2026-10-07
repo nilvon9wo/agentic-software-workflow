@@ -43,6 +43,13 @@ public sealed class GitHubPullRequestsTest
         ]
         """;
 
+    private const string BehindAndClean = """
+        [
+          { "number": 9, "url": "https://github.com/owner/repository/pull/9", "mergeStateStatus": "BEHIND" },
+          { "number": 10, "url": "https://github.com/owner/repository/pull/10", "mergeStateStatus": "CLEAN" }
+        ]
+        """;
+
     private const string LineComments = """
         [
           {
@@ -153,7 +160,7 @@ public sealed class GitHubPullRequestsTest
         // Assert
         Assert.Equal(
             "pr list --repo owner/repository --state open --author @me --json "
-            + "number,url,body,headRefName,reviewDecision,reviews,comments,commits --limit 30",
+            + "number,url,body,headRefName,reviewDecision,mergeStateStatus,reviews,comments,commits --limit 30",
             Assert.Single(this.Commands()).Arguments
         );
     }
@@ -243,6 +250,51 @@ public sealed class GitHubPullRequestsTest
         Assert.Equal(
             ($"pr comment {Address} --repo owner/repository --body-file -", "Revised."),
             Assert.Single(this.Commands())
+        );
+    }
+
+    [Fact]
+    public async Task UpdateBehind_WhenAProposalIsBehind_UpdatesOnlyThatOne()
+    {
+        // Arrange
+        this.Responds(Succeeded(BehindAndClean), Succeeded(""));
+        IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
+
+        // Act
+        _ = await pullRequests.UpdateBehind(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal("pr update-branch 9 --repo owner/repository", this.Commands()[^1].Arguments);
+    }
+
+    [Fact]
+    public async Task UpdateBehind_WhenAProposalIsUpdated_ReportsIt()
+    {
+        // Arrange
+        this.Responds(Succeeded(BehindAndClean), Succeeded(""));
+        IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
+
+        // Act
+        Fin<IReadOnlyList<string>> reports = await pullRequests.UpdateBehind(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal([$"Brought {Address} up to date with master."], AssertSuccess(reports));
+    }
+
+    [Fact]
+    public async Task UpdateBehind_WhenAProposalCannotBeUpdated_ReportsWhy()
+    {
+        // Arrange
+        this.Responds(Succeeded(BehindAndClean), new ProcessOutcome(1, "", "merge conflict", false));
+        IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
+
+        // Act
+        Fin<IReadOnlyList<string>> reports = await pullRequests.UpdateBehind(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            [$"Could not bring {Address} up to date: 'gh pr update-branch' exited with code 1: merge conflict"],
+            AssertSuccess(reports)
         );
     }
 
