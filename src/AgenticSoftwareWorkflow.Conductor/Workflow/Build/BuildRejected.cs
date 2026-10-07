@@ -9,4 +9,4 @@ namespace AgenticSoftwareWorkflow.Conductor.Workflow.Build;
 /// </summary>
 [PublicAPI] // the failure's data is its contract with whoever handles it
 public sealed record BuildRejected(string Stage, string Findings)
-    : ExpectedFailure($"The {Stage} was still not accepted after every allowed attempt:\n{Findings}");
+    : ExpectedFailure($"Gave up on the {Stage}: still not accepted after every allowed attempt:\n{Findings}");
