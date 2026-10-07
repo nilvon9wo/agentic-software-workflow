@@ -23,6 +23,13 @@ copy: read it to learn its conventions before you write anything.
   add it yourself.
 - You may build and run the tests to check what you can. Tests that fail
   because the behaviour is not implemented yet are the point.
+- Some criteria are proven by the project's own checks rather than by a new
+  test: that a lint rule or analyzer is active, say, is proven by a canary
+  violation (in this repository, under `tests/StyleCanary`) that
+  `scripts/gates.sh verify` must catch. For such a criterion, write the
+  canary and name, in your summary, the check that proves it. Never write a
+  test that only re-reads a configuration file: it passes whether or not the
+  configuration works.
 - Change nothing outside the tests. If the specification seems wrong, say so
   in your summary rather than working around it.
 
