@@ -361,6 +361,81 @@ public sealed class PullRequestFeedbackTest
         Assert.True(item.IsNone);
     }
 
+    [Fact]
+    public void AwaitsRevision_WhenAMaintainerApprovedAndGitHubReportsNoDecision_IsFalse()
+    {
+        // Arrange
+        GitHubPullRequest pullRequest = PullRequest() with
+        {
+            ReviewDecision = "",
+            Reviews = [Review(Maintainer, "APPROVED", "")],
+        };
+
+        // Act
+        bool awaits = PullRequestFeedback.AwaitsRevision(pullRequest, Maintainers);
+
+        // Assert
+        Assert.False(awaits);
+    }
+
+    [Fact]
+    public void AwaitsRevision_WhenAMaintainerCommentedThenApproved_IsFalse()
+    {
+        // Arrange
+        GitHubPullRequest pullRequest = PullRequest() with
+        {
+            ReviewDecision = "",
+            Reviews =
+            [
+                Review(Maintainer, "COMMENTED", "Why?"),
+                Review(Maintainer, "APPROVED", "Fine.") with { SubmittedAt = Committed.AddMinutes(2) },
+            ],
+        };
+
+        // Act
+        bool awaits = PullRequestFeedback.AwaitsRevision(pullRequest, Maintainers);
+
+        // Assert
+        Assert.False(awaits);
+    }
+
+    [Fact]
+    public void AwaitsRevision_WhenAMaintainerApprovedThenRequestedChanges_IsTrue()
+    {
+        // Arrange
+        GitHubPullRequest pullRequest = PullRequest() with
+        {
+            ReviewDecision = "",
+            Reviews =
+            [
+                Review(Maintainer, "APPROVED", ""),
+                Review(Maintainer, "CHANGES_REQUESTED", "On second thought…") with
+                {
+                    SubmittedAt = Committed.AddMinutes(2),
+                },
+            ],
+        };
+
+        // Act
+        bool awaits = PullRequestFeedback.AwaitsRevision(pullRequest, Maintainers);
+
+        // Assert
+        Assert.True(awaits);
+    }
+
+    [Fact]
+    public void Since_WhenAMaintainerApprovedWithAComment_LeavesTheApprovalOut()
+    {
+        // Arrange
+        GitHubPullRequest pullRequest = PullRequest() with { Reviews = [Review(Maintainer, "APPROVED", "Ship it.")] };
+
+        // Act
+        IReadOnlyList<WorkComment> feedback = PullRequestFeedback.Since(pullRequest, [], Maintainers);
+
+        // Assert
+        Assert.Empty(feedback);
+    }
+
     private static GitHubPullRequest PullRequest() =>
         new(
             9,

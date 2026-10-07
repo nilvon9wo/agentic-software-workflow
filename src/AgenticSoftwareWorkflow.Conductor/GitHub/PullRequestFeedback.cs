@@ -44,15 +44,19 @@ internal static class PullRequestFeedback
             : WorkItemId.Parse(body[(start + MarkerStart.Length)..end]);
     }
 
-    /// <summary>Not approved, and a maintainer has reviewed or commented since the latest commit.</summary>
+    /// <summary>
+    /// Not approved, and a maintainer has asked for something since the latest
+    /// commit: requested changes, commented in a review, or commented on the pull
+    /// request. An approval is never a request to revise.
+    /// </summary>
     public static bool AwaitsRevision(GitHubPullRequest pullRequest, IReadOnlyList<string> maintainers)
     {
         DateTimeOffset changed = LastChanged(pullRequest, maintainers);
-        bool isReviewedSince = (pullRequest.Reviews ?? [])
-            .Any(review => IsMaintainers(review.Author, maintainers) && review.SubmittedAt > changed);
+        bool isReviewedSince = MaintainersReviews(pullRequest, maintainers)
+            .Any(review => review.State != Approved && review.SubmittedAt > changed);
         bool isCommentedSince = (pullRequest.Comments ?? [])
             .Any(comment => IsMaintainers(comment.Author, maintainers) && comment.CreatedAt > changed);
-        return pullRequest.ReviewDecision != Approved && (isReviewedSince || isCommentedSince);
+        return !IsApproved(pullRequest, maintainers) && (isReviewedSince || isCommentedSince);
     }
 
     /// <summary>
@@ -69,6 +73,7 @@ internal static class PullRequestFeedback
         DateTimeOffset changed = LastChanged(pullRequest, maintainers);
         IEnumerable<(DateTimeOffset At, WorkComment Comment)> reviews = (pullRequest.Reviews ?? [])
             .Where(review => IsMaintainers(review.Author, maintainers) && review.SubmittedAt > changed)
+            .Where(review => review.State != Approved)
             .Where(review => review.State == ChangesRequested || !string.IsNullOrWhiteSpace(review.Body))
             .Select(
                 review => (
@@ -92,6 +97,20 @@ internal static class PullRequestFeedback
             .Select(commit => commit.CommittedDate ?? DateTimeOffset.MinValue)
             .DefaultIfEmpty(DateTimeOffset.MinValue)
             .Max();
+
+    // A repository that requires no approving reviews reports no review
+    // decision at all, so a maintainer's own latest verdict counts too.
+    private static bool IsApproved(GitHubPullRequest pullRequest, IReadOnlyList<string> maintainers) =>
+        pullRequest.ReviewDecision == Approved
+        || MaintainersReviews(pullRequest, maintainers)
+            .Where(review => review.State is Approved or ChangesRequested)
+            .MaxBy(review => review.SubmittedAt)?.State == Approved;
+
+    private static IEnumerable<GitHubReview> MaintainersReviews(
+        GitHubPullRequest pullRequest,
+        IReadOnlyList<string> maintainers
+    ) =>
+        (pullRequest.Reviews ?? []).Where(review => IsMaintainers(review.Author, maintainers));
 
     private static bool IsBaseMerge(GitHubCommit commit) =>
         (commit.MessageHeadline ?? string.Empty).StartsWith(MergeHeadline, StringComparison.Ordinal);

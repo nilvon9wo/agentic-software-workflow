@@ -57,9 +57,18 @@ public sealed class SpecifyCommand(
     public async Task<Fin<string>> Revise(WorkItemId id, CancellationToken cancellationToken)
     {
         Fin<ProposalReview> review = await this._changes.ReadReview(id, cancellationToken);
-        Fin<Workspace> workspace = await review.Then(found => this._git.OpenWorkspace(found.Branch, cancellationToken));
-        Fin<string> report = await review.Then(
-            found => workspace.Then(opened => this.ReviseIn(new Revision(found, opened), cancellationToken))
+        return await review.Then(
+            found => found.Feedback.Count == 0
+                ? Task.FromResult(Fin.Succ($"{id}: no feedback to revise from; nothing was run."))
+                : this.ReviseWith(found, cancellationToken)
+        );
+    }
+
+    private async Task<Fin<string>> ReviseWith(ProposalReview review, CancellationToken cancellationToken)
+    {
+        Fin<Workspace> workspace = await this._git.OpenWorkspace(review.Branch, cancellationToken);
+        Fin<string> report = await workspace.Then(
+            opened => this.ReviseIn(new Revision(review, opened), cancellationToken)
         );
         Fin<Unit> removed = await workspace.Then(opened => this._git.RemoveWorkspace(opened, cancellationToken));
         return report.Bind(message => removed.Map(_ => message));
