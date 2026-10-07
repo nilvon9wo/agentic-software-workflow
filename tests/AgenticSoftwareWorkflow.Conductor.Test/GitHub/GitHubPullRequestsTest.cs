@@ -153,7 +153,7 @@ public sealed class GitHubPullRequestsTest
         // Assert
         Assert.Equal(
             "pr list --repo owner/repository --state open --author @me --json "
-            + "number,url,body,headRefName,reviewDecision,reviews,comments,commits --limit 100",
+            + "number,url,body,headRefName,reviewDecision,reviews,comments,commits --limit 30",
             Assert.Single(this.Commands()).Arguments
         );
     }

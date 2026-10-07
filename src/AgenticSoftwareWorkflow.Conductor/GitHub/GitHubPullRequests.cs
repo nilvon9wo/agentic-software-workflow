@@ -17,7 +17,9 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
     private const string ReadFromStandardInput = "-";
     private const string OwnPullRequests = "@me";
     private const string ListFields = "number,url,body,headRefName,reviewDecision,reviews,comments,commits";
-    private const string ListLimit = "100";
+    // GitHub caps how many records one query may touch, and each pull request
+    // brings its commits and their authors: 30 open proposals stays well within.
+    private const string ListLimit = "30";
 
     private readonly CommandLineTool _gh = new(processes, options.Executable, options.WorkingDirectory);
     private readonly GitHubOptions _options = options;
