@@ -379,3 +379,7 @@ resharper_replace_with_primary_constructor_parameter_highlighting = none
 # testing through the port is the point - and test performance is irrelevant.
 dotnet_diagnostic.CA1859.severity = none
 resharper_join_declaration_and_initializer_highlighting = none
+# HLQ005 (prefer First() over Single()) would weaken the tests: in a test,
+# Single() is the assertion that there is exactly one element, and First()
+# would silently accept two.
+dotnet_diagnostic.HLQ005.severity = none

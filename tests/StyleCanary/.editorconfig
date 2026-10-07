@@ -4,3 +4,6 @@
 # to explain it. The real code keeps every rule at `error`.
 [*.cs]
 dotnet_diagnostic.CA1805.severity = suggestion
+# Canary-only: the root .editorconfig turns HLQ005 off for everything under
+# tests/, so the canary turns it back on to prove the Hyperlinq analyzer runs.
+dotnet_diagnostic.HLQ005.severity = error

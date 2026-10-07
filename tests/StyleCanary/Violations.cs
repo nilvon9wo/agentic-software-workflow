@@ -41,4 +41,6 @@ public sealed class Violations
     {
         System.Threading.Tasks.Task.Delay(1); // expect: build:VSTHRD110
     }
+
+    public int Only(int[] values) => values.Single(); // expect: build:HLQ005
 }
