@@ -17,6 +17,13 @@ public sealed class SpecifyCommandTest : IDisposable
     private static readonly WorkItemId Seven = new("github:owner/repository", "7");
     private static readonly WorkItem Item = new(Seven, "Add a clock", "Show the time.", ["ready"], [], false);
     private static readonly AgentUsage NoUsage = new(0, 0, 0m, 0, []);
+
+    private static readonly ProposalReview Review = new(
+        Seven,
+        Address,
+        "aswf/specify-7",
+        [new WorkComment("maintainer", "Make it general.", true, false)]
+    );
     private static readonly GitIdentity Bot = new("repository-bot", "bot@example.com");
 
     private readonly IWorkSupplying _work = Substitute.For<IWorkSupplying>();
@@ -34,13 +41,17 @@ public sealed class SpecifyCommandTest : IDisposable
             .Run(Arg.Any<ProcessRequest>(), Arg.Any<CancellationToken>())
             .Returns(new ProcessOutcome(0, "", "", false));
         _ = this._changes.Propose(Arg.Any<ChangeProposal>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Address));
+        _ = this._changes.ReadReview(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Review));
+        _ = this._changes
+            .Reply(Arg.Any<ProposalReview>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ(Unit.Default));
     }
 
     [Fact]
     public async Task Run_WhenTheItemIsSpecified_ProposesTheSpecificationForReview()
     {
         // Arrange
-        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"# Show the time in UTC\n\nSpec."}""");
         SpecifyCommand command = this.Command();
 
         // Act
@@ -54,7 +65,7 @@ public sealed class SpecifyCommandTest : IDisposable
         _ = await this._changes.Received(1).Propose(
             Arg.Is<ChangeProposal>(proposal =>
                 proposal.Branch == "aswf/specify-7"
-                && proposal.Title == "Specification for github:owner/repository#7"
+                && proposal.Title == "Specify: Show the time in UTC (#7)"
             ),
             Arg.Any<CancellationToken>()
         );
@@ -190,6 +201,131 @@ public sealed class SpecifyCommandTest : IDisposable
         );
     }
 
+    [Fact]
+    public async Task ListAwaitingRevision_WhenCalled_AsksWhereProposalsAreReviewed()
+    {
+        // Arrange
+        _ = this._changes
+            .ListAwaitingRevision(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([Seven]));
+        SpecifyCommand command = this.Command();
+
+        // Act
+        Fin<IReadOnlyList<WorkItemId>> awaiting = await command.ListAwaitingRevision(
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal([Seven], AssertSuccess(awaiting));
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheSpecifierRevises_PushesToTheProposalsOwnBranch()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"# Show the time in UTC\n\nRevised."}""");
+        SpecifyCommand command = this.Command();
+
+        // Act
+        _ = await command.Revise(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Contains(
+            "worktree add -b aswf/specify-7",
+            this.GitCommands().Single(arguments => arguments.StartsWith("worktree add", StringComparison.Ordinal)),
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheSpecifierRevises_RepliesOnTheProposal()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"# Show the time in UTC\n\nRevised."}""");
+        SpecifyCommand command = this.Command();
+
+        // Act
+        Fin<string> report = await command.Revise(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            "github:owner/repository#7: Revised the specification in response to the review above; "
+            + $"see the latest commit. ({Address})",
+            AssertSuccess(report)
+        );
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheSpecifierAsksInstead_SaysSoOnTheProposal()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"questions","questions":["Which files?"]}""");
+        SpecifyCommand command = this.Command();
+
+        // Act
+        _ = await command.Revise(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = await this._changes.Received(1).Reply(
+            Review,
+            "The specifier needs answers before it can revise this; it has asked them on the issue.",
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheReviewCannotBeRead_FailsWithoutCheckingAnythingOut()
+    {
+        // Arrange
+        _ = this._changes
+            .ReadReview(Seven, Arg.Any<CancellationToken>())
+            .Returns(Fin.Fail<ProposalReview>(new ProposalNotFound(Seven)));
+        SpecifyCommand command = this.Command();
+
+        // Act
+        Fin<string> report = await command.Revise(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        ProposalNotFound notFound = Assert.IsType<ProposalNotFound>(AssertFailure(report));
+        Assert.Equal((Seven, 0), (notFound.Item, this.GitCommands().Count));
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheItemIsStillWaitingOnAnAnswer_SaysSoWithoutReplying()
+    {
+        // Arrange
+        _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item with { IsWaiting = true }));
+        SpecifyCommand command = this.Command();
+
+        // Act
+        Fin<string> report = await command.Revise(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            "github:owner/repository#7 is still waiting on a maintainer's answer; nothing was run.",
+            AssertSuccess(report)
+        );
+    }
+
+    [Fact]
+    public async Task Revise_WhenTheSpecifierFails_StillRemovesTheWorkspace()
+    {
+        // Arrange
+        _ = this._agent
+            .Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>())
+            .Returns(Fin.Fail<AgentResult>(new AgentTimedOut(TimeSpan.FromMinutes(15))));
+        SpecifyCommand command = this.Command();
+
+        // Act
+        Fin<string> report = await command.Revise(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            (true, "worktree remove"),
+            (report.IsFail, this.GitCommands()[^2][..15])
+        );
+    }
+
     public void Dispose() => this._root.Delete(recursive: true);
 
     private SpecifyCommand Command()
@@ -212,5 +348,13 @@ public sealed class SpecifyCommandTest : IDisposable
                 .ReceivedCalls()
                 .Select(call => (ProcessRequest)call.GetArguments()[0]!)
                 .Select(request => request.Arguments[0]),
+        ];
+
+    private List<string> GitCommands() =>
+        [
+            .. this._processes
+                .ReceivedCalls()
+                .Select(call => (ProcessRequest)call.GetArguments()[0]!)
+                .Select(request => string.Join(' ', request.Arguments)),
         ];
 }

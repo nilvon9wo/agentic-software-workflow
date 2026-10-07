@@ -29,6 +29,12 @@ public sealed class RunLoopTest : IDisposable
         _ = this._processing
             .Run(Arg.Any<WorkItemId>(), Arg.Any<CancellationToken>())
             .Returns(call => Fin.Succ($"Did {call.Arg<WorkItemId>()}."));
+        _ = this._processing
+            .ListAwaitingRevision(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
+        _ = this._processing
+            .Revise(Arg.Any<WorkItemId>(), Arg.Any<CancellationToken>())
+            .Returns(call => Fin.Succ($"Revised {call.Arg<WorkItemId>()}."));
         _ = this._work
             .Ask(Arg.Any<WorkItemId>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Fin.Succ(Unit.Default));
@@ -88,7 +94,7 @@ public sealed class RunLoopTest : IDisposable
                 "[2026-10-07 12:00:00Z] Could not list the ready items: 'gh issue list' exited with code 1: offline",
                 0
             ),
-            (Assert.Single(this.LogLines()), this._processing.ReceivedCalls().Count())
+            (Assert.Single(this.LogLines()), this.RunCalls())
         );
     }
 
@@ -228,6 +234,51 @@ public sealed class RunLoopTest : IDisposable
         await secondPass.Task.WaitAsync(Settle, TestContext.Current.CancellationToken);
     }
 
+    [Fact]
+    public async Task Run_WhenAProposalAwaitsRevision_RevisesItBeforeTheReadyItems()
+    {
+        // Arrange
+        _ = this._processing
+            .ListAwaitingRevision(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([Eight]));
+        RunLoop loop = this.Loop(RunLoopOptions.Once);
+
+        // Act
+        await loop.Run(TestContext.Current.CancellationToken);
+
+        // Assert
+        Received.InOrder(
+            () =>
+            {
+                _ = this._processing.Revise(Eight, Arg.Any<CancellationToken>());
+                _ = this._processing.Run(Seven, Arg.Any<CancellationToken>());
+            }
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenTheProposalsCannotBeListed_LogsWhyAndStillProcessesTheReadyItems()
+    {
+        // Arrange
+        _ = this._processing
+            .ListAwaitingRevision(Arg.Any<CancellationToken>())
+            .Returns(Fin.Fail<IReadOnlyList<WorkItemId>>(new CommandFailed("gh pr list", 1, "offline")));
+        RunLoop loop = this.Loop(RunLoopOptions.Once);
+
+        // Act
+        await loop.Run(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            (
+                "[2026-10-07 12:00:00Z] Could not list the proposals awaiting revision: "
+                + "'gh pr list' exited with code 1: offline",
+                1
+            ),
+            (this.LogLines()[0], this.RunCalls())
+        );
+    }
+
     public void Dispose()
     {
         this._stopping.Cancel();
@@ -249,4 +300,9 @@ public sealed class RunLoopTest : IDisposable
 
     private List<string> LogLines() =>
         [.. this._log.ToString().ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries)];
+
+    private int RunCalls() =>
+        this._processing
+            .ReceivedCalls()
+            .Count(call => call.GetMethodInfo().Name == nameof(IWorkProcessing.Run));
 }

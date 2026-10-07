@@ -38,7 +38,41 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent, IGateKeepi
     )
     {
         Fin<WorkItem> item = await this._work.Read(id, cancellationToken);
-        return await item.Then(read => this.Begin(read, workingDirectory, cancellationToken));
+        return await item.Then(
+            read => this.Begin(read, () => this.Specify(read, workingDirectory, cancellationToken), cancellationToken)
+        );
+    }
+
+    /// <summary>
+    /// Revises a proposed specification in response to its review, in a workspace
+    /// holding the proposal's branch. The revision is held to the same checks, and
+    /// waits, like specifying does, while a question the specifier asked is unanswered.
+    /// </summary>
+    public async Task<Fin<SpecifyOutcome>> Revise(
+        ProposalReview review,
+        string workingDirectory,
+        CancellationToken cancellationToken
+    )
+    {
+        Fin<WorkItem> item = await this._work.Read(review.Item, cancellationToken);
+        return await item.Then(
+            read => this.Begin(
+                read,
+                () => this.Attempt(RevisionAttempt(read, review, workingDirectory), cancellationToken),
+                cancellationToken
+            )
+        );
+    }
+
+    private static SpecifyAttempt RevisionAttempt(WorkItem item, ProposalReview review, string workingDirectory)
+    {
+        string fileName = SpecificationFileName.For(item);
+        string path = Path.Combine(workingDirectory, WorkspaceLayout.SpecificationDirectory, fileName);
+        string current = File.Exists(path)
+            ? File.ReadAllText(path)
+            : "(The specification file was not found; write it afresh.)";
+        string brief = RevisionBrief.Describe(item, current, review.Feedback);
+        return new SpecifyAttempt(item, workingDirectory, brief, true);
     }
 
     private static AgentTask SpecifierTask(SpecifyAttempt attempt) =>
@@ -101,24 +135,24 @@ public sealed class SpecifyStage(IWorkSupplying work, IAgentic agent, IGateKeepi
     // an unanswered one is left alone, so no agent run is spent re-asking.
     private Task<Fin<SpecifyOutcome>> Begin(
         WorkItem item,
-        string workingDirectory,
+        Func<Task<Fin<SpecifyOutcome>>> work,
         CancellationToken cancellationToken
     ) =>
         item switch
         {
-            { IsAnswered: true } => this.ResolveThenSpecify(item, workingDirectory, cancellationToken),
+            { IsAnswered: true } => this.ResolveThen(item.Id, work, cancellationToken),
             { IsWaiting: true } => Task.FromResult(Fin.Succ<SpecifyOutcome>(new StillWaiting())),
-            _ => this.Specify(item, workingDirectory, cancellationToken),
+            _ => work(),
         };
 
-    private async Task<Fin<SpecifyOutcome>> ResolveThenSpecify(
-        WorkItem item,
-        string workingDirectory,
+    private async Task<Fin<SpecifyOutcome>> ResolveThen(
+        WorkItemId id,
+        Func<Task<Fin<SpecifyOutcome>>> work,
         CancellationToken cancellationToken
     )
     {
-        Fin<Unit> resolved = await this._work.Resolve(item.Id, cancellationToken);
-        return await resolved.Then(_ => this.Specify(item, workingDirectory, cancellationToken));
+        Fin<Unit> resolved = await this._work.Resolve(id, cancellationToken);
+        return await resolved.Then(_ => work());
     }
 
     private Task<Fin<SpecifyOutcome>> Specify(

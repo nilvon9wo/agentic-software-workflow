@@ -15,6 +15,9 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
     : IChangeProposing
 {
     private const string ReadFromStandardInput = "-";
+    private const string OwnPullRequests = "@me";
+    private const string ListFields = "number,url,body,headRefName,reviewDecision,reviews,comments,commits";
+    private const string ListLimit = "100";
 
     private readonly CommandLineTool _gh = new(processes, options.Executable, options.WorkingDirectory);
     private readonly GitHubOptions _options = options;
@@ -37,7 +40,7 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
                 "--body-file",
                 ReadFromStandardInput,
             ],
-            proposal.Description,
+            $"{proposal.Description}\n\n{PullRequestFeedback.Marker(proposal.Item)}\n",
             cancellationToken
         );
         Fin<string> address = created.Map(output => output.Trim());
@@ -45,5 +48,86 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
             url => this._gh.Run(["pr", "merge", url, "--auto", "--merge"], cancellationToken)
         );
         return merging.Bind(_ => address);
+    }
+
+    public async Task<Fin<IReadOnlyList<WorkItemId>>> ListAwaitingRevision(CancellationToken cancellationToken)
+    {
+        Fin<List<GitHubPullRequest>> open = await this.OpenProposals(cancellationToken);
+        return open.Map(this.AwaitingRevision);
+    }
+
+    public async Task<Fin<ProposalReview>> ReadReview(WorkItemId id, CancellationToken cancellationToken)
+    {
+        Fin<List<GitHubPullRequest>> open = await this.OpenProposals(cancellationToken);
+        Fin<GitHubPullRequest> proposal = open.Bind(pullRequests => FindFor(pullRequests, id));
+        Fin<List<GitHubLineComment>> lines = await proposal.Then(found => this.LineComments(found, cancellationToken));
+        return proposal.Bind(found => lines.Map(comments => this.ToReview(id, found, comments)));
+    }
+
+    public async Task<Fin<Unit>> Reply(ProposalReview review, string message, CancellationToken cancellationToken)
+    {
+        Fin<string> commented = await this._gh.Run(
+            ["pr", "comment", review.Address, "--repo", this._options.Repository, "--body-file", ReadFromStandardInput],
+            message,
+            cancellationToken
+        );
+        return commented.Map(_ => Unit.Default);
+    }
+
+    private static Fin<GitHubPullRequest> FindFor(List<GitHubPullRequest> pullRequests, WorkItemId id) =>
+        pullRequests.Find(pullRequest => PullRequestFeedback.ItemOf(pullRequest) == id) is { } found
+            ? Fin.Succ(found)
+            : Fin.Fail<GitHubPullRequest>(new ProposalNotFound(id));
+
+    private static IEnumerable<WorkItemId> ItemsOf(GitHubPullRequest pullRequest) =>
+        PullRequestFeedback.ItemOf(pullRequest).Match<IEnumerable<WorkItemId>>(Some: id => [id], None: () => []);
+
+    private IReadOnlyList<WorkItemId> AwaitingRevision(List<GitHubPullRequest> pullRequests) =>
+        [
+            .. pullRequests
+                .Where(pullRequest => PullRequestFeedback.AwaitsRevision(pullRequest, this._options.Maintainers))
+                .SelectMany(ItemsOf),
+        ];
+
+    private ProposalReview ToReview(WorkItemId id, GitHubPullRequest pullRequest, List<GitHubLineComment> comments) =>
+        new(
+            id,
+            pullRequest.Url ?? string.Empty,
+            pullRequest.HeadRefName ?? string.Empty,
+            PullRequestFeedback.Since(pullRequest, comments, this._options.Maintainers)
+        );
+
+    private async Task<Fin<List<GitHubPullRequest>>> OpenProposals(CancellationToken cancellationToken)
+    {
+        Fin<string> listed = await this._gh.Run(
+            [
+                "pr",
+                "list",
+                "--repo",
+                this._options.Repository,
+                "--state",
+                "open",
+                "--author",
+                OwnPullRequests,
+                "--json",
+                ListFields,
+                "--limit",
+                ListLimit,
+            ],
+            cancellationToken
+        );
+        return listed.Bind(GitHubIssueReader.ReadPullRequests);
+    }
+
+    private async Task<Fin<List<GitHubLineComment>>> LineComments(
+        GitHubPullRequest pullRequest,
+        CancellationToken cancellationToken
+    )
+    {
+        Fin<string> listed = await this._gh.Run(
+            ["api", $"repos/{this._options.Repository}/pulls/{pullRequest.Number}/comments"],
+            cancellationToken
+        );
+        return listed.Bind(GitHubIssueReader.ReadLineComments);
     }
 }

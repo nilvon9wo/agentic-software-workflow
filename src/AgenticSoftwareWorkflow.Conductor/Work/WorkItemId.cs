@@ -1,3 +1,5 @@
+using LanguageExt;
+
 namespace AgenticSoftwareWorkflow.Conductor.Work;
 
 /// <summary>
@@ -7,6 +9,7 @@ namespace AgenticSoftwareWorkflow.Conductor.Work;
 public sealed record WorkItemId(string Source, string Key)
 {
     private const char Replacement = '-';
+    private const char KeySeparator = '#';
 
     /// <summary>
     /// The key, safe to use in a file or branch name: anything a file name
@@ -22,5 +25,14 @@ public sealed record WorkItemId(string Source, string Key)
         }
     }
 
-    public override string ToString() => $"{this.Source}#{this.Key}";
+    /// <summary>The id <see cref="ToString"/> wrote, or none if the text is not one.</summary>
+    public static Option<WorkItemId> Parse(string text)
+    {
+        int separator = text.LastIndexOf(KeySeparator);
+        return separator > 0 && separator < text.Length - 1
+            ? new WorkItemId(text[..separator], text[(separator + 1)..])
+            : Option<WorkItemId>.None;
+    }
+
+    public override string ToString() => $"{this.Source}{KeySeparator}{this.Key}";
 }
