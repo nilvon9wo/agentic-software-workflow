@@ -1,4 +1,3 @@
-using AgenticSoftwareWorkflow.Conductor.Agents;
 using AgenticSoftwareWorkflow.Conductor.Functional;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.Work;
@@ -13,8 +12,8 @@ namespace AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
 /// removed afterwards.
 /// </summary>
 public sealed class SpecifyCommand(
+    SpecifyStage stage,
     IWorkSupplying work,
-    IAgentic agent,
     GitRepository git,
     IChangeProposing changes,
     string baseBranch
@@ -22,7 +21,7 @@ public sealed class SpecifyCommand(
 {
     private const string BranchPrefix = "aswf/specify-";
 
-    private readonly SpecifyStage _stage = new(work, agent);
+    private readonly SpecifyStage _stage = stage;
     private readonly IWorkSupplying _work = work;
     private readonly GitRepository _git = git;
     private readonly IChangeProposing _changes = changes;

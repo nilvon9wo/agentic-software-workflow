@@ -1,4 +1,5 @@
 using AgenticSoftwareWorkflow.Conductor.Agents;
+using AgenticSoftwareWorkflow.Conductor.Gates;
 using AgenticSoftwareWorkflow.Conductor.Processes;
 using AgenticSoftwareWorkflow.Conductor.Work;
 using AgenticSoftwareWorkflow.Conductor.Workflow;
@@ -30,12 +31,14 @@ public sealed class SpecifyStageTest : IDisposable
 
     private readonly IWorkSupplying _work = Substitute.For<IWorkSupplying>();
     private readonly IAgentic _agent = Substitute.For<IAgentic>();
+    private readonly IGateKeeping _gate = Substitute.For<IGateKeeping>();
     private readonly DirectoryInfo _workspace = Directory.CreateTempSubdirectory("aswf-specify-");
 
     public SpecifyStageTest()
     {
         _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item));
         _ = this._work.Ask(Seven, Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
+        this.GateAnswers(Fin.Succ(Unit.Default));
     }
 
     [Fact]
@@ -43,7 +46,7 @@ public sealed class SpecifyStageTest : IDisposable
     {
         // Arrange
         this.SpecifierAnswers($$"""{"outcome":"specified","specification":"{{Specification.Replace("\n", "\\n")}}"}""");
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -66,7 +69,7 @@ public sealed class SpecifyStageTest : IDisposable
     {
         // Arrange
         this.SpecifierAnswers("""{"outcome":"questions","questions":["Which zone?","Which format?"]}""");
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -91,7 +94,7 @@ public sealed class SpecifyStageTest : IDisposable
     {
         // Arrange
         this.SpecifierAnswers("""{"outcome":"questions","questions":["Which zone?"]}""");
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         _ = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
@@ -116,7 +119,7 @@ public sealed class SpecifyStageTest : IDisposable
         // Arrange
         Error unreadable = new WorkResponseMalformed("unreadable");
         _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Fail<WorkItem>(unreadable));
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -136,7 +139,7 @@ public sealed class SpecifyStageTest : IDisposable
         _ = this._agent
             .Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>())
             .Returns(Fin.Fail<AgentResult>(new AgentTimedOut(TimeSpan.FromMinutes(15))));
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -156,7 +159,7 @@ public sealed class SpecifyStageTest : IDisposable
         _ = this._agent
             .Run(Arg.Any<AgentTask>(), Arg.Any<CancellationToken>())
             .Returns(Fin.Succ(new AgentResult("prose only", Option<string>.None, NoUsage, [])));
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -182,7 +185,7 @@ public sealed class SpecifyStageTest : IDisposable
     {
         // Arrange
         this.SpecifierAnswers(answer);
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -203,7 +206,7 @@ public sealed class SpecifyStageTest : IDisposable
         _ = this._work
             .Ask(Seven, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Fin.Fail<Unit>(new CommandFailed("gh issue comment", 1, "rate limited")));
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -223,7 +226,7 @@ public sealed class SpecifyStageTest : IDisposable
         WorkItemId nested = new("jira:PROJECT", "PROJECT/12");
         _ = this._work.Read(nested, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item with { Id = nested }));
         this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -241,7 +244,7 @@ public sealed class SpecifyStageTest : IDisposable
     {
         // Arrange
         _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Item with { IsWaiting = true }));
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -261,7 +264,7 @@ public sealed class SpecifyStageTest : IDisposable
         _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Answered));
         _ = this._work.Resolve(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Unit.Default));
         this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -288,7 +291,7 @@ public sealed class SpecifyStageTest : IDisposable
         Error rateLimited = new CommandFailed("gh issue edit", 1, "rate limited");
         _ = this._work.Read(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Succ(Answered));
         _ = this._work.Resolve(Seven, Arg.Any<CancellationToken>()).Returns(Fin.Fail<Unit>(rateLimited));
-        SpecifyStage stage = new(this._work, this._agent);
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
 
         // Act
         Fin<SpecifyOutcome> outcome = await stage.Run(
@@ -301,7 +304,86 @@ public sealed class SpecifyStageTest : IDisposable
         Assert.Equal((rateLimited, 0), (AssertFailure(outcome), this._agent.ReceivedCalls().Count()));
     }
 
+    [Fact]
+    public async Task Run_WhenTheSpecificationFailsTheChecks_GivesTheSpecifierTheReportToRepairIt()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        this.GateAnswers(Fin.Fail<Unit>(new GatesFailed("spec/7.md:3 MD013 line too long")), Fin.Succ(Unit.Default));
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
+
+        // Act
+        _ = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = await this._agent.Received(1).Run(
+            Arg.Is<AgentTask>(
+                task => task.Prompt.Contains("spec/7.md:3 MD013 line too long")
+                    && task.Prompt.Contains("Spec.")
+            ),
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenTheRepairPassesTheChecks_ReportsTheSpecification()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        this.GateAnswers(Fin.Fail<Unit>(new GatesFailed("MD013")), Fin.Succ(Unit.Default));
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
+
+        // Act
+        Fin<SpecifyOutcome> outcome = await stage.Run(
+            Seven,
+            this._workspace.FullName,
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(new Specified("spec/7-add-a-clock.md"), AssertSuccess(outcome));
+    }
+
+    [Fact]
+    public async Task Run_WhenTheRepairStillFailsTheChecks_FailsWithTheirReportAfterOneRepair()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"specified","specification":"Spec."}""");
+        GatesFailed stillFailing = new("MD013");
+        this.GateAnswers(Fin.Fail<Unit>(new GatesFailed("MD029")), Fin.Fail<Unit>(stillFailing));
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
+
+        // Act
+        Fin<SpecifyOutcome> outcome = await stage.Run(
+            Seven,
+            this._workspace.FullName,
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal((stillFailing, 2), (AssertFailure(outcome), this._agent.ReceivedCalls().Count()));
+    }
+
+    [Fact]
+    public async Task Run_WhenTheSpecifierAsks_RunsNoChecks()
+    {
+        // Arrange
+        this.SpecifierAnswers("""{"outcome":"questions","questions":["Which zone?"]}""");
+        SpecifyStage stage = new(this._work, this._agent, this._gate);
+
+        // Act
+        _ = await stage.Run(Seven, this._workspace.FullName, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(this._gate.ReceivedCalls());
+    }
+
     public void Dispose() => this._workspace.Delete(recursive: true);
+
+    private void GateAnswers(Fin<Unit> first, params Fin<Unit>[] rest) =>
+        this._gate
+            .Check(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(first, rest);
 
     private void SpecifierAnswers(string structuredOutput) =>
         this._agent
