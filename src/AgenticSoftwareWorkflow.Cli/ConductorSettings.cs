@@ -8,8 +8,9 @@ namespace AgenticSoftwareWorkflow.Cli;
 /// <summary>
 /// How the conductor is set up for one repository, read from <c>aswf.json</c>
 /// at the repository's root: where the work lives, who may answer for it, who
-/// commits on the workers' behalf, and the command that checks the documents
-/// the workers write (<c>documentGate</c>, as an argument list).
+/// commits on the workers' behalf, the command that checks the documents the
+/// workers write (<c>documentGate</c>, as an argument list), and — optionally —
+/// the command that checks code (<c>codeGate</c>); without it, nothing is built.
 /// </summary>
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)] // created by the JSON deserializer
 internal sealed record ConductorSettings(
@@ -17,7 +18,8 @@ internal sealed record ConductorSettings(
     string BaseBranch,
     List<string> Maintainers,
     GitIdentity CommitAuthor,
-    List<string>? DocumentGate
+    List<string>? DocumentGate,
+    List<string>? CodeGate
 )
 {
     public const string FileName = "aswf.json";

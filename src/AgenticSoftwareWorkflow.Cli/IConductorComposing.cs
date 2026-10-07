@@ -11,5 +11,7 @@ internal interface IConductorComposing
 {
     SpecifyCommand CreateSpecifyCommand(ConductorSettings settings, string repositoryRoot);
 
+    Pipeline CreatePipeline(ConductorSettings settings, string repositoryRoot);
+
     RunLoop CreateRunLoop(ConductorSettings settings, CommandContext context, RunLoopOptions options);
 }

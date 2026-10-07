@@ -327,6 +327,41 @@ public sealed class GitHubIssuesTest
         );
     }
 
+    [Fact]
+    public async Task ListSpecified_WhenCalled_ListsTheOpenIssuesLabelledSpecified()
+    {
+        // Arrange
+        this.Responds(Succeeded("[]"));
+        IWorkSupplying issues = new GitHubIssues(this._processes, Options);
+
+        // Act
+        _ = await issues.ListSpecified(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            "issue list --repo owner/repository --label specified --state open --json number,labels --limit 100",
+            string.Join(' ', this.Requests().Single().Arguments)
+        );
+    }
+
+    [Fact]
+    public async Task MarkBuilt_WhenCalled_ReplacesSpecifiedWithBuilt()
+    {
+        // Arrange
+        this.Responds(Succeeded(""));
+        IWorkSupplying issues = new GitHubIssues(this._processes, Options);
+
+        // Act
+        Fin<Unit> marked = await issues.MarkBuilt(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = AssertSuccess(marked);
+        Assert.Equal(
+            "issue edit 7 --repo owner/repository --remove-label specified --add-label built",
+            string.Join(' ', this.Requests().Single().Arguments)
+        );
+    }
+
     private static ProcessOutcome Succeeded(string standardOutput) => new(0, standardOutput, "", false);
 
     private void Responds(ProcessOutcome first, params ProcessOutcome[] rest) =>

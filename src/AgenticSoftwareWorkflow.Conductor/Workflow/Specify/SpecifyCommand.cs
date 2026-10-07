@@ -17,7 +17,7 @@ public sealed class SpecifyCommand(
     GitRepository git,
     IChangeProposing changes,
     string baseBranch
-) : IWorkProcessing
+)
 {
     private const string BranchPrefix = "aswf/specify-";
     private const string Revised =
@@ -111,7 +111,7 @@ public sealed class SpecifyCommand(
             cancellationToken
         );
         Fin<Unit> pushed = await committed.Then(_ => this._git.Push(workspace, cancellationToken));
-        ChangeProposal proposal = new(id, workspace.Branch, title, DescribeProposal(id));
+        ChangeProposal proposal = new(id, ProposalKind.Specification, workspace.Branch, title, DescribeProposal(id));
         Fin<string> proposed = await pushed.Then(_ => this._changes.Propose(proposal, cancellationToken));
         Fin<Unit> marked = await proposed.Then(_ => this._work.MarkSpecified(id, cancellationToken));
         return proposed.Bind(
@@ -130,7 +130,7 @@ public sealed class SpecifyCommand(
             Path.Combine(workspace.Path, specified.SpecificationPath),
             cancellationToken
         );
-        return ProposalTitle.For(id, specification);
+        return ProposalTitle.For("Specify", id, specification);
     }
 
     private async Task<Fin<string>> ReviseIn(Revision revision, CancellationToken cancellationToken)

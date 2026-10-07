@@ -36,6 +36,12 @@ public sealed class RunLoopTest : IDisposable
             .UpdateBehindProposals(Arg.Any<CancellationToken>())
             .Returns(Fin.Succ<IReadOnlyList<string>>([]));
         _ = this._processing
+            .ListBuildable(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([]));
+        _ = this._processing
+            .Build(Arg.Any<WorkItemId>(), Arg.Any<CancellationToken>())
+            .Returns(call => Fin.Succ($"Built {call.Arg<WorkItemId>()}."));
+        _ = this._processing
             .Revise(Arg.Any<WorkItemId>(), Arg.Any<CancellationToken>())
             .Returns(call => Fin.Succ($"Revised {call.Arg<WorkItemId>()}."));
         _ = this._work
@@ -318,6 +324,47 @@ public sealed class RunLoopTest : IDisposable
                 1
             ),
             (this.LogLines()[0], this.RunCalls())
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenAnItemIsReadyToBuild_BuildsItAfterTheReadyItems()
+    {
+        // Arrange
+        _ = this._processing
+            .ListBuildable(Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ<IReadOnlyList<WorkItemId>>([Eight]));
+        RunLoop loop = this.Loop(RunLoopOptions.Once);
+
+        // Act
+        await loop.Run(TestContext.Current.CancellationToken);
+
+        // Assert
+        Received.InOrder(
+            () =>
+            {
+                _ = this._processing.Run(Seven, Arg.Any<CancellationToken>());
+                _ = this._processing.Build(Eight, Arg.Any<CancellationToken>());
+            }
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenTheBuildableItemsCannotBeListed_LogsWhy()
+    {
+        // Arrange
+        _ = this._processing
+            .ListBuildable(Arg.Any<CancellationToken>())
+            .Returns(Fin.Fail<IReadOnlyList<WorkItemId>>(new CommandFailed("git ls-tree", 1, "offline")));
+        RunLoop loop = this.Loop(RunLoopOptions.Once);
+
+        // Act
+        await loop.Run(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            "[2026-10-07 12:00:00Z] Could not list the items ready to build: 'git ls-tree' exited with code 1: offline",
+            this.LogLines()[^1]
         );
     }
 

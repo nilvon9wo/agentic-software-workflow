@@ -6,9 +6,13 @@ why each piece is built (or *not* built) the way it is.
 > **Status.** In place: the quality gates and their canary, CI, branch
 > protection with auto-merge, the agent runner (`IAgentic` with its Claude
 > Code adapter), the role catalogue with enforced access rules, and the work
-> source (`IWorkSupplying` with its GitHub Issues adapter), and the first
-> pipeline stage, issue → specification (`aswf specify`). Next: tests from the
-> specification. Tracked as GitHub issues.
+> source (`IWorkSupplying` with its GitHub Issues adapter); the run loop
+> (`aswf run`), which keeps proposals up to date and waits out usage limits;
+> issue → specification (`aswf specify`), revised from maintainers' reviews;
+> and specification → reviewed tests → implementation through the code gate
+> and a code review → pull request (`aswf build`; merged by a maintainer for
+> now). Next: hidden tests, mutation testing, the arbitrator. Tracked as
+> GitHub issues.
 
 ## The one idea that matters most
 

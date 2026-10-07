@@ -17,13 +17,20 @@ namespace AgenticSoftwareWorkflow.Conductor.GitHub;
 internal static class PullRequestFeedback
 {
     private const string MarkerStart = "<!-- aswf-work-item: ";
+    private const string BuildMarkerStart = "<!-- aswf-build: ";
     private const string MarkerEnd = " -->";
     private const string Approved = "APPROVED";
     private const string ChangesRequested = "CHANGES_REQUESTED";
     private const string MergeHeadline = "Merge ";
 
-    /// <summary>The hidden line that ties a pull request to its work item.</summary>
-    public static string Marker(WorkItemId id) => $"{MarkerStart}{id}{MarkerEnd}";
+    /// <summary>
+    /// The hidden line that ties a pull request to its work item. A build has
+    /// its own, so a specification's revisions never mistake it for the spec.
+    /// </summary>
+    public static string Marker(WorkItemId id, ProposalKind kind) =>
+        kind == ProposalKind.Specification
+            ? $"{MarkerStart}{id}{MarkerEnd}"
+            : $"{BuildMarkerStart}{id}{MarkerEnd}";
 
     public static Option<WorkItemId> ItemOf(GitHubPullRequest pullRequest)
     {

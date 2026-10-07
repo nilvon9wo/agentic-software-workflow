@@ -68,9 +68,16 @@ public sealed class RunLoop(
             Succ: ids => this.ProcessReady(ids, cancellationToken),
             Fail: failure => this.Log($"Could not list the ready items: {failure.Message}")
         );
+        Fin<IReadOnlyList<WorkItemId>> buildable = await this._processing.ListBuildable(cancellationToken);
+        await buildable.Match(
+            Succ: ids => this.ProcessEach([.. ids.Select(this.BuildOf)], cancellationToken),
+            Fail: failure => this.Log($"Could not list the items ready to build: {failure.Message}")
+        );
     }
 
     private Job RevisionOf(WorkItemId id) => new(id, this._processing.Revise);
+
+    private Job BuildOf(WorkItemId id) => new(id, this._processing.Build);
 
     private async Task ProcessReady(IReadOnlyList<WorkItemId> ids, CancellationToken cancellationToken)
     {

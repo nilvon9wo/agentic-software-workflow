@@ -44,13 +44,13 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
                 "--body-file",
                 ReadFromStandardInput,
             ],
-            $"{proposal.Description}\n\n{PullRequestFeedback.Marker(proposal.Item)}\n",
+            $"{proposal.Description}\n\n{PullRequestFeedback.Marker(proposal.Item, proposal.Kind)}\n",
             cancellationToken
         );
         Fin<string> address = created.Map(output => output.Trim());
-        Fin<string> merging = await address.Then(
-            url => this._gh.Run(["pr", "merge", url, "--auto", "--merge"], cancellationToken)
-        );
+        Fin<string> merging = proposal.Kind == ProposalKind.Specification
+            ? await address.Then(url => this._gh.Run(["pr", "merge", url, "--auto", "--merge"], cancellationToken))
+            : address;
         return merging.Bind(_ => address);
     }
 

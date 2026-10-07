@@ -67,6 +67,7 @@ public sealed class GitHubPullRequestsTest
 
     private static readonly ChangeProposal Proposal = new(
         Seven,
+        ProposalKind.Specification,
         "aswf/specify-7",
         "Specify: a clock (#7)",
         "Please review."
@@ -295,6 +296,24 @@ public sealed class GitHubPullRequestsTest
         Assert.Equal(
             [$"Could not bring {Address} up to date: 'gh pr update-branch' exited with code 1: merge conflict"],
             AssertSuccess(reports)
+        );
+    }
+
+    [Fact]
+    public async Task Propose_WhenItIsAnImplementation_TiesItWithABuildMarkerAndLeavesTheMergeToAMaintainer()
+    {
+        // Arrange
+        this.Responds(Succeeded($"{Address}\n"));
+        IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
+        ChangeProposal build = Proposal with { Kind = ProposalKind.Implementation, Branch = "aswf/build-7" };
+
+        // Act
+        _ = await pullRequests.Propose(build, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            "Please review.\n\n<!-- aswf-build: github:owner/repository#7 -->\n",
+            Assert.Single(this.Commands()).Input
         );
     }
 
