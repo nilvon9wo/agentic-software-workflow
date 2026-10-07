@@ -3,16 +3,17 @@ using AgenticSoftwareWorkflow.Conductor.Work;
 namespace AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
 
 /// <summary>
-/// Names a specification's proposal (and its commit) after what it intends,
-/// from the specification's own heading, with the work item's key as a
-/// reference: <c>Specify: Parameterise tests that differ only by data (#25)</c>.
+/// Names a proposal (and its commit) after what it intends, from the
+/// specification's own heading, with the work item's key as a reference:
+/// <c>Specify: Parameterise tests that differ only by data (#25)</c>, or
+/// <c>Build: …</c> for its implementation.
 /// </summary>
 internal static class ProposalTitle
 {
     private const string HeadingStart = "# ";
     private const int MaximumHeadingLength = 100;
 
-    public static string For(WorkItemId id, string specification)
+    public static string For(string verb, WorkItemId id, string specification)
     {
         string heading = specification
             .Split('\n')
@@ -21,7 +22,7 @@ internal static class ProposalTitle
         string intent = heading.Length == 0
             ? $"the work item {id}"
             : Shorten(heading[HeadingStart.Length..].Trim());
-        return $"Specify: {intent} (#{id.Key})";
+        return $"{verb}: {intent} (#{id.Key})";
     }
 
     private static string Shorten(string heading) =>

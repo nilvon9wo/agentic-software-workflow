@@ -35,4 +35,13 @@ public interface IWorkSupplying
     /// ready for specifying, so it is never specified twice.
     /// </summary>
     Task<Fin<Unit>> MarkSpecified(WorkItemId id, CancellationToken cancellationToken);
+
+    /// <summary>Items whose specification has been proposed, and not waiting on a human.</summary>
+    Task<Fin<IReadOnlyList<WorkItemId>>> ListSpecified(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Records that the item's implementation has been proposed: it is no longer
+    /// waiting to be built, so it is never built twice.
+    /// </summary>
+    Task<Fin<Unit>> MarkBuilt(WorkItemId id, CancellationToken cancellationToken);
 }

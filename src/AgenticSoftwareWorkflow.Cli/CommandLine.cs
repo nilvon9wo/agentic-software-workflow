@@ -15,12 +15,14 @@ internal static class CommandLine
     public const int UsageError = 64;
 
     private const string SpecifyVerb = "specify";
+    private const string BuildVerb = "build";
     private const string RunVerb = "run";
     private const string OnceFlag = "--once";
     private const string PassComplete = "The pass is complete.";
 
     private const string Usage = """
         Usage: aswf specify <issue-number>   specify one issue
+               aswf build <issue-number>     build one issue from its approved specification
                aswf run [--once]             work through the ready issues, then keep watching (or stop)
         """;
 
@@ -33,6 +35,8 @@ internal static class CommandLine
         {
             [SpecifyVerb, { } number] when int.TryParse(number, out int issue) =>
                 Specify(issue, context, cancellationToken),
+            [BuildVerb, { } number] when int.TryParse(number, out int issue) =>
+                Build(issue, context, cancellationToken),
             [RunVerb] => RunLoop(RunLoopOptions.Continuous, context, cancellationToken),
             [RunVerb, OnceFlag] => RunLoop(RunLoopOptions.Once, context, cancellationToken),
             _ => Report(context.Output, Usage, UsageError),
@@ -44,6 +48,14 @@ internal static class CommandLine
             settings => context.Composer
                 .CreateSpecifyCommand(settings, context.RepositoryRoot)
                 .Run(new WorkItemId($"github:{settings.Repository}", $"{issue}"), cancellationToken)
+        );
+
+    private static Task<int> Build(int issue, CommandContext context, CancellationToken cancellationToken) =>
+        WithSettings(
+            context,
+            settings => context.Composer
+                .CreatePipeline(settings, context.RepositoryRoot)
+                .Build(new WorkItemId($"github:{settings.Repository}", $"{issue}"), cancellationToken)
         );
 
     private static Task<int> RunLoop(

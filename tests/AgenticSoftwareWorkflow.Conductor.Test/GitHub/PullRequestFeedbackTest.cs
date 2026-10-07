@@ -16,7 +16,10 @@ public sealed class PullRequestFeedbackTest
     public void ItemOf_WhenTheDescriptionHasTheMarker_ReturnsTheItem()
     {
         // Arrange
-        GitHubPullRequest pullRequest = PullRequest() with { Body = $"Text.\n\n{PullRequestFeedback.Marker(Seven)}\n" };
+        GitHubPullRequest pullRequest = PullRequest() with
+        {
+            Body = $"Text.\n\n{PullRequestFeedback.Marker(Seven, ProposalKind.Specification)}\n",
+        };
 
         // Act
         Option<WorkItemId> item = PullRequestFeedback.ItemOf(pullRequest);
@@ -340,6 +343,22 @@ public sealed class PullRequestFeedbackTest
 
         // Assert
         Assert.True(awaits);
+    }
+
+    [Fact]
+    public void ItemOf_WhenTheDescriptionHasOnlyABuildMarker_ReturnsNone()
+    {
+        // Arrange
+        GitHubPullRequest pullRequest = PullRequest() with
+        {
+            Body = PullRequestFeedback.Marker(Seven, ProposalKind.Implementation),
+        };
+
+        // Act
+        Option<WorkItemId> item = PullRequestFeedback.ItemOf(pullRequest);
+
+        // Assert
+        Assert.True(item.IsNone);
     }
 
     private static GitHubPullRequest PullRequest() =>

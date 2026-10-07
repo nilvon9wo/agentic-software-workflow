@@ -10,13 +10,15 @@ namespace AgenticSoftwareWorkflow.Conductor.GitHub;
 /// GitHub Issues as a work source, through the GitHub CLI. An issue labelled
 /// <c>ready</c> is ready; <c>needs-human</c>, plus an assignee, marks one
 /// waiting on a maintainer; <c>specified</c> replaces <c>ready</c> once its
-/// specification has been proposed.
+/// specification has been proposed, and <c>built</c> replaces <c>specified</c>
+/// once its implementation has.
 /// </summary>
 public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions options) : IWorkSupplying
 {
     private const string ReadyLabel = "ready";
     private const string NeedsHumanLabel = "needs-human";
     private const string SpecifiedLabel = "specified";
+    private const string BuiltLabel = "built";
     private const string UnknownAuthor = "ghost";
     private const string ListFields = "number,labels";
     private const string ViewFields = "number,title,body,labels,comments";
@@ -28,7 +30,19 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
 
     private string Source => $"github:{this._options.Repository}";
 
-    public async Task<Fin<IReadOnlyList<WorkItemId>>> ListReady(CancellationToken cancellationToken)
+    public Task<Fin<IReadOnlyList<WorkItemId>>> ListReady(CancellationToken cancellationToken) =>
+        this.ListLabelled(ReadyLabel, cancellationToken);
+
+    public Task<Fin<IReadOnlyList<WorkItemId>>> ListSpecified(CancellationToken cancellationToken) =>
+        this.ListLabelled(SpecifiedLabel, cancellationToken);
+
+    public Task<Fin<Unit>> MarkSpecified(WorkItemId id, CancellationToken cancellationToken) =>
+        this.Relabel(id, new LabelChange(ReadyLabel, SpecifiedLabel), cancellationToken);
+
+    public Task<Fin<Unit>> MarkBuilt(WorkItemId id, CancellationToken cancellationToken) =>
+        this.Relabel(id, new LabelChange(SpecifiedLabel, BuiltLabel), cancellationToken);
+
+    private async Task<Fin<IReadOnlyList<WorkItemId>>> ListLabelled(string label, CancellationToken cancellationToken)
     {
         Fin<string> listed = await this._gh.Run(
             [
@@ -37,7 +51,7 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
                 "--repo",
                 this._options.Repository,
                 "--label",
-                ReadyLabel,
+                label,
                 "--state",
                 "open",
                 "--json",
@@ -88,7 +102,7 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
         return unmarked.Map(_ => Unit.Default);
     }
 
-    public async Task<Fin<Unit>> MarkSpecified(WorkItemId id, CancellationToken cancellationToken)
+    private async Task<Fin<Unit>> Relabel(WorkItemId id, LabelChange change, CancellationToken cancellationToken)
     {
         Fin<string> relabelled = await this.RequireOwn(id).Then(
             _ => this._gh.Run(
@@ -99,9 +113,9 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
                     "--repo",
                     this._options.Repository,
                     "--remove-label",
-                    ReadyLabel,
+                    change.Removed,
                     "--add-label",
-                    SpecifiedLabel,
+                    change.Added,
                 ],
                 string.Empty,
                 cancellationToken
@@ -170,4 +184,7 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
             string.Empty,
             cancellationToken
         );
+
+    /// <summary>One stage label giving way to the next.</summary>
+    private sealed record LabelChange(string Removed, string Added);
 }

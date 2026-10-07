@@ -20,4 +20,10 @@ public interface IWorkProcessing
 
     /// <summary>Revises the item's proposal in response to its review; what happened, for a person.</summary>
     Task<Fin<string>> Revise(WorkItemId id, CancellationToken cancellationToken);
+
+    /// <summary>The items whose approved specification is ready to be built.</summary>
+    Task<Fin<IReadOnlyList<WorkItemId>>> ListBuildable(CancellationToken cancellationToken);
+
+    /// <summary>Builds the item from its approved specification; what happened, for a person.</summary>
+    Task<Fin<string>> Build(WorkItemId id, CancellationToken cancellationToken);
 }

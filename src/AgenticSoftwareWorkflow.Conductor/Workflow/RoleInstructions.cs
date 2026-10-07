@@ -13,6 +13,14 @@ public static class RoleInstructions
 
     public static string Specifier { get; } = Load("specifier.md");
 
+    public static string TestAuthor { get; } = Load("test-author.md");
+
+    public static string TestReviewer { get; } = Load("test-reviewer.md");
+
+    public static string Implementer { get; } = Load("implementer.md");
+
+    public static string CodeReviewer { get; } = Load("code-reviewer.md");
+
     internal static string Load(string fileName)
     {
         Assembly assembly = typeof(RoleInstructions).Assembly;

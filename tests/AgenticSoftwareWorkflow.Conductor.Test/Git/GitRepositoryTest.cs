@@ -143,12 +143,85 @@ public sealed class GitRepositoryTest
         );
     }
 
-    private static ProcessOutcome Succeeded() => new(0, "", "", false);
+    [Fact]
+    public async Task ChangedPaths_WhenCalled_ListsEveryChangedFileIncludingNewOnes()
+    {
+        // Arrange
+        this.Responds(Succeeded(), Succeeded(" src/Clock.cs \ntests/ClockTest.cs\n\n"));
+        GitRepository repository = new(this._processes, Root, Bot);
+
+        // Act
+        Fin<IReadOnlyList<string>> changed = await repository.ChangedPaths(
+            Workspace,
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(["src/Clock.cs", "tests/ClockTest.cs"], AssertSuccess(changed));
+    }
+
+    [Fact]
+    public async Task ChangedPaths_WhenCalled_NotesNewFilesBeforeListingTheChanges()
+    {
+        // Arrange
+        GitRepository repository = new(this._processes, Root, Bot);
+
+        // Act
+        _ = await repository.ChangedPaths(Workspace, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            [(WorkspacePath, "add --intent-to-add --all"), (WorkspacePath, "diff --name-only")],
+            this.Commands()
+        );
+    }
+
+    [Fact]
+    public async Task Diff_WhenCalled_ReturnsTheWorkspacesChangesIncludingNewFiles()
+    {
+        // Arrange
+        this.Responds(Succeeded(), Succeeded("diff --git a/src/Clock.cs b/src/Clock.cs"));
+        GitRepository repository = new(this._processes, Root, Bot);
+
+        // Act
+        Fin<string> diff = await repository.Diff(Workspace, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            ("diff --git a/src/Clock.cs b/src/Clock.cs", "diff --no-color"),
+            (AssertSuccess(diff), this.Commands()[1].Arguments)
+        );
+    }
+
+    [Fact]
+    public async Task FilesOnRemote_WhenCalled_ListsTheDirectoryOnTheFreshlyFetchedBranch()
+    {
+        // Arrange
+        this.Responds(Succeeded(), Succeeded("spec/7-add-a-clock.md\nspec/8-other.md\n"));
+        GitRepository repository = new(this._processes, Root, Bot);
+
+        // Act
+        Fin<IReadOnlyList<string>> files = await repository.FilesOnRemote(
+            "master",
+            "spec",
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(
+            ("spec/7-add-a-clock.md|spec/8-other.md", "ls-tree --name-only origin/master spec/"),
+            (string.Join('|', AssertSuccess(files)), this.Commands()[1].Arguments)
+        );
+    }
+
+    private static ProcessOutcome Succeeded() => Succeeded("");
+
+    private static ProcessOutcome Succeeded(string output) => new(0, output, "", false);
 
     private static ProcessOutcome Failed() => new(1, "", "fatal", false);
 
-    private void Responds(ProcessOutcome outcome) =>
-        this._processes.Run(Arg.Any<ProcessRequest>(), Arg.Any<CancellationToken>()).Returns(outcome);
+    private void Responds(ProcessOutcome first, params ProcessOutcome[] rest) =>
+        this._processes.Run(Arg.Any<ProcessRequest>(), Arg.Any<CancellationToken>()).Returns(first, rest);
 
     private List<(string Directory, string Arguments)> Commands() =>
         [

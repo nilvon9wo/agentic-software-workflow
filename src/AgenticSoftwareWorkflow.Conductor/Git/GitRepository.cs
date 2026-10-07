@@ -41,6 +41,43 @@ public sealed class GitRepository(IProcessCapable processes, string repositoryRo
     public Task<Fin<Workspace>> OpenWorkspace(string branch, CancellationToken cancellationToken) =>
         this.AddWorkspace(branch, branch, cancellationToken);
 
+    /// <summary>
+    /// Every path changed in the workspace since its last commit, new files
+    /// included: what a worker that edits files itself has touched.
+    /// </summary>
+    public async Task<Fin<IReadOnlyList<string>>> ChangedPaths(Workspace workspace, CancellationToken cancellationToken)
+    {
+        CommandLineTool git = this.In(workspace);
+        Fin<string> noted = await NoteNewFiles(git, cancellationToken);
+        Fin<string> listed = await noted.Then(_ => git.Run(["diff", "--name-only"], cancellationToken));
+        return listed.Map(Lines);
+    }
+
+    /// <summary>
+    /// The workspace's changes since its last commit, new files included, as a
+    /// diff: how a reviewer that may only read sees what was done.
+    /// </summary>
+    public async Task<Fin<string>> Diff(Workspace workspace, CancellationToken cancellationToken)
+    {
+        CommandLineTool git = this.In(workspace);
+        Fin<string> noted = await NoteNewFiles(git, cancellationToken);
+        return await noted.Then(_ => git.Run(["diff", "--no-color"], cancellationToken));
+    }
+
+    /// <summary>The files in a directory of a remote branch as it is now, after fetching it.</summary>
+    public async Task<Fin<IReadOnlyList<string>>> FilesOnRemote(
+        string branch,
+        string directory,
+        CancellationToken cancellationToken
+    )
+    {
+        Fin<string> fetched = await this._git.Run(["fetch", Remote, branch], cancellationToken);
+        Fin<string> listed = await fetched.Then(
+            _ => this._git.Run(["ls-tree", "--name-only", $"{Remote}/{branch}", $"{directory}/"], cancellationToken)
+        );
+        return listed.Map(Lines);
+    }
+
     /// <summary>Commits exactly the named paths, as the workers' identity.</summary>
     public async Task<Fin<Unit>> Commit(
         Workspace workspace,
@@ -106,6 +143,14 @@ public sealed class GitRepository(IProcessCapable processes, string repositoryRo
         );
         return added.Map(_ => new Workspace(path, branch));
     }
+
+    private static IReadOnlyList<string> Lines(string output) =>
+        [.. output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
+
+    // Untracked files are invisible to `git diff`; noting them as intended for
+    // the next commit makes them appear, without staging their content.
+    private static Task<Fin<string>> NoteNewFiles(CommandLineTool git, CancellationToken cancellationToken) =>
+        git.Run(["add", "--intent-to-add", "--all"], cancellationToken);
 
     private string WorkspacePathFor(string branch)
     {

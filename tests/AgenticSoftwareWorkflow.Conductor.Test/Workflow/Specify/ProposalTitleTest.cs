@@ -14,7 +14,7 @@ public sealed class ProposalTitleTest
         const string specification = "# Parameterise tests that differ only by data\n\n## Summary\n";
 
         // Act
-        string title = ProposalTitle.For(TwentyFive, specification);
+        string title = ProposalTitle.For("Specify", TwentyFive, specification);
 
         // Assert
         Assert.Equal("Specify: Parameterise tests that differ only by data (#25)", title);
@@ -27,7 +27,7 @@ public sealed class ProposalTitleTest
         const string specification = "## Summary\n\nNo top-level heading.\n";
 
         // Act
-        string title = ProposalTitle.For(TwentyFive, specification);
+        string title = ProposalTitle.For("Specify", TwentyFive, specification);
 
         // Assert
         Assert.Equal("Specify: the work item github:owner/repository#25 (#25)", title);
@@ -40,7 +40,7 @@ public sealed class ProposalTitleTest
         string specification = $"# {new string('a', 150)}\n";
 
         // Act
-        string title = ProposalTitle.For(TwentyFive, specification);
+        string title = ProposalTitle.For("Specify", TwentyFive, specification);
 
         // Assert
         Assert.Equal($"Specify: {new string('a', 100)}… (#25)", title);

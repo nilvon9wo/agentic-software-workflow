@@ -5,6 +5,7 @@ using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.Processes;
 using AgenticSoftwareWorkflow.Conductor.Work;
 using AgenticSoftwareWorkflow.Conductor.Workflow;
+using AgenticSoftwareWorkflow.Conductor.Workflow.Build;
 using AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
 using LanguageExt;
 using Microsoft.Extensions.Time.Testing;
@@ -26,6 +27,7 @@ public sealed class CommandLineTest : IDisposable
 
     private const string Usage = """
         Usage: aswf specify <issue-number>   specify one issue
+               aswf build <issue-number>     build one issue from its approved specification
                aswf run [--once]             work through the ready issues, then keep watching (or stop)
         """;
 
@@ -218,6 +220,26 @@ public sealed class CommandLineTest : IDisposable
         _ = Assert.IsType<OperationCanceledException>(thrown, exactMatch: false);
     }
 
+    [Fact]
+    public async Task Run_WhenBuildingWithoutACodeGate_RefusesAndSaysWhy()
+    {
+        // Arrange
+        await this.WriteSettings(Settings);
+
+        // Act
+        int exitCode = await this.Run(["build", "7"], TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            (
+                CommandLine.Failed,
+                "Failed (BuildingNotConfigured): This project names no codeGate (the command that checks code), "
+                + "so nothing is built.\n"
+            ),
+            (exitCode, this._output.ToString().ReplaceLineEndings("\n"))
+        );
+    }
+
     public void Dispose()
     {
         this._output.Dispose();
@@ -256,10 +278,13 @@ public sealed class CommandLineTest : IDisposable
             return new SpecifyCommand(stage, test._work, git, changes, settings.BaseBranch);
         }
 
+        public Pipeline CreatePipeline(ConductorSettings settings, string repositoryRoot) =>
+            new(this.CreateSpecifyCommand(settings, repositoryRoot), Option<BuildCommand>.None);
+
         public RunLoop CreateRunLoop(ConductorSettings settings, CommandContext context, RunLoopOptions options) =>
             new(
                 test._work,
-                this.CreateSpecifyCommand(settings, context.RepositoryRoot),
+                this.CreatePipeline(settings, context.RepositoryRoot),
                 options,
                 context.Output,
                 new FakeTimeProvider(new DateTimeOffset(2026, 10, 7, 12, 0, 0, TimeSpan.Zero))

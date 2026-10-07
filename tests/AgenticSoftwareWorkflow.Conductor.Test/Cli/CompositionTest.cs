@@ -1,7 +1,11 @@
 using AgenticSoftwareWorkflow.Cli;
 using AgenticSoftwareWorkflow.Conductor.Git;
+using AgenticSoftwareWorkflow.Conductor.Work;
 using AgenticSoftwareWorkflow.Conductor.Workflow;
+using AgenticSoftwareWorkflow.Conductor.Workflow.Build;
 using AgenticSoftwareWorkflow.Conductor.Workflow.Specify;
+using LanguageExt;
+using static AgenticSoftwareWorkflow.Conductor.Test.Support.FinAssertions;
 
 namespace AgenticSoftwareWorkflow.Conductor.Test.Cli;
 
@@ -12,7 +16,8 @@ public sealed class CompositionTest
         "master",
         ["maintainer"],
         new GitIdentity("repository-bot", "bot@example.com"),
-        ["true"]
+        ["true"],
+        null
     );
 
     [Fact]
@@ -40,6 +45,41 @@ public sealed class CompositionTest
 
         // Assert
         Assert.NotNull(loop);
+    }
+
+    [Fact]
+    public async Task CreatePipeline_WhenTheSettingsNameACodeGate_CanBuild()
+    {
+        // Arrange
+        DirectoryInfo notARepository = Directory.CreateTempSubdirectory("aswf-composition-");
+        ConductorSettings settings = Settings with { CodeGate = ["false"] };
+        Pipeline pipeline = new Composition().CreatePipeline(settings, notARepository.FullName);
+
+        // Act
+        Fin<string> report = await pipeline.Build(
+            new WorkItemId("github:owner/repository", "7"),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        notARepository.Delete(recursive: true);
+        Assert.IsNotType<BuildingNotConfigured>(AssertFailure(report));
+    }
+
+    [Fact]
+    public async Task CreatePipeline_WhenTheCodeGateIsEmpty_BuildsNothing()
+    {
+        // Arrange
+        Pipeline pipeline = new Composition().CreatePipeline(Settings with { CodeGate = [] }, "/repository");
+
+        // Act
+        Fin<string> report = await pipeline.Build(
+            new WorkItemId("github:owner/repository", "7"),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        _ = Assert.IsType<BuildingNotConfigured>(AssertFailure(report));
     }
 
     [Fact]

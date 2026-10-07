@@ -111,6 +111,27 @@ process. One caveat: an issue stopped mid-way can leave its worktree under
 `.aswf/worktrees/`; remove it (`git worktree remove --force <path>`) before
 that issue runs again.
 
+## Today: building an approved specification
+
+Once a specification's pull request merges, its issue can be built — by the
+loop (each pass builds every `specified` issue whose specification is on
+`master`), or one at a time:
+
+```bash
+dotnet run --project src/AgenticSoftwareWorkflow.Cli -- build 25
+```
+
+In a fresh worktree, the test author writes tests for every acceptance
+criterion and the test reviewer judges them (one revision allowed); the
+implementer then makes them pass, the project's `codeGate` checks the result,
+and the code reviewer judges it. Findings go back to the implementer, three
+attempts in all. The result is a pull request titled from the specification,
+which **waits for you to merge it**; the issue moves from `specified` to
+`built`. If the build gives up, it says why on the issue and asks you.
+
+Building needs `codeGate` in `aswf.json` — the command that decides whether
+code is done. Without it, nothing is built.
+
 ## Next
 
 The remaining stages — tests, implementation, review, repair — follow the
