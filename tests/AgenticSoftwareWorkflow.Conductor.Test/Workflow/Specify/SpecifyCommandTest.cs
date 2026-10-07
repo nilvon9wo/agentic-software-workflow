@@ -344,6 +344,25 @@ public sealed class SpecifyCommandTest : IDisposable
         Assert.Equal(["Brought PR 9 up to date with master."], AssertSuccess(reports));
     }
 
+    [Fact]
+    public async Task Revise_WhenTheReviewHasNoFeedback_RunsNothing()
+    {
+        // Arrange
+        _ = this._changes
+            .ReadReview(Seven, Arg.Any<CancellationToken>())
+            .Returns(Fin.Succ(Review with { Feedback = [] }));
+        SpecifyCommand command = this.Command();
+
+        // Act
+        Fin<string> report = await command.Revise(Seven, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(
+            ("github:owner/repository#7: no feedback to revise from; nothing was run.", 0),
+            (AssertSuccess(report), this.GitCommands().Count)
+        );
+    }
+
     public void Dispose() => this._root.Delete(recursive: true);
 
     private SpecifyCommand Command()
