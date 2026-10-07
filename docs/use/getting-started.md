@@ -122,10 +122,10 @@ dotnet run --project src/AgenticSoftwareWorkflow.Cli -- build 25
 ```
 
 In a fresh worktree, the test author writes tests for every acceptance
-criterion and the test reviewer judges them (one revision allowed); the
-implementer then makes them pass, the project's `codeGate` checks the result,
-and the code reviewer judges it. Findings go back to the implementer, three
-attempts in all. The result is a pull request titled from the specification,
+criterion and the test reviewer judges them; the implementer then makes them
+pass, the project's `codeGate` checks the result, and the code reviewer judges
+it. Each worker gets three attempts, with its reviewer's findings (or the
+checks' report) after each. The result is a pull request titled from the specification,
 which **waits for you to merge it**; the issue moves from `specified` to
 `built`. If the build gives up, it says why on the issue and asks you.
 

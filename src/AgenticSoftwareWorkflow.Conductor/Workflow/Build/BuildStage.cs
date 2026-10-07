@@ -20,7 +20,8 @@ namespace AgenticSoftwareWorkflow.Conductor.Workflow.Build;
 /// </remarks>
 public sealed class BuildStage(IAgentic agent, IGateKeeping gate, GitRepository git)
 {
-    private const int ImplementationAttempts = 3;
+    // Each worker gets this many goes at satisfying its reviewer and the checks.
+    private const int Attempts = 3;
     private const string NoFindings = "";
     private const string FindingsHeading = "What to fix";
 
@@ -30,17 +31,17 @@ public sealed class BuildStage(IAgentic agent, IGateKeeping gate, GitRepository 
 
     public async Task<Fin<Built>> Run(BuildJob job, CancellationToken cancellationToken)
     {
-        Fin<string> tests = await this.WriteReviewedTests(job, cancellationToken);
+        Fin<string> tests = await this.WriteTests(new TestAttempt(job, NoFindings, Attempts), cancellationToken);
         return await tests.Then(
-            summary => this.Implement(
-                new ImplementAttempt(job, summary, NoFindings, ImplementationAttempts),
-                cancellationToken
-            )
+            summary => this.Implement(new ImplementAttempt(job, summary, NoFindings, Attempts), cancellationToken)
         );
     }
 
-    private static AgentTask TestAuthorTask(BuildJob job, string findings) =>
-        Worker.TestAuthor.Task<WorkerReport>(job, BuildBrief.Describe(job, FindingsHeading, findings));
+    private static AgentTask TestAuthorTask(TestAttempt attempt) =>
+        Worker.TestAuthor.Task<WorkerReport>(
+            attempt.Job,
+            BuildBrief.Describe(attempt.Job, FindingsHeading, attempt.Findings)
+        );
 
     private static AgentTask ImplementerTask(ImplementAttempt attempt) =>
         Worker.Implementer.Task<WorkerReport>(
@@ -48,34 +49,28 @@ public sealed class BuildStage(IAgentic agent, IGateKeeping gate, GitRepository 
             BuildBrief.Describe(attempt.Job, FindingsHeading, attempt.Findings)
         );
 
-    private async Task<Fin<string>> WriteReviewedTests(BuildJob job, CancellationToken cancellationToken)
+    private static Fin<string> Accepted(Fin<WorkerReport> written) => written.Map(report => report.Text);
+
+    private async Task<Fin<string>> WriteTests(TestAttempt attempt, CancellationToken cancellationToken)
     {
-        Fin<WorkerReport> written = await this.Ask<WorkerReport>(TestAuthorTask(job, NoFindings), cancellationToken);
-        Fin<ReviewVerdict> verdict = await written.Then(_ => this.Review(job, Worker.TestReviewer, cancellationToken));
+        Fin<WorkerReport> written = await this.Ask<WorkerReport>(TestAuthorTask(attempt), cancellationToken);
+        Fin<ReviewVerdict> verdict = await written.Then(
+            _ => this.Review(attempt.Job, Worker.TestReviewer, cancellationToken)
+        );
         return await verdict.Then(
             judged => judged.IsApproved
-                ? Task.FromResult(written.Map(report => report.Text))
-                : this.ReviseTests(job, judged, cancellationToken)
+                ? Task.FromResult(Accepted(written))
+                : this.RetryTests(attempt, judged.Describe(), cancellationToken)
         );
     }
 
-    private async Task<Fin<string>> ReviseTests(
-        BuildJob job,
-        ReviewVerdict verdict,
-        CancellationToken cancellationToken
-    )
-    {
-        Fin<WorkerReport> rewritten = await this.Ask<WorkerReport>(
-            TestAuthorTask(job, verdict.Describe()),
-            cancellationToken
-        );
-        Fin<ReviewVerdict> second = await rewritten.Then(_ => this.Review(job, Worker.TestReviewer, cancellationToken));
-        return second.Bind(
-            judged => judged.IsApproved
-                ? rewritten.Map(report => report.Text)
-                : Fin.Fail<string>(new BuildRejected("tests", judged.Describe()))
-        );
-    }
+    private Task<Fin<string>> RetryTests(TestAttempt attempt, string findings, CancellationToken cancellationToken) =>
+        attempt.AttemptsLeft > 1
+            ? this.WriteTests(
+                attempt with { Findings = findings, AttemptsLeft = attempt.AttemptsLeft - 1 },
+                cancellationToken
+            )
+            : Task.FromResult(Fin.Fail<string>(new BuildRejected("tests", findings)));
 
     private async Task<Fin<Built>> Implement(ImplementAttempt attempt, CancellationToken cancellationToken)
     {
@@ -142,6 +137,9 @@ public sealed class BuildStage(IAgentic agent, IGateKeeping gate, GitRepository 
         Fin<AgentResult> result = await this._agent.Run(task, cancellationToken);
         return result.Bind(StructuredAnswers.Read<T>);
     }
+
+    /// <summary>One go at the tests, and what the previous one was told to fix.</summary>
+    private sealed record TestAttempt(BuildJob Job, string Findings, int AttemptsLeft);
 
     /// <summary>One go at the implementation, and what the previous one was told to fix.</summary>
     private sealed record ImplementAttempt(BuildJob Job, string TestsSummary, string Findings, int AttemptsLeft);

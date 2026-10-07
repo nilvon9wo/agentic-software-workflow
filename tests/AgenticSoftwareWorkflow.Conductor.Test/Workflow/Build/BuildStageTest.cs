@@ -72,10 +72,10 @@ public sealed class BuildStageTest
     }
 
     [Fact]
-    public async Task Run_WhenTheRevisedTestsAreStillRejected_GivesUpWithTheFindings()
+    public async Task Run_WhenTheTestsAreNeverAccepted_GivesUpAfterThreeAttemptsWithTheFindings()
     {
         // Arrange
-        this.Answers(WorkflowRoles.TestReviewer, Revise, Revise);
+        this.Answers(WorkflowRoles.TestReviewer, Revise);
         BuildStage stage = this.Stage();
 
         // Act
@@ -83,7 +83,10 @@ public sealed class BuildStageTest
 
         // Assert
         BuildRejected rejected = Assert.IsType<BuildRejected>(AssertFailure(built));
-        Assert.Equal(("tests", "- AC-2 has no test."), (rejected.Stage, rejected.Findings));
+        Assert.Equal(
+            ("tests", "- AC-2 has no test.", 3),
+            (rejected.Stage, rejected.Findings, this.CallsTo(WorkflowRoles.TestAuthor))
+        );
     }
 
     [Fact]
