@@ -27,11 +27,14 @@ public static class WorkflowRoles
     /// </summary>
     public static AgentRole Specifier { get; } = new(CapabilityTier.Standard, ReadOnly, AgentAccess.ToolsOnly);
 
-    /// <summary>Writes visible and hidden tests from the specification; cannot change it.</summary>
+    /// <summary>
+    /// Writes visible and hidden tests from the specification; cannot change it.
+    /// It formats its own files, since no one else may edit them.
+    /// </summary>
     public static AgentRole TestAuthor { get; } = new(
         CapabilityTier.Standard,
         ReadEditAndRun,
-        new AgentAccess([], [WorkspaceLayout.Specification, WorkspaceLayout.Source], [Build, Test])
+        new AgentAccess([], [WorkspaceLayout.Specification, WorkspaceLayout.Source], [Build, Test, Format])
     );
 
     /// <summary>Judges the tests; reads everything, changes nothing.</summary>

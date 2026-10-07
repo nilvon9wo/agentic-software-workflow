@@ -90,6 +90,19 @@ public sealed class WorkflowRolesTest
     }
 
     [Fact]
+    public void TestAuthor_WhenDefined_MayFormatItsOwnFiles()
+    {
+        // Arrange
+        // Nothing to arrange: the role catalogue is static.
+
+        // Act
+        IReadOnlyList<string> commands = WorkflowRoles.TestAuthor.Access.AllowedCommands;
+
+        // Assert
+        Assert.Contains("dotnet format", commands);
+    }
+
+    [Fact]
     public void Triage_WhenDefined_IsCheapAndHasNoTools()
     {
         // Arrange
