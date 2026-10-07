@@ -32,14 +32,25 @@ public sealed class BuildCommand(
     private readonly IChangeProposing _changes = changes;
     private readonly string _baseBranch = baseBranch;
 
-    /// <summary>The specified items whose specification has merged into the base branch.</summary>
+    /// <summary>
+    /// The specified items whose specification has merged into the base branch
+    /// and is not being revised: an open specification proposal means the
+    /// specification on the base branch is about to change, so it must not be
+    /// built from.
+    /// </summary>
     public async Task<Fin<IReadOnlyList<WorkItemId>>> ListBuildable(CancellationToken cancellationToken)
     {
         Fin<IReadOnlyList<WorkItemId>> specified = await this._work.ListSpecified(cancellationToken);
-        Fin<IReadOnlyList<string>> merged = await specified.Then(
+        Fin<IReadOnlyList<WorkItemId>> revising = await specified.Then(
+            _ => this._changes.ListOpenSpecifications(cancellationToken)
+        );
+        Fin<IReadOnlyList<WorkItemId>> settled = specified.Bind(
+            ids => revising.Map(IReadOnlyList<WorkItemId> (open) => [.. ids.Except(open)])
+        );
+        Fin<IReadOnlyList<string>> merged = await settled.Then(
             _ => this._git.FilesOnRemote(this._baseBranch, WorkspaceLayout.SpecificationDirectory, cancellationToken)
         );
-        return await specified.Then(
+        return await settled.Then(
             ids => merged.Then(files => this.WithMergedSpecification(ids, files, cancellationToken))
         );
     }
