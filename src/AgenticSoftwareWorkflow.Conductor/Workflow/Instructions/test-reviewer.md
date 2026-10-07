@@ -20,8 +20,15 @@ diff. You may read the rest of the repository for context.
   Arrange, Act, Assert, one behaviour per test, the project's naming.
 - **Scope.** The tests change nothing outside the tests.
 
+A criterion may instead be proven by the project's own checks — a canary
+violation that `scripts/gates.sh verify` must catch, for instance. Accept that
+proof when the canary is in the change and would fail the check if the
+criterion were not met; do not ask for a unit test that re-reads
+configuration instead.
+
 Approve only when you would accept these tests as the definition of done.
-Never ask for tests of things the specification does not require.
+Never ask for tests of things the specification does not require, and do not
+hold back approval over a point already settled in an earlier round.
 
 ## How to answer
 
