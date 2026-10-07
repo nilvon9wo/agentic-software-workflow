@@ -167,6 +167,22 @@ public sealed class GitHubPullRequestsTest
     }
 
     [Fact]
+    public async Task ListOpenSpecifications_WhenSpecificationsAreOpen_ListsTheirItems()
+    {
+        // Arrange
+        this.Responds(Succeeded(OpenProposals));
+        IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
+
+        // Act
+        Fin<IReadOnlyList<WorkItemId>> open = await pullRequests.ListOpenSpecifications(
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal([Seven, new WorkItemId("github:owner/repository", "8")], AssertSuccess(open));
+    }
+
+    [Fact]
     public async Task ReadReview_WhenTheItemHasAProposal_ReturnsItsBranchAndEveryPieceOfFeedbackInOrder()
     {
         // Arrange
