@@ -122,7 +122,19 @@ Naming (IDE1006) is enforced by `dotnet build` — verified by the
 - **Line length: 80 soft, 120 hard.** Never over 120 (`.editorconfig`
   `max_line_length = 120`; Roslyn ignores it, so the `layout` gate enforces it). There is
   essentially always a clearer way to express a line that long.
-- **One expression per line; one variable declaration per line.**
+- **One expression per line; one variable declaration per line.** In a chain
+  of calls, every call after the first goes on its own line, indented one level
+  past the start of the chain, dot first:
+
+  ```csharp
+  x.Foo()
+      .Bar()
+  ```
+
+  A member access before the first call is not split, so
+  `this._processRunner.ReceivedCalls()` stays together. Dots are indented, not
+  aligned, because alignment would need a custom formatter. This rule will be
+  enforced by the layout analyzer tracked in #3; no gate checks it yet.
 - **Long strings** are broken and `+`-concatenated across lines, never left to
   overflow.
 - **A wrapped call or declaration closes with `)` on its own line**, aligned to
