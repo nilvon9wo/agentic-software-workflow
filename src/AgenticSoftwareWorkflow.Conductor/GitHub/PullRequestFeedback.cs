@@ -11,6 +11,8 @@ namespace AgenticSoftwareWorkflow.Conductor.GitHub;
 /// <remarks>
 /// Only maintainers count, by login, exactly as on issues. Feedback older than
 /// the latest commit has been answered already: a revision is a new commit.
+/// A maintainer's own commits do not count as answers — GitHub's "Update
+/// branch", which merges the base in, is one.
 /// </remarks>
 internal static class PullRequestFeedback
 {
@@ -37,7 +39,7 @@ internal static class PullRequestFeedback
     /// <summary>Not approved, and a maintainer has reviewed or commented since the latest commit.</summary>
     public static bool AwaitsRevision(GitHubPullRequest pullRequest, IReadOnlyList<string> maintainers)
     {
-        DateTimeOffset changed = LastChanged(pullRequest);
+        DateTimeOffset changed = LastChanged(pullRequest, maintainers);
         bool isReviewedSince = (pullRequest.Reviews ?? [])
             .Any(review => IsMaintainers(review.Author, maintainers) && review.SubmittedAt > changed);
         bool isCommentedSince = (pullRequest.Comments ?? [])
@@ -56,7 +58,7 @@ internal static class PullRequestFeedback
     )
     {
         // Each `!` below follows a filter that kept only entries with an author and a time.
-        DateTimeOffset changed = LastChanged(pullRequest);
+        DateTimeOffset changed = LastChanged(pullRequest, maintainers);
         IEnumerable<(DateTimeOffset At, WorkComment Comment)> reviews = (pullRequest.Reviews ?? [])
             .Where(review => IsMaintainers(review.Author, maintainers) && review.SubmittedAt > changed)
             .Where(review => review.State == ChangesRequested || !string.IsNullOrWhiteSpace(review.Body))
@@ -75,8 +77,9 @@ internal static class PullRequestFeedback
         return [.. reviews.Concat(comments).Concat(lines).OrderBy(entry => entry.At).Select(entry => entry.Comment)];
     }
 
-    private static DateTimeOffset LastChanged(GitHubPullRequest pullRequest) =>
+    private static DateTimeOffset LastChanged(GitHubPullRequest pullRequest, IReadOnlyList<string> maintainers) =>
         (pullRequest.Commits ?? [])
+            .Where(commit => !(commit.Authors ?? []).Any(author => IsMaintainers(author, maintainers)))
             .Select(commit => commit.CommittedDate ?? DateTimeOffset.MinValue)
             .DefaultIfEmpty(DateTimeOffset.MinValue)
             .Max();

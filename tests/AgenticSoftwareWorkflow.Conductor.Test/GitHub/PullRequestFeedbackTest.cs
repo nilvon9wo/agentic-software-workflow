@@ -255,7 +255,7 @@ public sealed class PullRequestFeedbackTest
         // Arrange
         GitHubPullRequest pullRequest = PullRequest() with
         {
-            Commits = [new GitHubCommit(null)],
+            Commits = [new GitHubCommit(null, null)],
             Comments = [Comment(Maintainer, "Why?") with { CreatedAt = Committed.AddYears(-1) }],
         };
 
@@ -298,6 +298,24 @@ public sealed class PullRequestFeedbackTest
         Assert.Equal("Why?", Assert.Single(feedback).Body);
     }
 
+    [Fact]
+    public void AwaitsRevision_WhenAMaintainerOnlyUpdatedTheBranchSinceReviewing_IsStillTrue()
+    {
+        // Arrange
+        GitHubCommit updateBranch = new(Committed.AddMinutes(5), [Maintainer]);
+        GitHubPullRequest pullRequest = PullRequest() with
+        {
+            Commits = [new GitHubCommit(Committed, [new GitHubAuthor("workers-bot")]), updateBranch],
+            Reviews = [Review(Maintainer, "CHANGES_REQUESTED", "Use GlobalSuppressions.cs.")],
+        };
+
+        // Act
+        bool awaits = PullRequestFeedback.AwaitsRevision(pullRequest, Maintainers);
+
+        // Assert
+        Assert.True(awaits);
+    }
+
     private static GitHubPullRequest PullRequest() =>
         new(
             9,
@@ -307,7 +325,7 @@ public sealed class PullRequestFeedbackTest
             "REVIEW_REQUIRED",
             [],
             [],
-            [new GitHubCommit(Committed)]
+            [new GitHubCommit(Committed, [new GitHubAuthor("workers-bot")])]
         );
 
     /// <summary>A review a minute after the commit; <c>with</c> moves it.</summary>
