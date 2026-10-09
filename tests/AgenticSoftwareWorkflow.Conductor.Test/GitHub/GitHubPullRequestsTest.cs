@@ -327,10 +327,42 @@ public sealed class GitHubPullRequestsTest
         _ = await pullRequests.Propose(build, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(
-            "Please review.\n\n<!-- aswf-build: github:owner/repository#7 -->\n",
-            Assert.Single(this.Commands()).Input
-        );
+        Assert.EndsWith("\n\n<!-- aswf-build: github:owner/repository#7 -->\n", Assert.Single(this.Commands()).Input);
+    }
+
+    [Fact]
+    public async Task Propose_WhenItIsAnImplementationOfThisRepositorysIssue_ClosesTheIssueOnMerge()
+    {
+        // Arrange
+        this.Responds(Succeeded($"{Address}\n"));
+        IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
+        ChangeProposal build = Proposal with { Kind = ProposalKind.Implementation, Branch = "aswf/build-7" };
+
+        // Act
+        _ = await pullRequests.Propose(build, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.StartsWith("Please review.\n\nCloses #7\n\n", Assert.Single(this.Commands()).Input);
+    }
+
+    [Fact]
+    public async Task Propose_WhenItIsAnImplementationOfAnotherSourcesItem_ClosesNothing()
+    {
+        // Arrange
+        this.Responds(Succeeded($"{Address}\n"));
+        IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
+        ChangeProposal build = Proposal with
+        {
+            Item = new WorkItemId("github:someone/else", "7"),
+            Kind = ProposalKind.Implementation,
+            Branch = "aswf/build-7",
+        };
+
+        // Act
+        _ = await pullRequests.Propose(build, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.DoesNotContain("Closes", Assert.Single(this.Commands()).Input);
     }
 
     private static ProcessOutcome Succeeded(string output) => new(0, output, "", false);
