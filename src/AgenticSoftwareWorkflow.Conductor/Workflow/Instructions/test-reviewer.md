@@ -18,6 +18,9 @@ diff. You may read the rest of the repository for context.
   the arrangement.
 - **Standards.** The tests follow `docs/contribute/coding-standards.md`:
   Arrange, Act, Assert, one behaviour per test, the project's naming.
+  Layout — whitespace, line endings, a final newline or its absence — is not
+  yours to judge: the project's formatter has already been run over the tests,
+  and the project's checks hold what is left.
 - **Scope.** The tests change nothing outside the tests.
 
 A criterion may instead be proven by the project's own checks — a canary

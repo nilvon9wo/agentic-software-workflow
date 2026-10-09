@@ -14,20 +14,8 @@ namespace AgenticSoftwareWorkflow.Conductor.Gates;
 /// </remarks>
 public sealed class CommandGate(IProcessCapable processes, IReadOnlyList<string> command) : IGateKeeping
 {
-    private const string NoInput = "";
+    private readonly ProjectCommand _command = new(processes, command);
 
-    // Provisioning the checkers on a first run can take a while.
-    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(10);
-
-    private readonly IProcessCapable _processes = processes;
-    private readonly IReadOnlyList<string> _command = command;
-
-    public async Task<Fin<Unit>> Check(string workingDirectory, CancellationToken cancellationToken)
-    {
-        ProcessRequest request = new(this._command[0], [.. this._command.Skip(1)], NoInput, workingDirectory, Timeout);
-        ProcessOutcome outcome = await this._processes.Run(request, cancellationToken);
-        return outcome is { ExitCode: 0, HasTimedOut: false }
-            ? Fin.Succ(Unit.Default)
-            : Fin.Fail<Unit>(new GatesFailed(outcome.StandardOutput + outcome.StandardError));
-    }
+    public Task<Fin<Unit>> Check(string workingDirectory, CancellationToken cancellationToken) =>
+        this._command.Run(workingDirectory, report => new GatesFailed(report), cancellationToken);
 }

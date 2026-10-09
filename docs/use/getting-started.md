@@ -132,6 +132,12 @@ which **waits for you to merge it**; the issue moves from `specified` to
 Building needs `codeGate` in `aswf.json` — the command that decides whether
 code is done. Without it, nothing is built.
 
+`formatter` in `aswf.json` is optional: the command that lays code out in the
+project's style. When it is named, the conductor runs it after the test author
+and after the implementer, before anyone reviews or checks their work, so
+neither has to remember to and no reviewer has to judge layout. If it fails,
+the worker gets its report and tries again.
+
 ## Next
 
 The remaining stages — tests, implementation, review, repair — follow the

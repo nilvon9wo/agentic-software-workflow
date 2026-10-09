@@ -1,4 +1,5 @@
 using AgenticSoftwareWorkflow.Conductor.Agents;
+using AgenticSoftwareWorkflow.Conductor.Formatting;
 using AgenticSoftwareWorkflow.Conductor.Gates;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.Processes;
@@ -126,5 +127,11 @@ public sealed class PipelineTest
         new(new SpecifyStage(this._work, this._agent, this._gate), this._work, this.Git(), this._changes, "master");
 
     private BuildCommand Build() =>
-        new(new BuildStage(this._agent, this._gate, this.Git()), this._work, this.Git(), this._changes, "master");
+        new(
+            new BuildStage(this._agent, this._gate, new NoFormatter(), this.Git()),
+            this._work,
+            this.Git(),
+            this._changes,
+            "master"
+        );
 }

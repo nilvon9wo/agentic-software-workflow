@@ -10,7 +10,9 @@ namespace AgenticSoftwareWorkflow.Cli;
 /// at the repository's root: where the work lives, who may answer for it, who
 /// commits on the workers' behalf, the command that checks the documents the
 /// workers write (<c>documentGate</c>, as an argument list), and — optionally —
-/// the command that checks code (<c>codeGate</c>); without it, nothing is built.
+/// the command that checks code (<c>codeGate</c>), without which nothing is
+/// built, and the command that formats code (<c>formatter</c>), without which
+/// code is left as the workers wrote it.
 /// </summary>
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)] // created by the JSON deserializer
 internal sealed record ConductorSettings(
@@ -19,7 +21,8 @@ internal sealed record ConductorSettings(
     List<string> Maintainers,
     GitIdentity CommitAuthor,
     List<string>? DocumentGate,
-    List<string>? CodeGate
+    List<string>? CodeGate,
+    List<string>? Formatter
 )
 {
     public const string FileName = "aswf.json";

@@ -1,4 +1,5 @@
 using AgenticSoftwareWorkflow.Conductor.Agents;
+using AgenticSoftwareWorkflow.Conductor.Formatting;
 using AgenticSoftwareWorkflow.Conductor.Gates;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.Processes;
@@ -203,7 +204,7 @@ public sealed class BuildCommandTest : IDisposable
     private BuildCommand Command()
     {
         GitRepository git = new(this._processes, this._root.FullName, new GitIdentity("bot", "bot@example.com"));
-        BuildStage stage = new(this._agent, this._gate, git);
+        BuildStage stage = new(this._agent, this._gate, new NoFormatter(), git);
         return new BuildCommand(stage, this._work, git, this._changes, "master");
     }
 
