@@ -44,7 +44,7 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
                 "--body-file",
                 ReadFromStandardInput,
             ],
-            $"{proposal.Description}\n\n{PullRequestFeedback.Marker(proposal.Item, proposal.Kind)}\n",
+            this.Body(proposal),
             cancellationToken
         );
         Fin<string> address = created.Map(output => output.Trim());
@@ -94,6 +94,19 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
             )
         );
     }
+
+    private string Body(ChangeProposal proposal)
+    {
+        string marker = PullRequestFeedback.Marker(proposal.Item, proposal.Kind);
+        return $"{proposal.Description}\n\n{this.Closing(proposal)}{marker}\n";
+    }
+
+    // A build closes its issue when it merges. A specification does not: its
+    // issue has still to be built. GitHub closes only this repository's issues.
+    private string Closing(ChangeProposal proposal) =>
+        proposal.Kind == ProposalKind.Implementation && proposal.Item.Source == this._options.Source
+            ? $"Closes #{proposal.Item.Key}\n\n"
+            : string.Empty;
 
     private static Fin<GitHubPullRequest> FindFor(List<GitHubPullRequest> pullRequests, WorkItemId id) =>
         pullRequests.Find(pullRequest => PullRequestFeedback.ItemOf(pullRequest) == id) is { } found

@@ -127,7 +127,8 @@ pass, the project's `codeGate` checks the result, and the code reviewer judges
 it. Each worker gets three attempts, with its reviewer's findings (or the
 checks' report) after each. The result is a pull request titled from the specification,
 which **waits for you to merge it**; the issue moves from `specified` to
-`built`. If the build gives up, it says why on the issue and asks you.
+`built`, and merging the pull request closes it. If the build gives up, it
+says why on the issue and asks you.
 
 Building needs `codeGate` in `aswf.json` — the command that decides whether
 code is done. Without it, nothing is built.

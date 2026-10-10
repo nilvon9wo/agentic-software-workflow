@@ -17,4 +17,8 @@ public sealed record GitHubOptions(
     IReadOnlyList<string> Maintainers,
     string WorkingDirectory,
     string Executable = "gh"
-);
+)
+{
+    /// <summary>The source this repository's work items come from: <c>github:owner/name</c>.</summary>
+    public string Source => $"github:{this.Repository}";
+}

@@ -28,8 +28,6 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
     private readonly CommandLineTool _gh = new(processes, options.Executable, options.WorkingDirectory);
     private readonly GitHubOptions _options = options;
 
-    private string Source => $"github:{this._options.Repository}";
-
     public Task<Fin<IReadOnlyList<WorkItemId>>> ListReady(CancellationToken cancellationToken) =>
         this.ListLabelled(ReadyLabel, cancellationToken);
 
@@ -131,12 +129,12 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
         [.. issues.Where(issue => !IsWaiting(issue)).Select(issue => this.IdOf(issue.Number))];
 
     private WorkItemId IdOf(int number) =>
-        new(this.Source, number.ToString(CultureInfo.InvariantCulture));
+        new(this._options.Source, number.ToString(CultureInfo.InvariantCulture));
 
     private Fin<WorkItemId> RequireOwn(WorkItemId id) =>
-        id.Source == this.Source
+        id.Source == this._options.Source
             ? Fin.Succ(id)
-            : Fin.Fail<WorkItemId>(new ForeignWorkItem(id, this.Source));
+            : Fin.Fail<WorkItemId>(new ForeignWorkItem(id, this._options.Source));
 
     private WorkItem ToWorkItem(GitHubIssue issue, string workerLogin) =>
         new(
