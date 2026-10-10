@@ -129,7 +129,9 @@ In a fresh worktree, the test author writes tests for every acceptance
 criterion and the test reviewer judges them; the implementer then makes them
 pass, the project's `codeGate` checks the result, and the code reviewer judges
 it. Each worker gets three attempts, with its reviewer's findings (or the
-checks' report) after each. The result is a pull request titled from the
+checks' report) after each. When the checks fail, the test author first fixes
+whatever in their report is in the tests (lint, a test project's settings),
+since the implementer may not change them. The result is a pull request titled from the
 specification, which **merges by itself** once the repository's checks pass:
 you approved what to build when you approved the specification. A build that
 changes what only maintainers may change still waits for your approval, and
