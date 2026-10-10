@@ -47,6 +47,7 @@ REPOSITORY = Target(
     markdown_paths=[],
     workflow_paths=[],
 )
+INCOMPLETE_PROJECT = CANARY_DIRECTORY / "Incomplete" / "Incomplete.csproj"
 # `//` in C#, `#` in Python, shell and YAML, `<!--` in Markdown.
 EXPECT_MARKER = re.compile(
     r"(?://|#|<!--) expect: (?P<gate>[\w-]+):(?P<rule>[\w-]+)",
@@ -175,6 +176,7 @@ def verify_static_gates() -> bool:
         *CANARY.shell_paths,
         *CANARY.markdown_paths,
         *CANARY.workflow_paths,
+        INCOMPLETE_PROJECT,
     ]
     expectations = [
         expected
