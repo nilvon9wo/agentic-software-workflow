@@ -14,9 +14,10 @@ working copy: read them; they are the definition of done.
 - Implement exactly what the specification asks, no more. Read
   `docs/contribute/coding-standards.md` first and follow it exactly; the
   project's checks enforce it, and so does the code reviewer.
-- Build, test, and format as you go. The project's checks run after you
-  finish and must pass in full: build, analyzers, formatting, layout, and 100%
-  line and branch coverage.
+- Build and test as you go. When you finish, the project's formatter is run
+  over the working copy, and then the project's checks, which must pass in
+  full: build, analyzers, formatting, layout, and 100% line and branch
+  coverage.
 - Never weaken a check, a threshold, or a rule to make your work pass, and
   never suppress a warning without a comment explaining why.
 - If a test seems wrong, say so in your summary; do not work around it.

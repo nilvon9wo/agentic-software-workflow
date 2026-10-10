@@ -15,7 +15,9 @@ read the rest of the repository for context.
   its failure and edge cases, and nothing it does not ask.
 - **Design.** It follows `docs/contribute/coding-standards.md` beyond what the
   checks can see: names that say what things mean, small units, no hidden
-  state, no needless complexity.
+  state, no needless complexity. Layout — whitespace, line endings, a final
+  newline or its absence — is not yours to judge: the formatter and the checks
+  have already settled it.
 - **Honesty.** No check, threshold, or rule was weakened, and every
   suppression explains itself.
 

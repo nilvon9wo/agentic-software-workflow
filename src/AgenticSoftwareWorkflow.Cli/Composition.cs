@@ -1,4 +1,5 @@
 using AgenticSoftwareWorkflow.Conductor.Claude;
+using AgenticSoftwareWorkflow.Conductor.Formatting;
 using AgenticSoftwareWorkflow.Conductor.Gates;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.GitHub;
@@ -64,6 +65,7 @@ internal sealed class Composition : IConductorComposing
         BuildStage stage = new(
             new ClaudeCodeAgentRunner(this._processes),
             new CommandGate(this._processes, codeGate),
+            this.FormatterFor(settings),
             git
         );
         return new BuildCommand(
@@ -74,6 +76,12 @@ internal sealed class Composition : IConductorComposing
             settings.BaseBranch
         );
     }
+
+    // A project that names no formatter has what its workers write left as written.
+    private IFormatting FormatterFor(ConductorSettings settings) =>
+        settings.Formatter is { Count: > 0 } formatter
+            ? new CommandFormatter(this._processes, formatter)
+            : new NoFormatter();
 
     private static GitHubOptions GitHubOptionsFor(ConductorSettings settings, string repositoryRoot) =>
         new(settings.Repository, settings.Maintainers, repositoryRoot);

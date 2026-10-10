@@ -17,6 +17,7 @@ public sealed class CompositionTest
         ["maintainer"],
         new GitIdentity("repository-bot", "bot@example.com"),
         ["true"],
+        null,
         null
     );
 
@@ -47,12 +48,17 @@ public sealed class CompositionTest
         Assert.NotNull(loop);
     }
 
-    [Fact]
-    public async Task CreatePipeline_WhenTheSettingsNameACodeGate_CanBuild()
+    // The formatter's length in words: none at all, an empty command, a command.
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(1)]
+    public async Task CreatePipeline_WhenTheSettingsNameACodeGate_CanBuildWithOrWithoutAFormatter(int? formatterWords)
     {
         // Arrange
         DirectoryInfo notARepository = Directory.CreateTempSubdirectory("aswf-composition-");
-        ConductorSettings settings = Settings with { CodeGate = ["false"] };
+        List<string>? formatter = formatterWords is { } words ? [.. Enumerable.Repeat("true", words)] : null;
+        ConductorSettings settings = Settings with { CodeGate = ["false"], Formatter = formatter };
         Pipeline pipeline = new Composition().CreatePipeline(settings, notARepository.FullName);
 
         // Act

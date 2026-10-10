@@ -1,4 +1,5 @@
 using AgenticSoftwareWorkflow.Conductor.Agents;
+using AgenticSoftwareWorkflow.Conductor.Formatting;
 using AgenticSoftwareWorkflow.Conductor.Gates;
 using AgenticSoftwareWorkflow.Conductor.Git;
 using AgenticSoftwareWorkflow.Conductor.Processes;
@@ -24,6 +25,7 @@ public sealed class BuildStageTest
 
     private readonly IAgentic _agent = Substitute.For<IAgentic>();
     private readonly IGateKeeping _gate = Substitute.For<IGateKeeping>();
+    private readonly IFormatting _formatter = Substitute.For<IFormatting>();
     private readonly IProcessCapable _processes = Substitute.For<IProcessCapable>();
 
     public BuildStageTest()
@@ -36,6 +38,7 @@ public sealed class BuildStageTest
         this.Answers(WorkflowRoles.Implementer, Report("Added Clock."));
         this.Answers(WorkflowRoles.CodeReviewer, Approve);
         this.GateAnswers(Fin.Succ(Unit.Default));
+        this.FormatterAnswers(Fin.Succ(Unit.Default));
     }
 
     [Fact]
@@ -155,6 +158,76 @@ public sealed class BuildStageTest
     }
 
     [Fact]
+    public async Task Run_WhenEveryStepIsAccepted_FormatsTheWorkspaceAfterEachWriter()
+    {
+        // Arrange
+        BuildStage stage = this.Stage();
+
+        // Act
+        _ = await stage.Run(Job, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = await this._formatter.Received(2).Format(Workspace.Path, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Run_WhenTheFormatterRejectsTheTests_GivesTheTestAuthorItsReport()
+    {
+        // Arrange
+        this.FormatterAnswers(Fin.Fail<Unit>(new FormattingFailed("ClockTest.cs(3): CS1002")), Fin.Succ(Unit.Default));
+        BuildStage stage = this.Stage();
+
+        // Act
+        _ = await stage.Run(Job, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = await this._agent.Received(1).Run(
+            Arg.Is<AgentTask>(
+                task => task.Role == WorkflowRoles.TestAuthor && task.Prompt.Contains("ClockTest.cs(3): CS1002")
+            ),
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenTheFormatterRejectsTheImplementation_GivesTheImplementerItsReport()
+    {
+        // Arrange
+        this.FormatterAnswers(
+            Fin.Succ(Unit.Default),
+            Fin.Fail<Unit>(new FormattingFailed("Clock.cs(3): CS1002")),
+            Fin.Succ(Unit.Default)
+        );
+        BuildStage stage = this.Stage();
+
+        // Act
+        _ = await stage.Run(Job, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = await this._agent.Received(1).Run(
+            Arg.Is<AgentTask>(
+                task => task.Role == WorkflowRoles.Implementer && task.Prompt.Contains("Clock.cs(3): CS1002")
+            ),
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenTheFormatterCannotRun_StopsWithoutRetrying()
+    {
+        // Arrange
+        CommandFailed notInstalled = new("dotnet format", 127, "dotnet: command not found");
+        this.FormatterAnswers(Fin.Fail<Unit>(notInstalled));
+        BuildStage stage = this.Stage();
+
+        // Act
+        Fin<Built> built = await stage.Run(Job, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal((notInstalled, 1), (AssertFailure(built), this.CallsTo(WorkflowRoles.TestAuthor)));
+    }
+
+    [Fact]
     public async Task Run_WhenReviewing_ShowsTheReviewerTheChangeAsADiff()
     {
         // Arrange
@@ -190,7 +263,12 @@ public sealed class BuildStageTest
     private static string Report(string summary) => $$"""{"summary":"{{summary}}"}""";
 
     private BuildStage Stage() =>
-        new(this._agent, this._gate, new GitRepository(this._processes, "/repository", new GitIdentity("bot", "b@x")));
+        new(
+            this._agent,
+            this._gate,
+            this._formatter,
+            new GitRepository(this._processes, "/repository", new GitIdentity("bot", "b@x"))
+        );
 
     private void Answers(AgentRole role, string first, params string[] rest) =>
         this._agent
@@ -202,6 +280,9 @@ public sealed class BuildStageTest
 
     private void GateAnswers(Fin<Unit> first, params Fin<Unit>[] rest) =>
         this._gate.Check(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(first, rest);
+
+    private void FormatterAnswers(Fin<Unit> first, params Fin<Unit>[] rest) =>
+        this._formatter.Format(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(first, rest);
 
     private int CallsTo(AgentRole role) =>
         this._agent
