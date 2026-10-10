@@ -7,8 +7,10 @@ public enum ProposalKind
     Specification,
 
     /// <summary>
-    /// Waits for a maintainer to merge it: until the build stage has earned that
-    /// trust, an implementation is merged by a person, never by itself.
+    /// Merges by itself once the project's checks pass: the maintainer approved
+    /// what to build (its specification), and the checks and the code reviewer
+    /// judged how. One that changes what the rules reserve to maintainers still
+    /// waits for their approval.
     /// </summary>
     Implementation,
 }

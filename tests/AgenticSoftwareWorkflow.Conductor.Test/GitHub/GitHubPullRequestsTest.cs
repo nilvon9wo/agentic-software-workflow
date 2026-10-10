@@ -316,7 +316,22 @@ public sealed class GitHubPullRequestsTest
     }
 
     [Fact]
-    public async Task Propose_WhenItIsAnImplementation_TiesItWithABuildMarkerAndLeavesTheMergeToAMaintainer()
+    public async Task Propose_WhenItIsAnImplementation_AsksItToMergeOnceAllowed()
+    {
+        // Arrange
+        this.Responds(Succeeded($"{Address}\n"), Succeeded(""));
+        IChangeProposing pullRequests = new GitHubPullRequests(this._processes, Options, "master");
+        ChangeProposal build = Proposal with { Kind = ProposalKind.Implementation, Branch = "aswf/build-7" };
+
+        // Act
+        _ = await pullRequests.Propose(build, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal($"pr merge {Address} --auto --merge", this.Commands()[1].Arguments);
+    }
+
+    [Fact]
+    public async Task Propose_WhenItIsAnImplementation_TiesItWithABuildMarker()
     {
         // Arrange
         this.Responds(Succeeded($"{Address}\n"));
@@ -327,7 +342,7 @@ public sealed class GitHubPullRequestsTest
         _ = await pullRequests.Propose(build, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.EndsWith("\n\n<!-- aswf-build: github:owner/repository#7 -->\n", Assert.Single(this.Commands()).Input);
+        Assert.EndsWith("\n\n<!-- aswf-build: github:owner/repository#7 -->\n", this.Commands()[0].Input);
     }
 
     [Fact]
@@ -342,7 +357,7 @@ public sealed class GitHubPullRequestsTest
         _ = await pullRequests.Propose(build, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.StartsWith("Please review.\n\nCloses #7\n\n", Assert.Single(this.Commands()).Input);
+        Assert.StartsWith("Please review.\n\nCloses #7\n\n", this.Commands()[0].Input);
     }
 
     [Fact]
@@ -362,7 +377,7 @@ public sealed class GitHubPullRequestsTest
         _ = await pullRequests.Propose(build, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.DoesNotContain("Closes", Assert.Single(this.Commands()).Input);
+        Assert.DoesNotContain("Closes", this.Commands()[0].Input);
     }
 
     private static ProcessOutcome Succeeded(string output) => new(0, output, "", false);

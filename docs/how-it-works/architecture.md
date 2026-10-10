@@ -10,9 +10,9 @@ why each piece is built (or *not* built) the way it is.
 > (`aswf run`), which keeps proposals up to date and waits out usage limits;
 > issue → specification (`aswf specify`), revised from maintainers' reviews;
 > and specification → reviewed tests → implementation through the code gate
-> and a code review → pull request (`aswf build`; merged by a maintainer for
-> now). Next: hidden tests, mutation testing, the arbitrator. Tracked as
-> GitHub issues.
+> and a code review → pull request (`aswf build`), which merges itself once
+> the checks pass. Next: hidden tests, mutation testing, the arbitrator.
+> Tracked as GitHub issues.
 
 ## The one idea that matters most
 
