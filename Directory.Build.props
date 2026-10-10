@@ -28,6 +28,15 @@
   </ItemGroup>
 
   <!--
+    ConfigureAwait.Fody applies ConfigureAwait(false) to every await after
+    compilation. Each project also needs a GlobalSuppressions.cs declaring it
+    (see coding-standards.md); the configure-await gate checks both.
+  -->
+  <ItemGroup>
+    <PackageReference Include="ConfigureAwait.Fody" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
     One checkout is built from both Windows and WSL (see
     docs/contribute/local-development.md). Separate output roots per OS stop the
     two from overwriting each other's restore graphs and binaries.
