@@ -10,8 +10,9 @@ namespace AgenticSoftwareWorkflow.Conductor.Functional;
 /// code, which would be branching logic in disguise.
 /// </summary>
 /// <remarks>
-/// Each failure's data is public: it is the contract with whatever handles
-/// the failure (a repair loop deciding to retry, say), hence <c>[PublicAPI]</c>.
+/// A failure exposes only its message until a handler needs more: a property
+/// is added when some caller's behaviour depends on it, and tested through
+/// that behaviour.
 /// </remarks>
 public abstract record ExpectedFailure : Expected
 {
