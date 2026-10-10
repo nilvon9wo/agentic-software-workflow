@@ -215,13 +215,18 @@ proven to fire by the canary. See
   `PublicAPI.Shipped.txt` via
   [Microsoft.CodeAnalysis.PublicApiAnalyzers](https://www.nuget.org/packages/Microsoft.CodeAnalysis.PublicApiAnalyzers).
   Code that is truly dead is deleted rather than covered or worked around.
-- **No `ConfigureAwait` noise.** `ConfigureAwait(false)` only matters where a
-  `SynchronizationContext` exists (UI frameworks, legacy ASP.NET). This
-  project's code runs in console processes, where it does nothing — so it is
-  not written. A library destined for hosts that do have one states the
-  intent once, as an assembly-level attribute via
-  [ConfigureAwait.Fody](https://github.com/Fody/ConfigureAwait), rather than
-  at every `await`.
+- **No `ConfigureAwait` noise.** `ConfigureAwait(false)` is never written at
+  an `await`. Instead, every project references
+  [ConfigureAwait.Fody](https://github.com/Fody/ConfigureAwait) (a
+  `PackageReference` with `PrivateAssets="all"`; the version is pinned in
+  `Directory.Packages.props`) and declares
+  `[assembly: Fody.ConfigureAwait(false)]` in its `GlobalSuppressions.cs`,
+  so the code suits hosts that have a `SynchronizationContext`. The same
+  `GlobalSuppressions.cs` suppresses the `ConfigureAwaitEnforcer` and
+  `CA2007` rules, because Fody applies the call after compilation and
+  analyzers that look for it at every `await` cannot see it. A new project
+  adds both the reference and `GlobalSuppressions.cs`; the `configure-await`
+  gate fails without them.
 - **No nested classes, ever.** A private helper scoped to one file (a test
   double, a small worker class) is `file sealed class Foo` at namespace scope
   in the same `.cs` file.
