@@ -1,0 +1,10 @@
+<!-- expect: configure-await:package-reference -->
+<!-- expect: configure-await:global-suppressions -->
+<!--
+  Deliberately incomplete: no ConfigureAwait.Fody reference and no
+  GlobalSuppressions.cs. The configure-await gate, run against the canary,
+  must report both. Do not fix it.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+</Project>

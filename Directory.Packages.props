@@ -9,6 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      Applies ConfigureAwait(false) to every await after compilation, so the
+      code is correct for hosts that have a SynchronizationContext. Each
+      project also declares it in GlobalSuppressions.cs (see coding-standards.md).
+    -->
+    <PackageVersion Include="ConfigureAwait.Fody" Version="3.3.2" />
     <PackageVersion Include="coverlet.MTP" Version="10.1.0" />
     <!-- Errors as values (Fin/Try). v5 is beta; pinned exactly, upgraded deliberately. -->
     <!--
