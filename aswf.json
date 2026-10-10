@@ -8,5 +8,9 @@
   },
   "documentGate": ["bash", "scripts/gates.sh", "run", "markdownlint", "lychee"],
   "codeGate": ["bash", "-c", "bash scripts/gates.sh verify && bash scripts/gates.sh run"],
-  "formatter": ["dotnet", "format", "AgenticSoftwareWorkflow.slnx", "--severity", "info"]
+  "formatter": [
+    "bash",
+    "-c",
+    "dotnet restore AgenticSoftwareWorkflow.slnx --nologo --verbosity quiet && dotnet format AgenticSoftwareWorkflow.slnx --no-restore --severity info"
+  ]
 }
