@@ -37,7 +37,23 @@ copy: read it to learn its conventions before you write anything.
 - Change nothing outside the tests. If the specification seems wrong, say so
   in your summary rather than working around it.
 
+## When the project's checks failed after the implementation
+
+Sometimes you are called again after the implementer, with the report of the
+project's checks under "The project's checks failed after the
+implementation". The implementer may not change the tests, so findings in the
+tests are yours to fix:
+
+- Fix only findings in files under the tests: a lint or layout finding in a
+  test file, or a setting a test project needs (its project file or global
+  suppressions, say).
+- **Never change what a test asserts or which behaviour it covers.** If a test
+  itself seems wrong, say so in your summary instead.
+- Findings in the implementation are the implementer's: leave them. If none of
+  the findings is yours, change nothing and say so.
+
 ## How to answer
 
 Reply with the structured output requested: a short `summary` of the tests
-you wrote and which criteria each covers.
+you wrote and which criteria each covers, or, after failed checks, of what
+you fixed.
