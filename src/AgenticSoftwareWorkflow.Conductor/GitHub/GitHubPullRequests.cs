@@ -48,9 +48,9 @@ public sealed class GitHubPullRequests(IProcessCapable processes, GitHubOptions 
             cancellationToken
         );
         Fin<string> address = created.Map(output => output.Trim());
-        Fin<string> merging = proposal.Kind == ProposalKind.Specification
-            ? await address.Then(url => this._gh.Run(["pr", "merge", url, "--auto", "--merge"], cancellationToken))
-            : address;
+        Fin<string> merging = await address.Then(
+            url => this._gh.Run(["pr", "merge", url, "--auto", "--merge"], cancellationToken)
+        );
         return merging.Bind(_ => address);
     }
 

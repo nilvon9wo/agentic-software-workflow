@@ -89,7 +89,8 @@ public sealed class BuildCommand(
 
         {built.ImplementationSummary}
 
-        This pull request does not merge by itself: a maintainer merges it.
+        This pull request merges by itself once the project's checks pass. To stop
+        it, disable auto-merge on it.
         """;
 
     private async Task<Fin<IReadOnlyList<WorkItemId>>> WithMergedSpecification(

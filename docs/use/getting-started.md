@@ -125,9 +125,12 @@ In a fresh worktree, the test author writes tests for every acceptance
 criterion and the test reviewer judges them; the implementer then makes them
 pass, the project's `codeGate` checks the result, and the code reviewer judges
 it. Each worker gets three attempts, with its reviewer's findings (or the
-checks' report) after each. The result is a pull request titled from the specification,
-which **waits for you to merge it**; the issue moves from `specified` to
-`built`, and merging the pull request closes it. If the build gives up, it
+checks' report) after each. The result is a pull request titled from the
+specification, which **merges by itself** once the repository's checks pass:
+you approved what to build when you approved the specification. A build that
+changes what only maintainers may change still waits for your approval, and
+you can stop any build by disabling its auto-merge. The issue moves from
+`specified` to `built`, and the merge closes it. If the build gives up, it
 says why on the issue and asks you.
 
 Building needs `codeGate` in `aswf.json` — the command that decides whether
