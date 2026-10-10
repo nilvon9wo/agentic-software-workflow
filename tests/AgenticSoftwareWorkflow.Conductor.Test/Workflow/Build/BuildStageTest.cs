@@ -112,6 +112,59 @@ public sealed class BuildStageTest
     }
 
     [Fact]
+    public async Task Run_WhenTheChecksFail_GivesTheTestAuthorTheReportBeforeTheImplementersNextGo()
+    {
+        // Arrange
+        this.GateAnswers(Fin.Fail<Unit>(new GatesFailed("ClockTest.py:3 F401")), Fin.Succ(Unit.Default));
+        BuildStage stage = this.Stage();
+
+        // Act
+        _ = await stage.Run(Job, TestContext.Current.CancellationToken);
+
+        // Assert
+        _ = await this._agent.Received(1).Run(
+            Arg.Is<AgentTask>(
+                task => task.Role == WorkflowRoles.TestAuthor
+                    && task.Prompt.Contains("## The project's checks failed after the implementation")
+                    && task.Prompt.Contains("ClockTest.py:3 F401")
+            ),
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact]
+    public async Task Run_WhenTheChecksNeverPass_LetsTheTestAuthorFixOnlyWhileTheImplementerHasGoesLeft()
+    {
+        // Arrange
+        this.GateAnswers(Fin.Fail<Unit>(new GatesFailed("ClockTest.py:3 F401")));
+        BuildStage stage = this.Stage();
+
+        // Act
+        _ = await stage.Run(Job, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal((3, 3), (this.CallsTo(WorkflowRoles.TestAuthor), this.CallsTo(WorkflowRoles.Implementer)));
+    }
+
+    [Fact]
+    public async Task Run_WhenTheTestAuthorCannotFixTheTests_StopsWithoutRetrying()
+    {
+        // Arrange
+        AgentTimedOut timedOut = new(TimeSpan.FromMinutes(20));
+        _ = this._agent
+            .Run(Arg.Is<AgentTask>(task => task.Role == WorkflowRoles.TestAuthor), Arg.Any<CancellationToken>())
+            .Returns(Answer(Report("Tests for AC-1.")), Fin.Fail<AgentResult>(timedOut));
+        this.GateAnswers(Fin.Fail<Unit>(new GatesFailed("ClockTest.py:3 F401")));
+        BuildStage stage = this.Stage();
+
+        // Act
+        Fin<Built> built = await stage.Run(Job, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal((timedOut, 1), (AssertFailure(built), this.CallsTo(WorkflowRoles.Implementer)));
+    }
+
+    [Fact]
     public async Task Run_WhenTheCodeReviewerAsksForChanges_GivesTheImplementerItsFindings()
     {
         // Arrange
