@@ -109,7 +109,19 @@ a pull request when:
 - it changes no governed path (`spec/`, `.github/`,
   `scripts/maintainer_approval.py`, `aswf.json`); or
 - a maintainer authored it; or
-- a maintainer's latest review **approves its current head commit**.
+- a maintainer's latest review **approves its current head commit**; or
+- a maintainer's latest review approves an **earlier commit whose own changes
+  are identical** to the head's.
+
+The last rule exists because the ruleset requires pull requests to be up to
+date: merging `master` into an approved pull request creates a new head
+commit, and without it every such update would need a fresh approval. A pull
+request's *own changes* are its diff against the base branch
+(`git diff master...commit`), read through GitHub's compare API. They count as
+identical when the same files appear in the same order with the same status,
+previous path (for renames) and content (blob SHA). Any difference voids the
+approval: an extra edit, an added or removed file, or a conflict resolution
+that changes what the pull request proposes.
 
 ### Why a custom check
 
@@ -130,9 +142,10 @@ a pull request when:
   review is submitted or dismissed. A pull request could tamper with that
   file; the worst it could do is fail to re-run the check, which leaves the
   pull request blocked, not merged.
-- **Approval is of a commit.** Pushing new commits after an approval needs a
-  new approval; a later "changes requested" by the same maintainer overrides
-  their earlier approval.
+- **Approval is of what the pull request proposes.** Pushing a change to the
+  pull request's own diff after an approval needs a new approval; merging
+  `master` into it does not. A later "changes requested" by the same
+  maintainer overrides their earlier approval.
 - **Governance governs itself.** Changing the check, the workflows, or the
   list of maintainers is itself a governed change.
 
@@ -146,6 +159,9 @@ a pull request when:
   is never a maintainer.
 - **A compromised maintainer account defeats it**, as it would any
   review-based control.
+- **It trusts GitHub's compare output** to say what a pull request changes.
+  If an approved commit disappears (a force-push), the compare call fails and
+  so does the check, until a fresh approval is given.
 - **Pull requests from forks** cannot re-run the check automatically on review
   (their review event runs with a read-only token); a maintainer re-runs the
   check by hand.

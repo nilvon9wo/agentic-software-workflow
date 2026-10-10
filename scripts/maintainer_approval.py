@@ -4,8 +4,15 @@
 A specification defines what tests and code are held to; the workflows,
 this check, and the list of maintainers define how the repository is
 governed. A pull request that changes any of these passes only when a
-maintainer authored it or approved its current head commit. Every other
-pull request passes at once, so ordinary changes still merge on green gates.
+maintainer authored it or approved its current head commit - or approved
+an earlier commit whose own changes (its diff against the base branch) are
+identical to the head's, so bringing a pull request up to date does not
+void its approval. Every other pull request passes at once, so ordinary
+changes still merge on green gates.
+
+Everything the check relies on stays in this one file: only this file is
+governed, so a helper module would let a pull request change the rules
+without a maintainer's approval.
 
 GitHub's own "require review from Code Owners" does not enforce anything
 while a ruleset requires zero approvals, and requiring approvals on every
@@ -37,8 +44,29 @@ GOVERNED_PATHS = (
 APPROVED = "APPROVED"
 SETTINGS_FILE = Path(__file__).resolve().parent.parent / "aswf.json"
 FIELD_SEPARATOR = "\t"
+COMPARED_FILE_FIELDS = (
+    '.files[] | [.filename, .status, (.previous_filename // ""),'
+    ' (.sha // "")] | @tsv'
+)
 
 type CommandRunner = Callable[[Sequence[str]], str]
+
+
+@dataclass(frozen=True)
+class ChangedFile:
+    """One file in a pull request's own changes, as GitHub compares it.
+
+    The blob SHA stands for the file's exact content, so binary and large
+    files, whose patches GitHub omits, are compared as surely as text.
+    """
+
+    path: str
+    status: str
+    previous_path: str
+    blob: str
+
+
+type DiffReader = Callable[[str], Sequence[ChangedFile]]
 
 
 @dataclass(frozen=True)
@@ -56,6 +84,7 @@ class PullRequest:
 
     author: str
     head: str
+    base: str
     files: Sequence[str]
     reviews: Sequence[Review]
 
@@ -78,17 +107,25 @@ def latest_decisions(reviews: Sequence[Review]) -> dict[str, Review]:
     return {review.author: review for review in reviews}
 
 
-def approves(
+def is_maintainers_approval(
     review: Review,
-    head: str,
     maintainers: Sequence[str],
 ) -> bool:
-    """True when a maintainer approved exactly this commit."""
-    return (
-        review.author in maintainers
-        and review.state == APPROVED
-        and review.commit == head
-    )
+    """True when the review is a maintainer's approval, of any commit."""
+    return review.author in maintainers and review.state == APPROVED
+
+
+def maintainers_approvals(
+    pull_request: PullRequest,
+    maintainers: Sequence[str],
+) -> list[Review]:
+    """Maintainers' latest reviews that approve; a later verdict revokes."""
+    decisions = latest_decisions(pull_request.reviews).values()
+    return [
+        review
+        for review in decisions
+        if is_maintainers_approval(review, maintainers)
+    ]
 
 
 def approvers(
@@ -96,12 +133,41 @@ def approvers(
     maintainers: Sequence[str],
 ) -> list[str]:
     """Maintainers whose latest review approves the current head commit."""
-    decisions = latest_decisions(pull_request.reviews).values()
+    approvals = maintainers_approvals(pull_request, maintainers)
     return [
         review.author
-        for review in decisions
-        if approves(review, pull_request.head, maintainers)
+        for review in approvals
+        if review.commit == pull_request.head
     ]
+
+
+def carried_approvals(
+    pull_request: PullRequest,
+    maintainers: Sequence[str],
+    diff_of: DiffReader,
+) -> list[Review]:
+    """Approvals of earlier commits whose own changes match the head's.
+
+    Each earlier commit is compared once, and nothing is compared when no
+    maintainer approved an earlier commit.
+    """
+    approvals = maintainers_approvals(pull_request, maintainers)
+    earlier = [
+        review
+        for review in approvals
+        if review.commit != pull_request.head
+    ]
+    if earlier:
+        head_changes = diff_of(pull_request.head)
+        commits = {review.commit for review in earlier}
+        unchanged = {
+            commit
+            for commit in commits
+            if diff_of(commit) == head_changes
+        }
+        return [review for review in earlier if review.commit in unchanged]
+    else:
+        return []
 
 
 def reasons_to_pass(
@@ -138,12 +204,56 @@ def describe_missing_approval(
     )
 
 
-def judge(pull_request: PullRequest, maintainers: Sequence[str]) -> Verdict:
-    """Decide whether the pull request may merge."""
+def describe_carried_approval(
+    pull_request: PullRequest,
+    carried: Sequence[Review],
+) -> str:
+    """Whose earlier approvals still hold, and for which head commit."""
+    approvals = [
+        f"{review.author} at {review.commit}"
+        for review in carried
+    ]
+    approved_at = ", ".join(approvals)
+    return (
+        f"Approved by {approved_at}; its own changes are identical at "
+        f"{pull_request.head}."
+    )
+
+
+def judge(
+    pull_request: PullRequest,
+    maintainers: Sequence[str],
+    diff_of: DiffReader,
+) -> Verdict:
+    """Decide whether the pull request may merge.
+
+    Comparing diffs costs API calls, so it is the last resort: only when no
+    cheaper reason lets the pull request pass.
+    """
     governed = [path for path in pull_request.files if is_governed(path)]
     reasons = reasons_to_pass(pull_request, maintainers, governed)
     if reasons:
         return Verdict(has_passed=True, reason=reasons[0])
+    else:
+        return judge_by_earlier_approvals(
+            pull_request,
+            maintainers,
+            governed,
+            diff_of,
+        )
+
+
+def judge_by_earlier_approvals(
+    pull_request: PullRequest,
+    maintainers: Sequence[str],
+    governed: Sequence[str],
+    diff_of: DiffReader,
+) -> Verdict:
+    """Pass on an earlier approval whose changes match; otherwise fail."""
+    carried = carried_approvals(pull_request, maintainers, diff_of)
+    if carried:
+        reason = describe_carried_approval(pull_request, carried)
+        return Verdict(has_passed=True, reason=reason)
     else:
         reason = describe_missing_approval(pull_request, governed)
         return Verdict(has_passed=False, reason=reason)
@@ -174,8 +284,10 @@ def fetch(
 ) -> PullRequest:
     """The pull request's author, head commit, changed files, and reviews."""
     base = f"repos/{repository}/pulls/{number}"
-    summary = run(["api", base, "--jq", "[.user.login, .head.sha] | @tsv"])
-    author, head = summary.strip().split(FIELD_SEPARATOR)
+    summary = run(
+        ["api", base, "--jq", "[.user.login, .head.sha, .base.ref] | @tsv"],
+    )
+    author, head, base_branch = summary.strip().split(FIELD_SEPARATOR)
     files = run(["api", "--paginate", f"{base}/files", "--jq", ".[].filename"])
     reviews = run(
         [
@@ -190,9 +302,40 @@ def fetch(
     return PullRequest(
         author=author,
         head=head,
+        base=base_branch,
         files=files.split(),
         reviews=review_list,
     )
+
+
+def to_changed_file(line: str) -> ChangedFile:
+    """A changed file from one tab-separated line of `gh api` output."""
+    path, status, previous_path, blob = line.split(FIELD_SEPARATOR)
+    return ChangedFile(
+        path=path,
+        status=status,
+        previous_path=previous_path,
+        blob=blob,
+    )
+
+
+def compare_reader(
+    repository: str,
+    base_branch: str,
+    run: CommandRunner,
+) -> DiffReader:
+    """Reads a commit's own changes: `git diff base...commit`, via GitHub.
+
+    A failing call raises, so the check fails closed - for instance when an
+    approved commit no longer exists after a force-push.
+    """
+
+    def diff_of(commit: str) -> Sequence[ChangedFile]:
+        endpoint = f"repos/{repository}/compare/{base_branch}...{commit}"
+        compared = run(["api", endpoint, "--jq", COMPARED_FILE_FIELDS])
+        return [to_changed_file(line) for line in compared.splitlines()]
+
+    return diff_of
 
 
 def read_maintainers(settings_file: Path) -> list[str]:
@@ -211,7 +354,8 @@ def main(
     repository, number = arguments
     pull_request = fetch(repository, number, run)
     maintainers = read_maintainers(settings_file)
-    verdict = judge(pull_request, maintainers)
+    diff_of = compare_reader(repository, pull_request.base, run)
+    verdict = judge(pull_request, maintainers, diff_of)
     print(verdict.reason)
     return exit_code_for(verdict.has_passed)
 
