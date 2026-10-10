@@ -6,7 +6,8 @@ namespace AgenticSoftwareWorkflow.TestProcess;
 /// A stand-in child process. The behaviour is chosen by the first argument:
 /// <c>echo</c> copies standard input to standard output; <c>fail &lt;code&gt;</c>
 /// writes "failed" to standard error and exits with that code; <c>hang</c>
-/// waits until it is killed.
+/// waits until it is killed, first writing its process id to the file named
+/// by a second argument, if there is one, so a test can check it was stopped.
 /// </summary>
 internal static class Program
 {
@@ -22,7 +23,7 @@ internal static class Program
         {
             EchoCommand => await Echo(),
             FailCommand => await Fail(arguments[1]),
-            HangCommand => await Hang(),
+            HangCommand => await Hang(arguments.Skip(1)),
             _ => await Reject(command),
         };
     }
@@ -40,8 +41,13 @@ internal static class Program
         return int.Parse(exitCode, CultureInfo.InvariantCulture);
     }
 
-    private static async Task<int> Hang()
+    private static async Task<int> Hang(IEnumerable<string> processIdFile)
     {
+        foreach (string path in processIdFile)
+        {
+            await File.WriteAllTextAsync(path, $"{Environment.ProcessId}");
+        }
+
         await Task.Delay(Timeout.Infinite);
         return 0;
     }

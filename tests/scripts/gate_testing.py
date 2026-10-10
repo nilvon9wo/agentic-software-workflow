@@ -6,16 +6,19 @@ from pathlib import Path
 
 from gates.model import Target
 
+CANARY_PROJECT = Path("Canary.csproj")
+
 type FakeExecute = Callable[[Sequence[str]], subprocess.CompletedProcess[str]]
 
 
 def a_target(
     markdown_paths: Sequence[Path] = (),
     workflow_paths: Sequence[Path] = (),
+    dotnet_project: Path = CANARY_PROJECT,
 ) -> Target:
     """A target holding only the paths a test cares about."""
     return Target(
-        dotnet_project=Path("Canary.csproj"),
+        dotnet_project=dotnet_project,
         csharp_paths=(),
         python_paths=(),
         shell_paths=(),
