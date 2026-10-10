@@ -58,6 +58,55 @@ public sealed class GitHubIssuesTest
     }
 
     [Fact]
+    public async Task ListReady_WhenIssuesHavePriorities_ListsTheMostUrgentFirstAndTheOldestFirstWithin()
+    {
+        // Arrange
+        this.Responds(
+            Succeeded(
+                """
+                [
+                  { "number": 8, "labels": [ { "name": "ready" } ] },
+                  { "number": 3, "labels": [ { "name": "ready" }, { "name": "priority: low" } ] },
+                  { "number": 9, "labels": [ { "name": "ready" }, { "name": "priority: high" } ] },
+                  { "number": 5, "labels": [ { "name": "priority: high" }, { "name": "ready" } ] },
+                  { "number": 6 }
+                ]
+                """
+            )
+        );
+        IWorkSupplying issues = new GitHubIssues(this._processes, Options);
+
+        // Act
+        Fin<IReadOnlyList<WorkItemId>> ready = await issues.ListReady(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(["5", "9", "6", "8", "3"], AssertSuccess(ready).Select(id => id.Key));
+    }
+
+    [Fact]
+    public async Task ListReady_WhenAnIssueIsLabelledBothHighAndLow_TakesItAsHigh()
+    {
+        // Arrange
+        this.Responds(
+            Succeeded(
+                """
+                [
+                  { "number": 2, "labels": [ { "name": "ready" } ] },
+                  { "number": 7, "labels": [ { "name": "priority: low" }, { "name": "priority: high" } ] }
+                ]
+                """
+            )
+        );
+        IWorkSupplying issues = new GitHubIssues(this._processes, Options);
+
+        // Act
+        Fin<IReadOnlyList<WorkItemId>> ready = await issues.ListReady(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(["7", "2"], AssertSuccess(ready).Select(id => id.Key));
+    }
+
+    [Fact]
     public async Task ListReady_WhenCalled_AsksGitHubForOpenReadyIssues()
     {
         // Arrange

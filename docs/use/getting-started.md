@@ -94,6 +94,10 @@ again. An issue whose specification has been proposed moves from `ready` to
 `specified`, so it is never specified twice. Issues waiting on you are
 skipped until you reply.
 
+To say what comes first, label an issue `priority: high` or `priority: low`.
+Issues are taken high first, then unlabelled, then low, and oldest first
+within each, both for specifying and for building.
+
 - **Reviewing a specification**: review its pull request the usual way.
   Approve it, and it merges. Comment, request changes, or comment on lines,
   and the next pass revises the specification on the same pull request — the

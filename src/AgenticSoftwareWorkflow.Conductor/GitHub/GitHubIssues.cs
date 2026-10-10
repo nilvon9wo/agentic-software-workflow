@@ -11,7 +11,9 @@ namespace AgenticSoftwareWorkflow.Conductor.GitHub;
 /// <c>ready</c> is ready; <c>needs-human</c>, plus an assignee, marks one
 /// waiting on a maintainer; <c>specified</c> replaces <c>ready</c> once its
 /// specification has been proposed, and <c>built</c> replaces <c>specified</c>
-/// once its implementation has.
+/// once its implementation has. Issues are listed most urgent first
+/// (<c>priority: high</c>, then unlabelled, then <c>priority: low</c>), and
+/// oldest first within each.
 /// </summary>
 public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions options) : IWorkSupplying
 {
@@ -19,12 +21,21 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
     private const string NeedsHumanLabel = "needs-human";
     private const string SpecifiedLabel = "specified";
     private const string BuiltLabel = "built";
+    private const string HighPriorityLabel = "priority: high";
+    private const string LowPriorityLabel = "priority: low";
     private const string UnknownAuthor = "ghost";
     private const string ListFields = "number,labels";
     private const string ViewFields = "number,title,body,labels,comments";
     private const string IssueListLimit = "100";
     private const string ReadFromStandardInput = "-";
     private const string ListSeparator = ",";
+
+    private static readonly Dictionary<string, GitHubPriority> PriorityLabels = new(StringComparer.Ordinal)
+    {
+        [HighPriorityLabel] = GitHubPriority.High,
+        [LowPriorityLabel] = GitHubPriority.Low,
+    };
+
     private readonly CommandLineTool _gh = new(processes, options.Executable, options.WorkingDirectory);
     private readonly GitHubOptions _options = options;
 
@@ -125,8 +136,26 @@ public sealed class GitHubIssues(IProcessCapable processes, GitHubOptions option
     private static bool IsWaiting(GitHubIssue issue) =>
         (issue.Labels ?? []).Any(label => label.Name == NeedsHumanLabel);
 
+    // Maintainers rank work with priority labels. Within a rank the oldest
+    // issue (the lowest number) goes first, so nothing waits forever behind
+    // newer work.
     private IReadOnlyList<WorkItemId> NotWaiting(List<GitHubIssue> issues) =>
-        [.. issues.Where(issue => !IsWaiting(issue)).Select(issue => this.IdOf(issue.Number))];
+        [
+            .. issues
+                .Where(issue => !IsWaiting(issue))
+                .OrderBy(PriorityOf)
+                .ThenBy(issue => issue.Number)
+                .Select(issue => this.IdOf(issue.Number)),
+        ];
+
+    // An issue labelled both high and low is taken as high: the more urgent wins.
+    private static GitHubPriority PriorityOf(GitHubIssue issue) =>
+        (issue.Labels ?? [])
+            .Select(label => label.Name)
+            .Where(PriorityLabels.ContainsKey)
+            .Select(name => PriorityLabels[name])
+            .DefaultIfEmpty(GitHubPriority.Normal)
+            .Min();
 
     private WorkItemId IdOf(int number) =>
         new(this._options.Source, number.ToString(CultureInfo.InvariantCulture));
