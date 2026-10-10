@@ -30,6 +30,7 @@ public sealed class BuildStage(IAgentic agent, IGateKeeping gate, IFormatting fo
     private const int Attempts = 3;
     private const string NoFindings = "";
     private const string FindingsHeading = "What to fix";
+    private const string ChecksFailedHeading = "The project's checks failed after the implementation";
 
     private readonly IAgentic _agent = agent;
     private readonly IGateKeeping _gate = gate;
@@ -143,8 +144,26 @@ public sealed class BuildStage(IAgentic agent, IGateKeeping gate, IFormatting fo
         CancellationToken cancellationToken
     ) =>
         failure is GatesFailed or FormattingFailed
-            ? this.Retry(attempt, failure.Message, cancellationToken)
+            ? this.FixTestsThenRetry(attempt, failure.Message, cancellationToken)
             : Task.FromResult(Fin.Fail<Built>(failure));
+
+    // The checks can fail on files only the test author may change: a test's
+    // lint, a test project's settings. The implementer may not touch those, so
+    // before its next go the test author fixes whatever in the report is its own.
+    private async Task<Fin<Built>> FixTestsThenRetry(
+        ImplementAttempt attempt,
+        string findings,
+        CancellationToken cancellationToken
+    )
+    {
+        Fin<WorkerReport> fixedTests = attempt.AttemptsLeft > 1
+            ? await this.Ask<WorkerReport>(TestFixerTask(attempt.Job, findings), cancellationToken)
+            : Fin.Succ(new WorkerReport(NoFindings));
+        return await fixedTests.Then(_ => this.Retry(attempt, findings, cancellationToken));
+    }
+
+    private static AgentTask TestFixerTask(BuildJob job, string findings) =>
+        Worker.TestAuthor.Task<WorkerReport>(job, BuildBrief.Describe(job, ChecksFailedHeading, findings));
 
     private Task<Fin<Built>> Retry(ImplementAttempt attempt, string findings, CancellationToken cancellationToken) =>
         attempt.AttemptsLeft > 1

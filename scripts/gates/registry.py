@@ -6,6 +6,7 @@ canary markers, the snippet gate with a stale document, and the test gates
 with an uncovered addition, so the groups are kept apart.
 """
 
+from gates.configure_await_gate import run_configure_await
 from gates.dotnet_gates import run_build, run_format, run_inspect, run_tests
 from gates.layout_gate import run_layout
 from gates.markdown_gates import run_lychee, run_markdownlint
@@ -25,6 +26,7 @@ STATIC_GATES = (
     Gate("format", run_format),
     Gate("inspect", run_inspect),
     Gate("layout", run_layout),
+    Gate("configure-await", run_configure_await),
     Gate("ruff", run_ruff),
     Gate("pylint", run_pylint),
     Gate("pyright", run_pyright),

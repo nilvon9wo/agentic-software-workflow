@@ -24,7 +24,8 @@ repo — human or AI. When a change is reviewed, this is the checklist.
   2. Prefer explicit over implicit.
   3. Keep methods short — a method past ~10 lines is usually doing two things.
      This is a smell to investigate, not a hard limit to contort code around.
-  4. Never more than one expression per line.
+  4. One non-trivial evaluation per line — see the
+     [Formatting](#formatting) bullet of that name.
   5. Blocks must not be nested more than two deep — except that a
      `try`/`catch` may be a third layer. A `try` wraps only the code expected
      to throw, and every `catch` names a specific exception type (CA1031 in
@@ -122,7 +123,51 @@ Naming (IDE1006) is enforced by `dotnet build` — verified by the
 - **Line length: 80 soft, 120 hard.** Never over 120 (`.editorconfig`
   `max_line_length = 120`; Roslyn ignores it, so the `layout` gate enforces it). There is
   essentially always a clearer way to express a line that long.
-- **One expression per line; one variable declaration per line.**
+- **One non-trivial evaluation per line.** A line evaluates at most one
+  non-trivial expression or statement, and a declaration still takes one
+  variable per line. These are free and do not count: `await`, casts,
+  literals, names, unary `!` and `-`, `not`, `nameof()`, `typeof()`, and
+  short property access. Dots used for plain member access are not counted,
+  so `this._processRunner.ReceivedCalls()` stays together on one line. A
+  call is an evaluation, though: each call in a chain of calls after the
+  first goes on its own line, dot first, indented one level past the start
+  of the chain, so a chain of exactly two calls is split:
+
+  ```csharp
+  x.Foo()
+      .Bar()
+  ```
+
+  A member access chain with three or more consecutive member accesses and
+  no call is long, and is also broken, one `.member` per line, dot first,
+  indented one level past the start of the chain. A null-conditional (`?.`)
+  or null-coalescing (`??`) operator is always placed at the start of its
+  own line, indented one level past the start of the statement:
+
+  ```csharp
+  string a = foo
+      ?.bar
+      ?.baz
+      ?? "whatever";
+  ```
+
+  A ternary is broken into three lines: the condition, then `? whenTrue`,
+  then `: whenFalse`, with `?` and `:` first on their lines and indented one
+  level past the condition. A ternary nested in the false branch indents its
+  own `?` and `:` one further level than the enclosing ones:
+
+  ```csharp
+  string b = isFoo()
+      ? "A"
+      : isBar()
+          ? "B"
+          : "C";
+  ```
+
+  Dots are indented, not aligned, because alignment would need a custom
+  formatter. The rule applies in every language this repository holds to
+  these standards, each with its own syntax for the same constructs. It
+  will be enforced by the layout analyzer tracked in #3.
 - **Long strings** are broken and `+`-concatenated across lines, never left to
   overflow.
 - **A wrapped call or declaration closes with `)` on its own line**, aligned to
@@ -215,13 +260,18 @@ proven to fire by the canary. See
   `PublicAPI.Shipped.txt` via
   [Microsoft.CodeAnalysis.PublicApiAnalyzers](https://www.nuget.org/packages/Microsoft.CodeAnalysis.PublicApiAnalyzers).
   Code that is truly dead is deleted rather than covered or worked around.
-- **No `ConfigureAwait` noise.** `ConfigureAwait(false)` only matters where a
-  `SynchronizationContext` exists (UI frameworks, legacy ASP.NET). This
-  project's code runs in console processes, where it does nothing — so it is
-  not written. A library destined for hosts that do have one states the
-  intent once, as an assembly-level attribute via
-  [ConfigureAwait.Fody](https://github.com/Fody/ConfigureAwait), rather than
-  at every `await`.
+- **No `ConfigureAwait` noise.** `ConfigureAwait(false)` is never written at
+  an `await`. Instead, every project references
+  [ConfigureAwait.Fody](https://github.com/Fody/ConfigureAwait) (a
+  `PackageReference` with `PrivateAssets="all"`; the version is pinned in
+  `Directory.Packages.props`) and declares
+  `[assembly: Fody.ConfigureAwait(false)]` in its `GlobalSuppressions.cs`,
+  so the code suits hosts that have a `SynchronizationContext`. The same
+  `GlobalSuppressions.cs` suppresses the `ConfigureAwaitEnforcer` and
+  `CA2007` rules, because Fody applies the call after compilation and
+  analyzers that look for it at every `await` cannot see it. A new project
+  adds both the reference and `GlobalSuppressions.cs`; the `configure-await`
+  gate fails without them.
 - **No nested classes, ever.** A private helper scoped to one file (a test
   double, a small worker class) is `file sealed class Foo` at namespace scope
   in the same `.cs` file.
@@ -302,9 +352,10 @@ checker where the language has one, and a canary proving each gate fires.
 
 The house rules above carry over where they make sense in another language:
 intention-revealing names, short single-purpose functions, no magic values,
-explicit over implicit, one expression per line, and every suppression
-justified beside it. Naming follows each language's convention — `snake_case`
-functions in Python, for example.
+explicit over implicit, one non-trivial evaluation per line (see the
+"One non-trivial evaluation per line" bullet under Formatting), and every
+suppression justified beside it. Naming follows each language's convention —
+`snake_case` functions in Python, for example.
 
 ### Python specifics
 

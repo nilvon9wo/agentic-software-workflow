@@ -4,7 +4,8 @@ namespace AgenticSoftwareWorkflow.Conductor.Processes;
 
 /// <summary>
 /// Runs a real operating-system process, capturing its output and stopping it
-/// (with any children it started) if it outlives its timeout.
+/// (with any children it started) if it outlives its timeout or the caller
+/// cancels.
 /// </summary>
 public sealed class SystemProcessRunner : IProcessCapable
 {
@@ -72,6 +73,13 @@ public sealed class SystemProcessRunner : IProcessCapable
         {
             // Only our own timeout lands here; the caller's cancellation propagates.
             return false;
+        }
+        catch (OperationCanceledException)
+        {
+            // The caller gave up: the process must not outlive the request, or a
+            // stopped conductor would leave its workers running unsupervised.
+            process.Kill(entireProcessTree: true);
+            throw;
         }
     }
 
